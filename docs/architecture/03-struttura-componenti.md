@@ -9,6 +9,7 @@
 | `fisio-persistence-mysql` | DAO JDBC, pool e lettura configurazione | `fisio-application`, MySQL Connector/J, HikariCP |
 | `fisio-web-legacy` | Servlet, JSP, bootstrap, KPI e integrazione WhatsApp | `fisio-persistence-mysql` e dipendenze web |
 | `fisio-backend` | Processo HTTP autonomo, `/health` e `/ready` | JDK e MySQL Connector/J |
+| `fisio-desktop` | Prototipo di interfaccia HTML/JavaScript locale in JavaFX WebView | JavaFX Web |
 
 Il `pom.xml` alla radice è l'aggregatore Maven. La webapp produce ancora
 `Fisio-e-Sports.war`; il nome del contesto Tomcat non cambia. Le classi
@@ -36,7 +37,8 @@ flowchart LR
   Web --> Baileys[Gateway WhatsApp]
 ```
 
-Android usa ancora la webapp tramite WebView. Il backend autonomo espone solo
+Il prototipo desktop mostra il calendario FullCalendar con dati fittizi e non
+chiama ancora il backend. Android usa ancora la webapp tramite WebView. Il backend autonomo espone solo
 controlli di salute e disponibilità del database; non gestisce sessioni o dati
-clinici. Le future UI desktop e Android dovranno usare API autenticate, senza
+clinici. Le UI desktop e Android dovranno usare API autenticate, senza
 connessione diretta a MySQL.

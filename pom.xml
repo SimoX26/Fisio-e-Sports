@@ -11,6 +11,7 @@
     <module>fisio-persistence-mysql</module>
     <module>fisio-web-legacy</module>
     <module>fisio-backend</module>
+    <module>fisio-desktop</module>
   </modules>
   <properties>
     <maven.compiler.release>15</maven.compiler.release>

@@ -10,7 +10,7 @@ non attesta un deploy in produzione.
 | Separazione Maven | Implementata, da collaudare in Tomcat | Build aggregata e contenuto WAR verificati |
 | Associazione paziente-terapista | Migrazione applicata al DB di test configurato; codice pronto | Deploy WAR e prova manuale con due utenti |
 | API autenticate | Da fare | Login, sessioni, autorizzazioni e contratti JSON |
-| Client desktop | Da fare | Prototipo calendario e scheda paziente |
+| Client desktop | Prima schermata FullCalendar locale, da collaudare manualmente | Verificare resa e interazioni su Windows; poi migrare le altre schermate, API e packaging |
 | Client Android autonomo | Da fare | Sostituzione della WebView |
 | Dismissione webapp | Da fare | Solo dopo parità funzionale e collaudo |
 

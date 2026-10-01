@@ -14,7 +14,7 @@ La separazione attuale aiuta: esistono già otto controller applicativi e dodici
 
 Due applicazioni installabili possono condividere lo stesso database attraverso un backend. Se invece il requisito fosse letteralmente «nessun componente applicativo sul server, soltanto MySQL», sarebbe un'architettura diversa da quella proposta qui. L'accesso SQL diretto obbligherebbe a distribuire accessi al DB e replicare o spostare nel database le regole oggi eseguite sul server.
 
-La scelta della UI Windows resta aperta fra controlli JavaFX e HTML/JavaScript locale in una finestra Java. Per conservare anche l'aspetto del calendario attuale, la seconda possibilità merita un prototipo prima di confermare JavaFX puro.
+Per la UI Windows è stato scelto HTML/JavaScript locale in una finestra JavaFX, per favorire il riutilizzo dell'interfaccia. Il primo prototipo è nel modulo `fisio-desktop`; compatibilità e parità con il calendario attuale restano da verificare.
 
 ## 2. Perimetro e attendibilità
 
@@ -218,7 +218,7 @@ JavaFX offre un `WebEngine` con rendering web e interazione Java/JavaScript. Que
 
 FullCalendar 6.1.11, Bootstrap 5.3.2 e Chart.js 4.4.3 sono caricati da CDN nel codice attuale. Un frontend locale dovrà includere gli asset necessari, convertire l'iniezione di dati JSP e sostituire i riferimenti al contesto web con chiamate API. Questo può eliminare la webapp JSP sul server pur mantenendo tecnologie web nella UI dei client.
 
-La precedente raccomandazione di JavaFX puro è quindi preliminare. Il criterio di scelta sarà una prova del calendario e della scheda paziente: elementi, azioni, tastiera, leggibilità, DPI, tempi di apertura e comportamento agli errori. «Stessi elementi» non autorizza a eliminare campi o semplificare flussi.
+La scelta attuale è HTML/JavaScript locale in JavaFX WebView. La prima schermata usa FullCalendar con gli stessi asset e la configurazione di base della webapp, ma solo con dati fittizi e modali semplificati. Prima di completare la UI occorre confrontare calendario e scheda con la versione esistente: elementi, azioni, tastiera, leggibilità, DPI, tempi di apertura e comportamento agli errori. «Stessi elementi» non autorizza a eliminare campi o semplificare flussi.
 
 ## 10. EXE, installer e ambiente di sviluppo
 

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calendario • Fisio e Sports</title>
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="stylesheet" href="vendor/bootstrap-5.3.2.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="desktop.css">
+  <script src="vendor/bootstrap-5.3.2.bundle.min.js" defer></script>
+  <script src="vendor/fullcalendar-6.1.11.min.js" defer></script>
+  <script src="prototype.js" defer></script>
+</head>
+<body class="calendar-gcal-page">
+  <nav class="navbar navbar-expand-lg px-3 px-lg-5 app-navbar">
+    <div class="container-fluid">
+      <span class="navbar-brand fw-bold"><span class="brand-dot"></span> FISIO E SPORTS</span>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Apri menu di navigazione"><span class="navbar-toggler-label">MENU</span><span class="navbar-toggler-icon"></span></button>
+      <div class="collapse navbar-collapse app-navbar-collapse" id="navbarNav">
+        <form class="d-flex mt-3 mt-lg-0 ms-lg-3 me-lg-3 app-global-search" id="searchForm">
+          <input class="form-control form-control-sm app-global-search-input" type="search" placeholder="Cerca nel sistema..." aria-label="Ricerca globale">
+          <button class="btn btn-outline-secondary btn-sm ms-2 app-global-search-btn" type="submit">Cerca</button>
+        </form>
+        <ul class="navbar-nav ms-auto align-items-lg-center app-navbar-links">
+          <li class="nav-item"><span class="nav-link">Home</span></li>
+          <li class="nav-item"><span class="nav-link active" aria-current="page">Calendario</span></li>
+          <li class="nav-item"><span class="nav-link">Rubrica</span></li>
+          <li class="nav-item"><span class="nav-link">Storico Trattamenti</span></li>
+          <li class="nav-item"><span class="nav-link">Dati e Statistiche</span></li>
+          <li class="nav-item d-none d-lg-block mx-2"><span class="nav-link disabled nav-separator">|</span></li>
+          <li class="nav-item"><span class="nav-link">Impostazioni</span></li>
+          <li class="nav-item"><span class="nav-link logout-link">Logout</span></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container app-shell calendar-gcal-header-shell mt-4">
+    <div class="page-header-row calendar-gcal-head mb-3">
+      <h2 class="page-title mb-0">Calendario</h2>
+      <div class="d-flex align-items-center gap-2">
+        <span class="btn btn-outline-secondary section-action-btn">Cestino</span>
+        <button class="btn btn-primary calendar-add-btn gcal-create-btn" id="openAppointmentModalBtn" type="button" aria-label="Nuovo appuntamento"><span>+</span><span>Crea</span></button>
+      </div>
+    </div>
+    <div class="alert alert-info py-2 px-3 small" role="status">Anteprima locale con dati fittizi: nessuna modifica viene salvata.</div>
+  </div>
+
+  <div class="container-fluid calendar-gcal-wrap"><div class="calendar-host"><div class="calendar-scroll-shell"><div id="calendar"></div></div></div></div>
+
+  <div class="modal fade" id="appointmentModal" tabindex="-1" aria-labelledby="appointmentModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content glass-card">
+      <div class="modal-header"><h5 class="modal-title" id="appointmentModalTitle">Nuovo appuntamento</h5><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
+      <div class="modal-body"><form id="appointmentForm">
+        <div class="mb-3"><label class="form-label" for="patientName">Paziente</label><input class="form-control" id="patientName" required></div>
+        <div class="mb-3"><label class="form-label" for="appointmentDate">Giorno</label><input class="form-control" type="date" id="appointmentDate" required></div>
+        <div class="row g-3"><div class="col-6"><label class="form-label" for="startTime">Orario inizio</label><input class="form-control" type="time" id="startTime" step="900" required></div><div class="col-6"><label class="form-label" for="endTime">Orario fine</label><input class="form-control" type="time" id="endTime" step="900" required></div></div>
+        <div class="mt-3"><label class="form-label" for="notes">Note</label><textarea class="form-control" id="notes" rows="3"></textarea></div>
+      </form></div>
+      <div class="modal-footer"><button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Annulla</button><button class="btn btn-primary" type="submit" form="appointmentForm">Salva nella prova</button></div>
+    </div></div>
+  </div>
+
+  <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content glass-card">
+      <div class="modal-header"><h5 class="modal-title" id="eventModalTitle"></h5><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
+      <div class="modal-body"><p id="eventModalTime"></p><p id="eventModalNotes" class="text-muted"></p></div>
+      <div class="modal-footer"><button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Chiudi</button></div>
+    </div></div>
+  </div>
+</body>
+</html>

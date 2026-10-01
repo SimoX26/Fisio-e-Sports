@@ -1,0 +1,2 @@
+/* Adattamenti necessari alla prova locale; lo stile principale viene dalla webapp. */
+.app-navbar .navbar-brand, .app-navbar .nav-link { cursor: default; }
