@@ -22,7 +22,12 @@ precedenti non devono restare visibili dopo l'uscita. Ripetere con un secondo
 terapista per verificare la separazione degli appuntamenti. Nel dettaglio di un
 appuntamento controllare data, orario, note e pulsanti visibili secondo lo stato;
 **Dettagli paziente** deve aprire la scheda nella rubrica. Provare anche un evento
-generico e uno tutto il giorno. Creazione, modifica, cancellazione,
+generico e uno tutto il giorno. **Crea** apre il modulo legacy: verificare i
+suggerimenti dei pazienti, la creazione di un paziente nuovo con telefono, un
+evento generico e uno tutto il giorno con paziente già presente. Provare una
+fascia occupata: il modulo deve restare aperto e mostrare l'errore. Controllare
+che l'appuntamento salvato compaia anche nella webapp legacy dello stesso
+terapista e non nel calendario di un altro. Modifica, cancellazione,
 completamento e promemoria sono ancora disabilitati: richiedono le rispettive
 API e saranno collegati nei prossimi passi. Chiudere e riaprire
 il desktop: con backend attivo deve entrare automaticamente nello stesso account.
@@ -62,7 +67,30 @@ il desktop segnala che l'accesso automatico non è attivo e la sessione corrente
 resta utilizzabile. Logout elimina il token locale e ne chiede la revoca al
 backend; se la revoca fallisce viene mostrato un avviso. Questa prova usa il backend
 locale su `127.0.0.1:8081`. La home contiene per ora i dati coperti
-dalle API calendario e lista d'attesa; ricerca globale, altre scritture, altre schermate e pacchetto Windows
-richiedono i prossimi incrementi. Le relative voci sono solo etichette.
+dalle API calendario e lista d'attesa; ricerca globale, altre scritture e altre
+schermate richiedono i prossimi incrementi. Le relative voci sono solo etichette.
 
 Le licenze degli asset incorporati sono in `src/main/resources/desktop/vendor/`.
+
+## Pacchetto Windows
+
+Su Windows, con JDK 21 o successivo (`JAVA_HOME`), Maven e WiX compatibile con
+il JDK per il formato EXE, eseguire dalla radice del repository:
+
+```powershell
+.\deploy-desktop-windows.ps1
+```
+
+Lo script compila il desktop, copia le dipendenze JavaFX per Windows e crea un
+installer EXE con runtime Java incluso in
+`fisio-desktop/target/windows-dist/1.0.0/`. Per una prima prova senza WiX:
+
+```powershell
+.\deploy-desktop-windows.ps1 -Type app-image
+```
+
+Il risultato portabile è una cartella con launcher `.exe` e runtime incluso:
+va copiata per intero. `-AppVersion 1.0.1` permette di cambiare la versione del
+pacchetto. La build Windows non è eseguibile da Linux. L'app desktop usa ancora
+`http://127.0.0.1:8081`: per provarla serve il backend avviato sullo stesso PC.
+L'installer non include il backend o il database e non modifica i dati.

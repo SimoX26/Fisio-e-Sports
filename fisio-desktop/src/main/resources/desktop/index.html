@@ -96,13 +96,33 @@
       <h2 class="page-title mb-0">Calendario</h2>
       <div class="d-flex align-items-center gap-2">
         <span class="btn btn-outline-secondary section-action-btn">Cestino</span>
-        <button class="btn btn-primary calendar-add-btn gcal-create-btn" type="button" disabled aria-label="Nuovo appuntamento"><span>+</span><span>Crea</span></button>
+        <button class="btn btn-primary calendar-add-btn gcal-create-btn" id="openAppointmentModalBtn" type="button" aria-label="Nuovo appuntamento"><span>+</span><span>Crea</span></button>
       </div>
     </div>
     <div class="alert alert-danger py-2 px-3 small d-none" id="dataStatus" role="alert"></div>
+    <div class="alert alert-success py-2 px-3 small d-none" id="appointmentCreated" role="status">Appuntamento salvato correttamente.</div>
   </div>
 
   <div class="container-fluid calendar-gcal-wrap"><div class="calendar-host"><div class="calendar-scroll-shell"><div id="calendar"></div></div></div></div>
+  </div>
+
+  <div class="modal fade" id="appointmentModal" tabindex="-1" aria-labelledby="appointmentModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content glass-card">
+      <div class="modal-header"><h5 class="modal-title" id="appointmentModalTitle">Nuovo appuntamento</h5><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
+      <form id="appointmentForm">
+        <div class="modal-body">
+          <div class="alert alert-danger d-none" id="appointmentFormError" role="alert"></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" id="appointmentAllDay"><label class="form-check-label" for="appointmentAllDay">Tutto il giorno</label></div>
+          <div class="form-check mt-2 mb-3"><input class="form-check-input" type="checkbox" id="appointmentGeneric"><label class="form-check-label" for="appointmentGeneric">Evento non collegato a trattamento</label></div>
+          <div class="mb-3 patient-search-wrap"><label class="form-label" id="appointmentPatientLabel" for="appointmentPatientName">Paziente</label><input class="form-control" id="appointmentPatientName" type="text" maxlength="180" autocomplete="off" placeholder="Nome e cognome paziente" required><div id="appointmentPatientSuggestions" class="patient-suggestions-menu d-none" role="listbox" aria-label="Suggerimenti pazienti"></div></div>
+          <div class="mb-3"><label class="form-label" for="appointmentPatientPhone">Telefono</label><input class="form-control" id="appointmentPatientPhone" type="tel" maxlength="20" placeholder="Numero di telefono paziente"></div>
+          <div class="mb-3"><label class="form-label" for="appointmentDate">Giorno</label><input class="form-control" id="appointmentDate" type="date" required></div>
+          <div class="row g-3" id="appointmentTimeSection"><div class="col-12 col-md-6"><label class="form-label" for="appointmentStartTime">Orario inizio</label><input class="form-control" id="appointmentStartTime" type="time" step="900" required></div><div class="col-12 col-md-6"><label class="form-label" for="appointmentEndTime">Orario fine</label><input class="form-control" id="appointmentEndTime" type="time" step="900" required></div></div>
+          <div class="mt-3"><label class="form-label" for="appointmentNotes">Note</label><textarea class="form-control" id="appointmentNotes" rows="3" maxlength="3000" placeholder="Inserisci eventuali note sull'appuntamento"></textarea></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Annulla</button><button class="btn btn-primary" id="saveAppointmentBtn" type="submit">Salva</button></div>
+      </form>
+    </div></div>
   </div>
 
   <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalTitle" aria-hidden="true">

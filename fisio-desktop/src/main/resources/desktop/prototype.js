@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const loginError = document.getElementById("loginError");
   const dataStatus = document.getElementById("dataStatus");
   const patientModal = new bootstrap.Modal(document.getElementById("patientModal"));
+  const appointmentModal = new bootstrap.Modal(document.getElementById("appointmentModal"));
   const createPatientModal = new bootstrap.Modal(document.getElementById("createPatientModal"));
   const deletePatientModal = new bootstrap.Modal(document.getElementById("confirmDeletePatientModal"));
   const mergeConfirmModal = new bootstrap.Modal(document.getElementById("confirmMergePatientModal"));
@@ -18,10 +19,51 @@ document.addEventListener("DOMContentLoaded", () => {
   let patientDetailRequest = 0;
   let mergeCandidatesRequest = 0;
   let manualLoginStarted = false;
+  let appointmentSuggestionsRequest = 0;
 
   function localDateTime(date) {
     const pad = number => String(number).padStart(2, "0");
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  }
+
+  function appointmentDate(date) {
+    return localDateTime(date).slice(0, 10);
+  }
+
+  function appointmentTime(date) {
+    return localDateTime(date).slice(11, 16);
+  }
+
+  function showAppointmentError(message) {
+    const error = document.getElementById("appointmentFormError");
+    error.textContent = message;
+    error.classList.remove("d-none");
+  }
+
+  function updateAppointmentForm() {
+    appointmentSuggestionsRequest++;
+    const generic = document.getElementById("appointmentGeneric").checked;
+    const allDay = document.getElementById("appointmentAllDay").checked;
+    document.getElementById("appointmentPatientLabel").textContent = generic ? "Titolo" : "Paziente";
+    document.getElementById("appointmentPatientName").placeholder = generic ? "Inserisci il titolo dell'evento" : "Nome e cognome paziente";
+    document.getElementById("appointmentTimeSection").classList.toggle("d-none", allDay);
+    document.getElementById("appointmentStartTime").disabled = allDay;
+    document.getElementById("appointmentEndTime").disabled = allDay;
+    document.getElementById("appointmentPatientSuggestions").classList.add("d-none");
+  }
+
+  function openAppointmentModal(start = new Date()) {
+    const rounded = new Date(start);
+    rounded.setMinutes(Math.ceil(rounded.getMinutes() / 15) * 15, 0, 0);
+    const end = new Date(rounded.getTime() + 60 * 60000);
+    document.getElementById("appointmentForm").reset();
+    document.getElementById("appointmentDate").value = appointmentDate(rounded);
+    document.getElementById("appointmentStartTime").value = appointmentTime(rounded);
+    document.getElementById("appointmentEndTime").value = appointmentTime(end);
+    document.getElementById("appointmentFormError").classList.add("d-none");
+    document.getElementById("appointmentCreated").classList.add("d-none");
+    updateAppointmentForm();
+    appointmentModal.show();
   }
 
   async function apiRequest(path, options = {}) {
@@ -238,7 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
       slotMinTime: "08:00:00",
       slotMaxTime: "21:00:00",
       scrollTime: "08:00:00",
-      selectable: false,
+      selectable: true,
       editable: false,
       displayEventTime: true,
       eventTimeFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
@@ -289,6 +331,9 @@ document.addEventListener("DOMContentLoaded", () => {
         document.body.classList.toggle("calendar-view-day", info.view.type === "timeGridDay");
         document.body.classList.toggle("calendar-view-week", info.view.type === "timeGridWeek");
         document.body.classList.toggle("calendar-view-month", info.view.type === "dayGridMonth");
+      },
+      select(info) {
+        openAppointmentModal(info.start);
       },
       eventClick(info) {
         info.jsEvent.preventDefault();
@@ -715,6 +760,90 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("homeNav").addEventListener("click", showHome);
   document.getElementById("calendarNav").addEventListener("click", () => showCalendar());
+  document.getElementById("openAppointmentModalBtn").addEventListener("click", () => openAppointmentModal());
+  document.getElementById("appointmentAllDay").addEventListener("change", updateAppointmentForm);
+  document.getElementById("appointmentGeneric").addEventListener("change", updateAppointmentForm);
+  document.getElementById("appointmentStartTime").addEventListener("change", () => {
+    const date = document.getElementById("appointmentDate").value;
+    const start = document.getElementById("appointmentStartTime").value;
+    if (!date || !start) return;
+    const end = new Date(new Date(`${date}T${start}`).getTime() + 60 * 60000);
+    document.getElementById("appointmentEndTime").value = appointmentTime(end);
+  });
+  document.getElementById("appointmentPatientName").addEventListener("input", async event => {
+    const request = ++appointmentSuggestionsRequest;
+    const currentSession = sessionEpoch;
+    const menu = document.getElementById("appointmentPatientSuggestions");
+    const query = event.target.value.trim();
+    menu.replaceChildren();
+    menu.classList.add("d-none");
+    if (!query || document.getElementById("appointmentGeneric").checked) return;
+    try {
+      const patients = await getJson(`/api/patients?q=${encodeURIComponent(query)}`);
+      if (request !== appointmentSuggestionsRequest || currentSession !== sessionEpoch
+          || document.getElementById("appointmentGeneric").checked) return;
+      for (const patient of patients.slice(0, 8)) {
+        const choice = document.createElement("button");
+        choice.type = "button";
+        choice.className = "patient-suggestion-item";
+        choice.setAttribute("role", "option");
+        choice.textContent = patient.fullName;
+        choice.addEventListener("mousedown", click => {
+          click.preventDefault();
+          document.getElementById("appointmentPatientName").value = patient.fullName;
+          menu.classList.add("d-none");
+        });
+        menu.appendChild(choice);
+      }
+      menu.classList.toggle("d-none", menu.childElementCount === 0);
+    } catch (failure) {
+      menu.classList.add("d-none");
+    }
+  });
+  document.getElementById("appointmentPatientName").addEventListener("blur", () => {
+    setTimeout(() => document.getElementById("appointmentPatientSuggestions").classList.add("d-none"), 120);
+  });
+  document.getElementById("appointmentForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    const currentSession = sessionEpoch;
+    const button = document.getElementById("saveAppointmentBtn");
+    const date = document.getElementById("appointmentDate").value;
+    const allDay = document.getElementById("appointmentAllDay").checked;
+    const generic = document.getElementById("appointmentGeneric").checked;
+    const start = allDay ? `${date}T00:00:00` : `${date}T${document.getElementById("appointmentStartTime").value}:00`;
+    const nextDay = new Date(`${date}T00:00:00`);
+    nextDay.setDate(nextDay.getDate() + 1);
+    const end = allDay ? `${appointmentDate(nextDay)}T00:00:00` : `${date}T${document.getElementById("appointmentEndTime").value}:00`;
+    if (!allDay && (new Date(start) >= new Date(end)
+        || !/:(00|15|30|45):00$/.test(start) || !/:(00|15|30|45):00$/.test(end))) {
+      showAppointmentError("Controlla gli orari: durata minima 15 minuti e scatti di 15 minuti.");
+      return;
+    }
+    const body = new URLSearchParams({
+      patientName: document.getElementById("appointmentPatientName").value.trim(),
+      patientPhone: document.getElementById("appointmentPatientPhone").value.trim(),
+      start, end, allDay: String(allDay), nonTreatmentEvent: String(generic),
+      notes: document.getElementById("appointmentNotes").value.trim()
+    });
+    button.disabled = true;
+    document.getElementById("appointmentFormError").classList.add("d-none");
+    try {
+      await apiRequest("/api/calendar", {
+        method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" }, body: body.toString()
+      });
+      if (currentSession !== sessionEpoch) return;
+      appointmentModal.hide();
+      document.getElementById("appointmentCreated").classList.remove("d-none");
+      calendar.refetchEvents();
+      loadTodayAgenda();
+    } catch (failure) {
+      if (currentSession === sessionEpoch) showAppointmentError(failure.status === 409 ? "Fascia oraria già occupata. Scegli un altro orario."
+        : failure.status === 400 && allDay && !generic ? "Per un evento tutto il giorno scegli un paziente già presente e controlla la data."
+          : "Impossibile salvare l'appuntamento. Controlla i dati e riprova.");
+    } finally {
+      button.disabled = false;
+    }
+  });
   document.getElementById("patientsNav").addEventListener("click", showPatients);
   document.getElementById("patientsSearchForm").addEventListener("submit", event => {
     event.preventDefault();
@@ -855,6 +984,7 @@ document.addEventListener("DOMContentLoaded", () => {
     patientDetailRequest++;
     mergeCandidatesRequest++;
     patientModal.hide();
+    appointmentModal.hide();
     createPatientModal.hide();
     deletePatientModal.hide();
     mergeConfirmModal.hide();

@@ -26,8 +26,9 @@ mvn clean package
 
 Il comando compila tutti i moduli. Il WAR si trova in
 `fisio-web-legacy/target/Fisio-e-Sports.war`; il JAR autonomo si trova in
-`fisio-backend/target/`. Per il deploy Tomcat sono disponibili
-`./deploy-locale.sh --help` e `./deploy-remoto.sh --help`.
+`fisio-backend/target/`. Per il deploy Tomcat locale è disponibile
+`./deploy-locale.sh --help`; `./deploy-remoto.sh --help` distribuisce solo il
+backend Java sul server attuale.
 Il deploy locale compila solo `fisio-web-legacy` e i moduli da cui dipende,
 poi copia `fisio-web-legacy/target/Fisio-e-Sports.war` in Tomcat.
 
@@ -37,6 +38,9 @@ Per provarlo localmente, configurare `fisio-backend/config.properties`, usare
 `/health` controlla il processo; `/ready` controlla la connessione MySQL.
 La configurazione DB del backend usa variabili d'ambiente separate dalla
 configurazione della webapp.
+Il pacchetto desktop Windows si crea su Windows con
+[`deploy-desktop-windows.ps1`](../../deploy-desktop-windows.ps1); requisiti e
+prova sono nella [guida desktop](../../fisio-desktop/README.md).
 
 ## Verifiche prima di un deploy
 

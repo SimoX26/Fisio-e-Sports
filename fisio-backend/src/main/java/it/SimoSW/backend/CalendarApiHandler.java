@@ -3,6 +3,8 @@ package it.SimoSW.backend;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import it.SimoSW.controller.application.CalendarController;
+import it.SimoSW.exception.TimeSlotNotAvailableException;
+import it.SimoSW.model.Appointment;
 import it.SimoSW.model.CalendarEventView;
 import it.SimoSW.model.User;
 
@@ -29,13 +31,14 @@ final class CalendarApiHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         try {
-            ApiJson.allowLocalFileOrigin(exchange, "GET, OPTIONS", "Authorization");
+            ApiJson.allowLocalFileOrigin(exchange, "GET, POST, OPTIONS", "Authorization, Content-Type");
             if ("OPTIONS".equals(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(204, -1);
                 return;
             }
-            if (!"GET".equals(exchange.getRequestMethod())) {
-                exchange.getResponseHeaders().set("Allow", "GET");
+            String method = exchange.getRequestMethod();
+            if (!"GET".equals(method) && !"POST".equals(method)) {
+                exchange.getResponseHeaders().set("Allow", "GET, POST");
                 ApiJson.send(exchange, 405, "{\"error\":\"method_not_allowed\"}");
                 return;
             }
@@ -46,6 +49,11 @@ final class CalendarApiHandler implements HttpHandler {
                 return;
             }
             if ("/api/me".equals(exchange.getRequestURI().getPath())) {
+                if (!"GET".equals(method)) {
+                    exchange.getResponseHeaders().set("Allow", "GET");
+                    ApiJson.send(exchange, 405, "{\"error\":\"method_not_allowed\"}");
+                    return;
+                }
                 ApiJson.send(exchange, 200, "{\"username\":" + ApiJson.quote(therapist.getUsername()) + ",\"role\":\"THERAPIST\"}");
                 return;
             }
@@ -56,6 +64,10 @@ final class CalendarApiHandler implements HttpHandler {
             Long therapistId = authenticator.therapistId(therapist);
             if (therapistId == null) {
                 ApiJson.send(exchange, 401, "{\"error\":\"unauthorized\"}");
+                return;
+            }
+            if ("POST".equals(method)) {
+                create(exchange, therapistId);
                 return;
             }
 
@@ -70,12 +82,59 @@ final class CalendarApiHandler implements HttpHandler {
 
             List<CalendarEventView> events = calendar.getCalendarEventViewsForTherapistInPeriod(therapistId, start, end);
             ApiJson.send(exchange, 200, toJson(events));
+        } catch (TimeSlotNotAvailableException exception) {
+            ApiJson.send(exchange, 409, "{\"error\":\"time_slot_unavailable\"}");
+        } catch (IllegalArgumentException exception) {
+            ApiJson.send(exchange, 400, "{\"error\":\"invalid_input\"}");
         } catch (RuntimeException exception) {
             System.err.println("Errore API calendario: " + exception.getClass().getSimpleName());
             ApiJson.send(exchange, 503, "{\"error\":\"unavailable\"}");
         } finally {
             exchange.close();
         }
+    }
+
+    private void create(HttpExchange exchange, long therapistId) throws IOException {
+        String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
+        if (contentType == null || !contentType.startsWith("application/x-www-form-urlencoded")) {
+            ApiJson.send(exchange, 415, "{\"error\":\"unsupported_media_type\"}");
+            return;
+        }
+        byte[] body = exchange.getRequestBody().readNBytes(4097);
+        if (body.length > 4096) {
+            ApiJson.send(exchange, 413, "{\"error\":\"body_too_large\"}");
+            return;
+        }
+        Map<String, String> fields = parseQuery(new String(body, StandardCharsets.UTF_8));
+        String name = fields.get("patientName");
+        String phone = fields.get("patientPhone");
+        String notes = fields.get("notes");
+        if (name == null || name.isBlank() || name.length() > 180
+                || phone != null && phone.length() > 20 || notes != null && notes.length() > 3000) {
+            ApiJson.send(exchange, 400, "{\"error\":\"invalid_input\"}");
+            return;
+        }
+        boolean allDay = Boolean.parseBoolean(fields.get("allDay"));
+        boolean generic = Boolean.parseBoolean(fields.get("nonTreatmentEvent"));
+        LocalDateTime start = parseDateTime(fields.get("start"));
+        LocalDateTime end = parseDateTime(fields.get("end"));
+        if (start == null || end == null) {
+            ApiJson.send(exchange, 400, "{\"error\":\"invalid_period\"}");
+            return;
+        }
+        Long patientId = generic ? null : allDay
+                ? calendar.resolveExistingPatientId(name, therapistId)
+                : calendar.resolveOrCreatePatientId(name, phone, therapistId);
+        Appointment appointment = new Appointment();
+        appointment.setTherapistId(therapistId);
+        appointment.setPatientId(patientId);
+        appointment.setTitle(generic ? name.trim() : null);
+        appointment.setStart(start);
+        appointment.setEnd(end);
+        appointment.setAllDay(allDay);
+        appointment.setNotes(notes == null || notes.isBlank() ? null : notes.trim());
+        Appointment saved = calendar.scheduleAppointment(appointment);
+        ApiJson.send(exchange, 201, "{\"id\":" + saved.getId() + "}");
     }
 
     private static Map<String, String> parseQuery(String rawQuery) {

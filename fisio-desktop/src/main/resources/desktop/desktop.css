@@ -29,6 +29,26 @@
   overscroll-behavior: contain;
 }
 
+#appointmentModal .modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 3rem);
+  overflow: hidden;
+}
+
+#appointmentModal #appointmentForm {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#appointmentModal .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .desktop-patient-row { cursor: pointer; }
 .desktop-patient-row:focus-visible {
   outline: 2px solid var(--brand-primary);

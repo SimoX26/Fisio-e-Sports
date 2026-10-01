@@ -54,6 +54,30 @@ il file accanto al JAR; si avvia con `java -jar fisio-backend-0.1.0.jar`.
 Il file con le credenziali non va caricato su GitHub. In questa fase il processo
 ascolta solo su loopback; accesso remoto, HTTPS e sessioni sono passi separati.
 
+## Deploy sul server attuale
+
+`./deploy-remoto.sh` usa come impostazione iniziale SSH `root@31.70.74.92:22`,
+compila solo `fisio-backend`, installa il JAR in `/opt/fisio-backend` e gestisce
+`fisio-backend.service` con systemd. Il servizio gira come utente dedicato,
+legge `/opt/fisio-backend/config.properties` e ascolta su `127.0.0.1:8081`.
+Non distribuisce WAR, Baileys o migrazioni SQL e non modifica Tomcat.
+
+Per la prima installazione, preparare un file privato con le credenziali del DB
+raggiungibile dal server e passarlo una volta allo script:
+
+```bash
+./deploy-remoto.sh --config /percorso/privato/config.properties
+```
+
+Gli aggiornamenti successivi usano `./deploy-remoto.sh` senza `--config`: il file
+remoto non viene sovrascritto. Si può usare una chiave SSH oppure impostare
+`DEPLOY_SSH_PASSWORD` nell'ambiente (serve `sshpass`); `--host`, `--user` e
+`--port` modificano la destinazione. Il server richiede Java, `systemd` e
+`curl`. Lo script verifica `/ready` sul server e ripristina il JAR precedente
+se il nuovo non diventa pronto. Il backend resta raggiungibile solo dal server:
+per i client Windows remoti serviranno un endpoint HTTPS e la configurazione
+dell'URL nel desktop.
+
 `POST /api/auth/remember` richiede Basic e rilascia un token di accesso automatico
 valido 30 giorni; `DELETE` con Bearer lo revoca. Il backend conserva solo l'hash
 del token. Le API protette accettano Basic o Bearer e verificano sempre ruolo e
@@ -62,7 +86,10 @@ del sistema operativo. L'endpoint è utilizzabile solo sul backend locale; prima
 di esporlo in rete servono HTTPS e una revisione dell'autenticazione remota.
 
 L'API calendario accetta `GET` con autenticazione Basic o Bearer e un intervallo massimo
-di 62 giorni. L'ID del terapista è ricavato dall'account, mai dal client.
+di 62 giorni. `POST /api/calendar` crea un appuntamento con campi form
+`patientName`, `patientPhone`, `start`, `end`, `allDay`, `nonTreatmentEvent` e
+`notes`. Usa le regole legacy per paziente, scatti di 15 minuti e conflitti
+(HTTP 409). L'ID del terapista è ricavato dall'account, mai dal client.
 La lista d'attesa usa `GET /api/waitlist`, `POST /api/waitlist` con campi form
 `fullName` e `phone`, e `DELETE /api/waitlist/{id}`. Anche in scrittura il
 terapista viene ricavato dall'account. Dopo ogni modifica il desktop rilegge
