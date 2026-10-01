@@ -25,9 +25,12 @@ Aprire **Rubrica**, cercare un paziente e cambiare l'ordinamento. Confrontare
 l'elenco con la webapp legacy usando lo stesso terapista. Ripetere con un
 secondo terapista: le schede dell'altro account non devono comparire.
 Selezionare un nome per aprire il modulo della scheda e confrontarlo con la
-webapp. Provare su una scheda di test la modifica dei dati anagrafici e di
-un campo anamnestico, quindi riaprire la scheda in entrambi i client. Provare
-anche una scheda senza anamnesi e i campi delle condizioni.
+webapp. La scheda si apre in modalità lettura con i soli campi compilati.
+**Modifica** mostra tutti i campi, anche quelli vuoti; **Annulla modifica**
+ricarica i valori salvati. Provare su una scheda di test a compilare un campo
+anamnestico vuoto e a salvare: la vista deve tornare al riepilogo e mostrare
+il nuovo valore. Provare anche una scheda senza anamnesi e i campi delle
+condizioni.
 Con due contatti di test con lo stesso nome, verificare i candidati di unione
 e la conferma prima di eseguire l'operazione. Provare l'eliminazione su una
 scheda di test senza appuntamenti e su una con appuntamenti, verificando la

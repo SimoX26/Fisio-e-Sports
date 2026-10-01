@@ -479,6 +479,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("patientSummarySuccess").classList.add("d-none");
     document.getElementById("patientSummaryContent").textContent = "Caricamento scheda...";
     document.getElementById("patientSummaryContent").classList.add("text-muted");
+    document.getElementById("patientModalTitle").textContent = "Dettagli paziente";
     document.getElementById("editPatientId").value = String(id);
     resetMergeCandidates();
     patientModal.show();
@@ -505,9 +506,16 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (failure) {
       if (currentSession !== sessionEpoch || currentRequest !== patientDetailRequest) return;
       document.getElementById("patientSummaryContent").replaceChildren();
-      summaryError.textContent = failure.status === 404
-        ? "Paziente non disponibile per questo terapista."
-        : "Impossibile caricare la scheda dal backend.";
+      if (successMessage) {
+        const success = document.getElementById("patientSummarySuccess");
+        success.textContent = successMessage;
+        success.classList.remove("d-none");
+      }
+      summaryError.textContent = successMessage
+        ? "Salvataggio riuscito, ma non riesco a ricaricare la scheda."
+        : failure.status === 404
+          ? "Paziente non disponibile per questo terapista."
+          : "Impossibile caricare la scheda dal backend.";
       summaryError.classList.remove("d-none");
     } finally {
       if (currentSession === sessionEpoch && currentRequest === patientDetailRequest) saveButton.disabled = false;
@@ -540,8 +548,11 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("patientsCreated").textContent = "Contatti uniti correttamente.";
         document.getElementById("patientsCreated").classList.remove("d-none");
       } else {
+        document.getElementById("patientsCreated").textContent = "Dati paziente e anamnesi salvati correttamente.";
+        document.getElementById("patientsCreated").classList.remove("d-none");
         await showPatientDetail(id, "Dati paziente e anamnesi salvati correttamente.");
       }
+      if (currentSession !== sessionEpoch) return;
       loadPatients();
     } catch (failure) {
       if (currentSession !== sessionEpoch) return;

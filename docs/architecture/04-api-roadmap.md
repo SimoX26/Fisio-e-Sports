@@ -30,7 +30,8 @@ ordinamento; i filtri sono pronti per i collegamenti dalla home.
 solo al terapista proprietario; un ID non appartenente all'account restituisce 404.
 `GET /api/patients/{id}/anamnesis` restituisce l'ultima anamnesi e le condizioni
 raggruppate per categoria, oppure `{}` se la scheda non ne ha. Applica lo
-stesso controllo di proprietà; il desktop carica i valori nel modulo legacy.
+stesso controllo di proprietà; il desktop mostra prima un riepilogo dei soli
+campi compilati e apre il modulo completo con **Modifica**.
 `POST /api/patients` crea una scheda con `fullName`, `email` e `phone` come la
 webapp legacy. Il proprietario è sempre il terapista autenticato; il client
 non invia né sceglie il suo ID.
