@@ -5,10 +5,21 @@ import com.sun.net.httpserver.HttpExchange;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+
+import it.SimoSW.controller.application.AuthenticationController;
+import it.SimoSW.controller.application.CalendarController;
+import it.SimoSW.model.dao.database.DatabaseAppointmentDAO;
+import it.SimoSW.model.dao.database.DatabasePatientDAO;
+import it.SimoSW.model.dao.database.DatabaseRememberMeTokenDAO;
+import it.SimoSW.model.dao.database.DatabaseUserDAO;
+import it.SimoSW.util.AppProperties;
 
 public final class BackendApplication {
 
@@ -16,6 +27,7 @@ public final class BackendApplication {
     }
 
     public static void main(String[] args) throws IOException {
+        configureFile();
         int port = readPort();
         DriverManager.setLoginTimeout(3);
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", port), 0);
@@ -49,15 +61,39 @@ public final class BackendApplication {
                 exchange.close();
             }
         });
+        DatabaseUserDAO users = new DatabaseUserDAO();
+        CalendarApiHandler calendarApi = new CalendarApiHandler(
+                new AuthenticationController(users, new DatabaseRememberMeTokenDAO()),
+                new CalendarController(new DatabaseAppointmentDAO(), new DatabasePatientDAO(), users),
+                users);
+        server.createContext("/api/calendar", calendarApi);
+        server.createContext("/api/me", calendarApi);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> server.stop(0)));
         server.start();
         System.out.println("Fisio backend in ascolto su http://127.0.0.1:" + port);
     }
 
+    private static void configureFile() {
+        if (System.getenv("FISIO_DB_CONFIG_FILE") != null) {
+            return;
+        }
+        try {
+            Path besideJar = Path.of(BackendApplication.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI()).resolveSibling("config.properties");
+            Path inWorkspace = Path.of("fisio-backend", "config.properties");
+            Path selected = Files.isRegularFile(besideJar) ? besideJar : inWorkspace;
+            if (Files.isRegularFile(selected)) {
+                System.setProperty("fisio.config.file", selected.toAbsolutePath().toString());
+            }
+        } catch (URISyntaxException exception) {
+            throw new IllegalStateException("Percorso backend non valido", exception);
+        }
+    }
+
     private static boolean databaseIsReady() {
-        String url = System.getenv("FISIO_DB_URL");
-        String user = System.getenv("FISIO_DB_USER");
-        String password = System.getenv("FISIO_DB_PASSWORD");
+        String url = configValue("FISIO_DB_URL", "db.url");
+        String user = configValue("FISIO_DB_USER", "db.username");
+        String password = configValue("FISIO_DB_PASSWORD", "db.password");
         if (url == null || url.isBlank() || user == null || user.isBlank() || password == null) {
             return false;
         }
@@ -66,6 +102,11 @@ public final class BackendApplication {
         } catch (SQLException exception) {
             return false;
         }
+    }
+
+    private static String configValue(String environmentName, String propertyName) {
+        String value = System.getenv(environmentName);
+        return value == null ? AppProperties.get(propertyName) : value;
     }
 
     private static void sendJson(HttpExchange exchange, int status, String json) throws IOException {

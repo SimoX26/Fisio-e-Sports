@@ -1,0 +1,9 @@
+# Copiare questo file in fisio-backend/config.properties e compilare i valori locali.
+# Sul server posizionare config.properties accanto al JAR del backend.
+db.driver=com.mysql.cj.jdbc.Driver
+db.url=jdbc:mysql://127.0.0.1:3306/nome_database?connectTimeout=3000
+db.username=utente_database
+db.password=password_database
+db.pool.maxSize=5
+db.pool.minIdle=1
+db.pool.connectionTimeoutMs=3000

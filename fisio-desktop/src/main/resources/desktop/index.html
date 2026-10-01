@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Calendario • Fisio e Sports</title>
+  <title>Login • Fisio e Sports</title>
   <link rel="icon" type="image/png" href="assets/img/logo.png">
   <link rel="stylesheet" href="vendor/bootstrap-5.3.2.min.css">
   <link rel="stylesheet" href="assets/css/style.css">
@@ -12,7 +12,21 @@
   <script src="vendor/fullcalendar-6.1.11.min.js" defer></script>
   <script src="prototype.js" defer></script>
 </head>
-<body class="calendar-gcal-page">
+<body class="auth-page app-page d-flex align-items-center justify-content-center">
+  <main class="container" id="loginScreen">
+    <div class="row justify-content-center"><div class="col-md-6 col-lg-5"><div class="glass-card p-4 p-md-5">
+      <div class="text-center mb-4"><h2 class="brand">Fisio e Sports</h2><p class="text-muted">Accedi alla tua dashboard</p></div>
+      <div class="alert alert-danger d-none" id="loginError" role="alert"></div>
+      <form id="loginForm">
+        <div class="form-floating mb-3"><input type="text" class="form-control" id="username" name="username" placeholder="Inserisci username" autocomplete="username" required><label for="username">Username</label></div>
+        <div class="form-floating mb-3"><input type="password" class="form-control" id="password" name="password" placeholder="Inserisci password" autocomplete="current-password" required><label for="password">Password</label></div>
+        <button type="submit" class="btn btn-primary w-100 py-2">Accedi</button>
+      </form>
+      <div class="text-center mt-4 small">Non hai un account? <span class="text-muted">Richiedi accesso</span></div>
+    </div></div></div>
+  </main>
+
+  <div id="appScreen" hidden>
   <nav class="navbar navbar-expand-lg px-3 px-lg-5 app-navbar">
     <div class="container-fluid">
       <span class="navbar-brand fw-bold"><span class="brand-dot"></span> FISIO E SPORTS</span>
@@ -23,43 +37,41 @@
           <button class="btn btn-outline-secondary btn-sm ms-2 app-global-search-btn" type="submit">Cerca</button>
         </form>
         <ul class="navbar-nav ms-auto align-items-lg-center app-navbar-links">
-          <li class="nav-item"><span class="nav-link">Home</span></li>
-          <li class="nav-item"><span class="nav-link active" aria-current="page">Calendario</span></li>
+          <li class="nav-item"><button class="nav-link active" id="homeNav" type="button">Home</button></li>
+          <li class="nav-item"><button class="nav-link" id="calendarNav" type="button">Calendario</button></li>
           <li class="nav-item"><span class="nav-link">Rubrica</span></li>
           <li class="nav-item"><span class="nav-link">Storico Trattamenti</span></li>
           <li class="nav-item"><span class="nav-link">Dati e Statistiche</span></li>
           <li class="nav-item d-none d-lg-block mx-2"><span class="nav-link disabled nav-separator">|</span></li>
           <li class="nav-item"><span class="nav-link">Impostazioni</span></li>
-          <li class="nav-item"><span class="nav-link logout-link">Logout</span></li>
+          <li class="nav-item"><button class="nav-link logout-link" id="logoutButton" type="button">Logout</button></li>
         </ul>
       </div>
     </div>
   </nav>
 
+  <main class="container app-shell mt-4" id="homeScreen">
+    <div class="home-topbar mb-3"><div><h1 class="home-title mb-1" id="homeGreeting"></h1><div class="home-subtitle" id="todayLabel"></div></div></div>
+    <div class="home-kpi-row mb-4">
+      <button class="glass-card section-card home-kpi-chip text-decoration-none" id="todayAppointmentsButton" type="button"><span class="home-kpi-chip__label">Appuntamenti oggi</span><span class="home-kpi-chip__value" id="appointmentsToday">–</span></button>
+      <div class="glass-card section-card home-kpi-chip"><span class="home-kpi-chip__label">Pazienti oggi</span><span class="home-kpi-chip__value" id="patientsToday">–</span></div>
+    </div>
+    <div class="glass-card section-card home-agenda-card"><div class="home-section-head"><h3 class="home-section-title mb-0">Agenda di oggi</h3><button class="home-link btn btn-link" id="openDayButton" type="button">Apri vista giornaliera</button></div><div class="home-agenda-list" id="todayAgenda"></div></div>
+  </main>
+
+  <div id="calendarScreen" hidden>
   <div class="container app-shell calendar-gcal-header-shell mt-4">
     <div class="page-header-row calendar-gcal-head mb-3">
       <h2 class="page-title mb-0">Calendario</h2>
       <div class="d-flex align-items-center gap-2">
         <span class="btn btn-outline-secondary section-action-btn">Cestino</span>
-        <button class="btn btn-primary calendar-add-btn gcal-create-btn" id="openAppointmentModalBtn" type="button" aria-label="Nuovo appuntamento"><span>+</span><span>Crea</span></button>
+        <button class="btn btn-primary calendar-add-btn gcal-create-btn" type="button" disabled aria-label="Nuovo appuntamento"><span>+</span><span>Crea</span></button>
       </div>
     </div>
-    <div class="alert alert-info py-2 px-3 small" role="status">Anteprima locale con dati fittizi: nessuna modifica viene salvata.</div>
+    <div class="alert alert-danger py-2 px-3 small d-none" id="dataStatus" role="alert"></div>
   </div>
 
   <div class="container-fluid calendar-gcal-wrap"><div class="calendar-host"><div class="calendar-scroll-shell"><div id="calendar"></div></div></div></div>
-
-  <div class="modal fade" id="appointmentModal" tabindex="-1" aria-labelledby="appointmentModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content glass-card">
-      <div class="modal-header"><h5 class="modal-title" id="appointmentModalTitle">Nuovo appuntamento</h5><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
-      <div class="modal-body"><form id="appointmentForm">
-        <div class="mb-3"><label class="form-label" for="patientName">Paziente</label><input class="form-control" id="patientName" required></div>
-        <div class="mb-3"><label class="form-label" for="appointmentDate">Giorno</label><input class="form-control" type="date" id="appointmentDate" required></div>
-        <div class="row g-3"><div class="col-6"><label class="form-label" for="startTime">Orario inizio</label><input class="form-control" type="time" id="startTime" step="900" required></div><div class="col-6"><label class="form-label" for="endTime">Orario fine</label><input class="form-control" type="time" id="endTime" step="900" required></div></div>
-        <div class="mt-3"><label class="form-label" for="notes">Note</label><textarea class="form-control" id="notes" rows="3"></textarea></div>
-      </form></div>
-      <div class="modal-footer"><button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Annulla</button><button class="btn btn-primary" type="submit" form="appointmentForm">Salva nella prova</button></div>
-    </div></div>
   </div>
 
   <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalTitle" aria-hidden="true">
@@ -68,6 +80,7 @@
       <div class="modal-body"><p id="eventModalTime"></p><p id="eventModalNotes" class="text-muted"></p></div>
       <div class="modal-footer"><button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Chiudi</button></div>
     </div></div>
+  </div>
   </div>
 </body>
 </html>

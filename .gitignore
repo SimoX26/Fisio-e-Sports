@@ -73,6 +73,7 @@ id_rsa.pub
 src/main/resources/config.properties
 !src/main/resources/config.properties.example
 fisio-web-legacy/src/main/resources/config.properties
+fisio-backend/config.properties
 
 # Local scripts with real credentials
 backup-db.sh

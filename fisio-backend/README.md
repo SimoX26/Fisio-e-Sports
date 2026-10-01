@@ -1,36 +1,58 @@
-# Backend Java — primi incrementi
+# Backend Java
 
-Questo modulo avvia un piccolo servizio HTTP autonomo. `GET /health` conferma
-l'avvio del processo. `GET /ready` controlla che MySQL accetti una connessione;
-non modifica dati o schema. Nessun dato applicativo è ancora esposto.
+Il processo HTTP autonomo espone `/health`, `/ready`, `/api/me` e
+`/api/calendar`. Le API sono limitate ai terapisti autenticati; il calendario
+mostra solo i loro appuntamenti. Il login può aggiornare un vecchio hash
+password, come nella webapp legacy.
+
+## Configurazione
+
+Il file operativo del backend è `fisio-backend/config.properties`, ignorato da
+Git. [config.properties.example](config.properties.example) è il modello
+versionato. In questo ambiente locale il file operativo è già stato copiato
+dalla configurazione della webapp; in futuro potrà avere credenziali DB proprie.
+
+Per un nuovo ambiente:
+
+```bash
+cp fisio-backend/config.properties.example fisio-backend/config.properties
+```
+
+Compilare `db.url`, `db.username` e `db.password`. Le variabili `FISIO_DB_URL`,
+`FISIO_DB_USER` e `FISIO_DB_PASSWORD`, se presenti, prevalgono sul file.
+`FISIO_DB_CONFIG_FILE` permette di indicare un percorso esplicito.
+
+## Avvio locale
 
 Richiede JDK 15 o successivo e Maven. Dalla radice del repository:
 
 ```bash
-mvn -f fisio-backend/pom.xml package
-java -jar fisio-backend/target/fisio-backend-0.1.0.jar
+./run-backend-locale.sh
 ```
 
-In un altro terminale:
+Lo script compila il backend, carica `fisio-backend/config.properties` e
+ascolta su `127.0.0.1:8081`. Fermare un'eventuale istanza precedente prima di
+avviarlo. Controlli:
 
 ```bash
 curl -i http://127.0.0.1:8081/health
 curl -i http://127.0.0.1:8081/ready
 ```
 
-Per verificare il database, configura `FISIO_DB_URL`, `FISIO_DB_USER` e
-`FISIO_DB_PASSWORD` nell'ambiente del processo prima di avviarlo. Esempio con
-valori di sviluppo, da sostituire con quelli del proprio database di test:
+`/ready` deve rispondere HTTP 200 con `{"status":"ok"}`. HTTP 503 con
+`{"status":"unavailable"}` indica che il backend non raggiunge il database.
+
+## Pacchetto server
 
 ```bash
-export FISIO_DB_URL='jdbc:mysql://127.0.0.1:3306/fisio_e_sport?connectTimeout=3000'
-export FISIO_DB_USER='utente_di_test'
-export FISIO_DB_PASSWORD='password_di_test'
-java -jar fisio-backend/target/fisio-backend-0.1.0.jar
+mvn -pl fisio-backend -am -DskipTests package
 ```
 
-`/health` risponde HTTP 200 con `{"status":"ok"}`. `/ready` risponde HTTP 200
-con lo stesso JSON quando MySQL è disponibile, oppure HTTP 503 con
-`{"status":"unavailable"}` se la configurazione manca o la connessione fallisce.
-Il servizio ascolta solo su `127.0.0.1` in questa fase; la porta si può cambiare
-con `FISIO_BACKEND_PORT`. Si arresta con Ctrl+C.
+Distribuire `fisio-backend/target/fisio-backend-0.1.0.jar` e il proprio
+`config.properties` nella stessa directory. Il backend rileva automaticamente
+il file accanto al JAR; si avvia con `java -jar fisio-backend-0.1.0.jar`.
+Il file con le credenziali non va caricato su GitHub. In questa fase il processo
+ascolta solo su loopback; accesso remoto, HTTPS e sessioni sono passi separati.
+
+L'API calendario accetta `GET` con autenticazione Basic e un intervallo massimo
+di 62 giorni. L'ID del terapista è ricavato dall'account, mai dal client.

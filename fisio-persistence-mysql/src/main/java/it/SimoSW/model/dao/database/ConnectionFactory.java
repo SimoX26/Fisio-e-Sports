@@ -16,10 +16,10 @@ public final class ConnectionFactory {
     static {
         try {
             Properties props = new Properties();
-            copyProperty(props, "db.driver");
-            copyProperty(props, "db.url");
-            copyProperty(props, "db.username");
-            copyProperty(props, "db.password");
+            copyProperty(props, "db.driver", "FISIO_DB_DRIVER");
+            copyProperty(props, "db.url", "FISIO_DB_URL");
+            copyProperty(props, "db.username", "FISIO_DB_USER");
+            copyProperty(props, "db.password", "FISIO_DB_PASSWORD");
             copyProperty(props, "db.pool.maxSize");
             copyProperty(props, "db.pool.minIdle");
             copyProperty(props, "db.pool.connectionTimeoutMs");
@@ -63,7 +63,17 @@ public final class ConnectionFactory {
     }
 
     private static void copyProperty(Properties props, String key) {
-        String value = AppProperties.get(key);
+        copyProperty(props, key, null);
+    }
+
+    private static void copyProperty(Properties props, String key, String environmentKey) {
+        String value = environmentKey == null ? null : System.getenv(environmentKey);
+        if (value == null) {
+            value = AppProperties.get(key);
+        }
+        if ("db.driver".equals(key) && value == null && System.getenv("FISIO_DB_URL") != null) {
+            value = "com.mysql.cj.jdbc.Driver";
+        }
         if (value != null) {
             props.setProperty(key, value);
         }

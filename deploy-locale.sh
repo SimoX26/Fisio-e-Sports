@@ -7,14 +7,14 @@ Uso:
   ./deploy-locale.sh [opzioni]
 
 Descrizione:
-  Builda il progetto Maven e deploya il WAR in Tomcat locale.
+  Builda la webapp legacy e deploya il suo WAR in Tomcat locale.
 
 Opzioni:
   --tomcat-webapps <path>  Cartella webapps Tomcat locale (default: /home/simone/apache-tomcat-9.0.112/webapps)
   --local-server <host>    Host locale per URL finale (default: localhost)
   --local-port <port>      Porta locale Tomcat per URL finale (default: 8080)
-  --war <path>             WAR locale da deployare (default: ultimo in fisio-web-legacy/target/)
-  --skip-build             Salta mvn clean package
+  --war <path>             WAR locale da deployare (default: fisio-web-legacy/target/Fisio-e-Sports.war)
+  --skip-build             Salta la build Maven
   --help                   Mostra questo aiuto
 
 Esempi:
@@ -71,15 +71,14 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-require_cmd mvn
-
 if [[ "$SKIP_BUILD" != "true" ]]; then
-  echo ">> Build Maven: mvn clean package"
-  mvn clean package
+  require_cmd mvn
+  echo ">> Build Maven webapp legacy: mvn -pl fisio-web-legacy -am clean package"
+  mvn -pl fisio-web-legacy -am clean package
 fi
 
 if [[ -z "$WAR_PATH" ]]; then
-  WAR_PATH="$(ls -t fisio-web-legacy/target/*.war 2>/dev/null | head -n 1 || true)"
+  WAR_PATH="fisio-web-legacy/target/Fisio-e-Sports.war"
 fi
 
 if [[ -z "$WAR_PATH" || ! -f "$WAR_PATH" ]]; then

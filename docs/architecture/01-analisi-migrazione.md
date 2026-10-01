@@ -218,7 +218,7 @@ JavaFX offre un `WebEngine` con rendering web e interazione Java/JavaScript. Que
 
 FullCalendar 6.1.11, Bootstrap 5.3.2 e Chart.js 4.4.3 sono caricati da CDN nel codice attuale. Un frontend locale dovrà includere gli asset necessari, convertire l'iniezione di dati JSP e sostituire i riferimenti al contesto web con chiamate API. Questo può eliminare la webapp JSP sul server pur mantenendo tecnologie web nella UI dei client.
 
-La scelta attuale è HTML/JavaScript locale in JavaFX WebView. La prima schermata usa FullCalendar con gli stessi asset e la configurazione di base della webapp, ma solo con dati fittizi e modali semplificati. Prima di completare la UI occorre confrontare calendario e scheda con la versione esistente: elementi, azioni, tastiera, leggibilità, DPI, tempi di apertura e comportamento agli errori. «Stessi elementi» non autorizza a eliminare campi o semplificare flussi.
+La scelta attuale è HTML/JavaScript locale in JavaFX WebView. La finestra apre il login del terapista; dopo l'autenticazione mostra una home parziale e il calendario FullCalendar con dati letti dal backend. Le altre schermate e azioni non sono ancora migrate. Prima di completare la UI occorre confrontare calendario e scheda con la versione esistente: elementi, azioni, tastiera, leggibilità, DPI, tempi di apertura e comportamento agli errori. «Stessi elementi» non autorizza a eliminare campi o semplificare flussi.
 
 ## 10. EXE, installer e ambiente di sviluppo
 

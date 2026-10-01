@@ -28,8 +28,12 @@ Il comando compila tutti i moduli. Il WAR si trova in
 `fisio-web-legacy/target/Fisio-e-Sports.war`; il JAR autonomo si trova in
 `fisio-backend/target/`. Per il deploy Tomcat sono disponibili
 `./deploy-locale.sh --help` e `./deploy-remoto.sh --help`.
+Il deploy locale compila solo `fisio-web-legacy` e i moduli da cui dipende,
+poi copia `fisio-web-legacy/target/Fisio-e-Sports.war` in Tomcat.
 
 Il backend autonomo si avvia seguendo [la guida del modulo](../../fisio-backend/README.md).
+Per provarlo localmente, configurare `fisio-backend/config.properties`, usare
+`./run-backend-locale.sh` e verificare che `/ready` risponda `ok` prima del login desktop.
 `/health` controlla il processo; `/ready` controlla la connessione MySQL.
 La configurazione DB del backend usa variabili d'ambiente separate dalla
 configurazione della webapp.
