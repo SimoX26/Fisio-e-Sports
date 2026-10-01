@@ -72,6 +72,7 @@ id_rsa.pub
 # Local runtime config with credentials (keep only template in repo)
 src/main/resources/config.properties
 !src/main/resources/config.properties.example
+fisio-web-legacy/src/main/resources/config.properties
 
 # Local scripts with real credentials
 backup-db.sh

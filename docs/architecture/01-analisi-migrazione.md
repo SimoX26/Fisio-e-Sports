@@ -1,5 +1,9 @@
 # Fase 1 — Analisi della migrazione Desktop e Android
 
+> Fotografia del 28 settembre 2026. Per lo stato corrente dei moduli e delle
+> modifiche consulta [la struttura dei componenti](03-struttura-componenti.md)
+> e [lo stato della migrazione](../migration-status.md).
+
 Data: 28 settembre 2026. Codice di riferimento: commit `a412e3d`.
 
 ## 1. Esito
@@ -62,9 +66,9 @@ Il frontend contiene una quota rilevante di comportamento: `calendar.js` ha 1.53
 
 Il [pom.xml](../../pom.xml) produce un WAR e dichiara Java source/target 15, Servlet 4.0.1, JSP 2.3.3, JSTL, Jackson 2.17.2, MySQL Connector/J 9.3.0, HikariCP 5.1.0 e jBCrypt 0.4. JUnit 3.8.1 è dichiarato, ma non è presente `src/test` né sono emersi test versionati nella ricognizione.
 
-[ApplicationInitializer](../../src/main/java/it/SimoSW/util/bootstrap/ApplicationInitializer.java) costruisce DAO, controller e servizi con wiring manuale. Non dipende direttamente dalle Servlet: può diventare il punto di composizione del backend.
+[ApplicationInitializer](../../fisio-web-legacy/src/main/java/it/SimoSW/util/bootstrap/ApplicationInitializer.java) costruisce DAO, controller e servizi con wiring manuale. Non dipende direttamente dalle Servlet: può diventare il punto di composizione del backend.
 
-[ApplicationContextListener](../../src/main/java/it/SimoSW/util/bootstrap/ApplicationContextListener.java) collega invece il ciclo di vita a Tomcat, pubblica le dipendenze nel `ServletContext` e avvia il ricalcolo KPI. Il pool è statico in [ConnectionFactory](../../src/main/java/it/SimoSW/model/dao/database/ConnectionFactory.java); il listener arresta lo scheduler ma non espone una chiusura del pool.
+[ApplicationContextListener](../../fisio-web-legacy/src/main/java/it/SimoSW/util/bootstrap/ApplicationContextListener.java) collega invece il ciclo di vita a Tomcat, pubblica le dipendenze nel `ServletContext` e avvia il ricalcolo KPI. Il pool è statico in [ConnectionFactory](../../fisio-persistence-mysql/src/main/java/it/SimoSW/model/dao/database/ConnectionFactory.java); il listener arresta lo scheduler ma non espone una chiusura del pool.
 
 ## 4. Riutilizzo ed estrazione
 
@@ -84,14 +88,14 @@ Il [pom.xml](../../pom.xml) produce un WAR e dichiara Java source/target 15, Ser
 
 Eccezioni importanti alla separazione già presente:
 
-- [KpiSnapshotController](../../src/main/java/it/SimoSW/controller/application/KpiSnapshotController.java) importa `ConnectionFactory` ed esegue query JDBC direttamente.
-- [GlobalSearchServlet](../../src/main/java/it/SimoSW/controller/graphic/GlobalSearchServlet.java) interroga pazienti, appuntamenti e sedute senza un servizio di ricerca intermedio.
-- [User](../../src/main/java/it/SimoSW/model/User.java) richiama `PasswordHasher`: spostare semplicemente `model` in un modulo indipendente introdurrebbe una dipendenza verso le utilità di autenticazione. Il modello contiene anche `passwordHash`, che non deve diventare un campo delle risposte API.
+- [KpiSnapshotController](../../fisio-web-legacy/src/main/java/it/SimoSW/controller/application/KpiSnapshotController.java) importa `ConnectionFactory` ed esegue query JDBC direttamente.
+- [GlobalSearchServlet](../../fisio-web-legacy/src/main/java/it/SimoSW/controller/graphic/GlobalSearchServlet.java) interroga pazienti, appuntamenti e sedute senza un servizio di ricerca intermedio.
+- [User](../../fisio-domain/src/main/java/it/SimoSW/model/User.java) richiama `PasswordHasher`: spostare semplicemente `model` in un modulo indipendente introdurrebbe una dipendenza verso le utilità di autenticazione. Il modello contiene anche `passwordHash`, che non deve diventare un campo delle risposte API.
 - Le interfacce DAO sono collocate sotto `model`, ma possono diventare contratti del livello applicativo. L'implementazione JDBC dovrà dipendere dai contratti, senza creare una dipendenza inversa del dominio verso MySQL.
 
 ## 5. Database e semantica dei dati
 
-Fonte: [db.sql](../../src/main/resources/db.sql) e [migrazioni](../../src/main/resources/migrations).
+Fonte: [db.sql](../../fisio-web-legacy/src/main/resources/db.sql) e [migrazioni](../../fisio-web-legacy/src/main/resources/migrations).
 
 | Gruppo | Tabelle | Relazioni e comportamento |
 |---|---|---|
@@ -110,7 +114,7 @@ Il ruolo ADMIN attuale non equivale a «può aprire qualsiasi schermata clinica�
 
 ### Eliminazione e unione
 
-[DatabasePatientDAO](../../src/main/java/it/SimoSW/model/dao/database/DatabasePatientDAO.java) contiene già transazioni locali per eliminazione e unione dei pazienti.
+[DatabasePatientDAO](../../fisio-persistence-mysql/src/main/java/it/SimoSW/model/dao/database/DatabasePatientDAO.java) contiene già transazioni locali per eliminazione e unione dei pazienti.
 
 - L'eliminazione stacca appuntamenti, piani e sedute dal paziente; negli appuntamenti può conservare il nome nel titolo. Non costituisce quindi anonimizzazione completa.
 - Secondo lo schema versionato, anamnesi e condizioni vengono eliminate a cascata insieme al paziente. «Conservare lo storico» non significa conservare l'intera scheda clinica.
@@ -145,7 +149,7 @@ Priorità A: prima di abilitare i nuovi client in scrittura. Priorità B: durant
 | B | Risoluzione paziente dal solo nome normalizzato | Omonimi ambigui; creazione del paziente precedente alla validazione dell'appuntamento | Selezione tramite ID e comando composto per la creazione rapida |
 | B | `LocalDateTime.now()` locale, `Europe/Rome` in alcune Servlet, parsing con rimozione dell'offset | Disallineamenti tra telefono, PC e server | Contratto temporale esplicito, fuso clinica configurato, orologio iniettabile nei test |
 
-Riferimenti principali: [CalendarServlet](../../src/main/java/it/SimoSW/controller/graphic/CalendarServlet.java), [CalendarController](../../src/main/java/it/SimoSW/controller/application/CalendarController.java), [TreatmentController](../../src/main/java/it/SimoSW/controller/application/TreatmentController.java), [AddressBookController](../../src/main/java/it/SimoSW/controller/application/AddressBookController.java), [AddressBookServlet](../../src/main/java/it/SimoSW/controller/graphic/AddressBookServlet.java), [AccessRequestController](../../src/main/java/it/SimoSW/controller/application/AccessRequestController.java), [DashboardServlet](../../src/main/java/it/SimoSW/controller/graphic/DashboardServlet.java).
+Riferimenti principali: [CalendarServlet](../../fisio-web-legacy/src/main/java/it/SimoSW/controller/graphic/CalendarServlet.java), [CalendarController](../../fisio-application/src/main/java/it/SimoSW/controller/application/CalendarController.java), [TreatmentController](../../fisio-application/src/main/java/it/SimoSW/controller/application/TreatmentController.java), [AddressBookController](../../fisio-application/src/main/java/it/SimoSW/controller/application/AddressBookController.java), [AddressBookServlet](../../fisio-web-legacy/src/main/java/it/SimoSW/controller/graphic/AddressBookServlet.java), [AccessRequestController](../../fisio-application/src/main/java/it/SimoSW/controller/application/AccessRequestController.java), [DashboardServlet](../../fisio-web-legacy/src/main/java/it/SimoSW/controller/graphic/DashboardServlet.java).
 
 ### Sessioni e contratti API
 
@@ -159,13 +163,13 @@ Il filtro attuale redirige al login anche le richieste che aspettano JSON. Il nu
 
 ### KPI
 
-[KpiSnapshotScheduler](../../src/main/java/it/SimoSW/util/bootstrap/KpiSnapshotScheduler.java) aggiorna mese corrente e precedente all'avvio e poi a intervalli fissi di 24 ore, con prima esecuzione calcolata per le 02:30 locali. Non è un cron che ricalcola ogni giorno l'orario nel fuso della clinica: il cambio d'ora merita un test.
+[KpiSnapshotScheduler](../../fisio-web-legacy/src/main/java/it/SimoSW/util/bootstrap/KpiSnapshotScheduler.java) aggiorna mese corrente e precedente all'avvio e poi a intervalli fissi di 24 ore, con prima esecuzione calcolata per le 02:30 locali. Non è un cron che ricalcola ogni giorno l'orario nel fuso della clinica: il cambio d'ora merita un test.
 
 Lo scheduler va ospitato sul backend, con un solo esecutore logico se in futuro ci saranno più istanze. Non deve partire su ogni desktop. Il ricalcolo di mesi più vecchi e la conservazione delle metriche dopo cancellazioni restano policy da esplicitare. La capacità di 160 ore mensili per terapista è un valore fisso nel controller.
 
 ### WhatsApp
 
-[WhatsAppBaileysService](../../src/main/java/it/SimoSW/service/whatsapp/WhatsAppBaileysService.java) comunica via HTTP col gateway e ne gestisce avvio/arresto attraverso Bash, percorsi Linux e script `.sh`. [server.js](../../baileys-service/server.js) ascolta su `127.0.0.1` e usa una directory di sessione condivisa.
+[WhatsAppBaileysService](../../fisio-web-legacy/src/main/java/it/SimoSW/service/whatsapp/WhatsAppBaileysService.java) comunica via HTTP col gateway e ne gestisce avvio/arresto attraverso Bash, percorsi Linux e script `.sh`. [server.js](../../baileys-service/server.js) ascolta su `127.0.0.1` e usa una directory di sessione condivisa.
 
 La configurazione permette tutti i terapisti o un terapista specifico, ma non crea un numero WhatsApp distinto per ciascuno. L'architettura proposta conserva il gateway accanto al backend; Desktop e Android chiedono l'invio al backend. Android deve poter lavorare anche a PC spento.
 

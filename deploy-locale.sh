@@ -13,7 +13,7 @@ Opzioni:
   --tomcat-webapps <path>  Cartella webapps Tomcat locale (default: /home/simone/apache-tomcat-9.0.112/webapps)
   --local-server <host>    Host locale per URL finale (default: localhost)
   --local-port <port>      Porta locale Tomcat per URL finale (default: 8080)
-  --war <path>             WAR locale da deployare (default: ultimo in target/)
+  --war <path>             WAR locale da deployare (default: ultimo in fisio-web-legacy/target/)
   --skip-build             Salta mvn clean package
   --help                   Mostra questo aiuto
 
@@ -79,7 +79,7 @@ if [[ "$SKIP_BUILD" != "true" ]]; then
 fi
 
 if [[ -z "$WAR_PATH" ]]; then
-  WAR_PATH="$(ls -t target/*.war 2>/dev/null | head -n 1 || true)"
+  WAR_PATH="$(ls -t fisio-web-legacy/target/*.war 2>/dev/null | head -n 1 || true)"
 fi
 
 if [[ -z "$WAR_PATH" || ! -f "$WAR_PATH" ]]; then

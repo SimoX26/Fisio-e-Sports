@@ -22,7 +22,7 @@ Opzioni:
   --baileys-owner <owner>  Owner remoto baileys-service (default: auto)
   --install-baileys-deps   Esegue npm install per baileys-service sul server remoto
   --with-sql               Carica la cartella migration su server remoto (destinazione: ~/)
-  --war <path>             WAR locale da deployare (default: ultimo in target/)
+  --war <path>             WAR locale da deployare (default: ultimo in fisio-web-legacy/target/)
   --skip-build             Salta mvn clean package
   --help                   Mostra questo aiuto
 
@@ -124,7 +124,7 @@ if [[ "$SKIP_BUILD" != "true" ]]; then
 fi
 
 if [[ -z "$WAR_PATH" ]]; then
-  WAR_PATH="$(ls -t target/*.war 2>/dev/null | head -n 1 || true)"
+  WAR_PATH="$(ls -t fisio-web-legacy/target/*.war 2>/dev/null | head -n 1 || true)"
 fi
 
 if [[ -z "$WAR_PATH" || ! -f "$WAR_PATH" ]]; then
@@ -237,7 +237,7 @@ sshpass -p "$PASSWORD" ssh "${SSH_OPTS[@]}" "$TARGET" "
 "
 
 if [[ "$WITH_SQL" == "true" ]]; then
-  MIGRATION_DIR="src/main/resources/migrations"
+  MIGRATION_DIR="fisio-web-legacy/src/main/resources/migrations"
 
   if [[ ! -d "$MIGRATION_DIR" ]]; then
     echo ">> Cartella migration non trovata: $MIGRATION_DIR"

@@ -1,0 +1,52 @@
+# Sviluppo e verifiche
+
+## Requisiti
+
+JDK 15 o successivo, Maven 3.8 o successivo e MySQL 8 per la webapp. Il wrapper
+Android richiede inoltre JDK 17 e Android SDK, secondo la sua guida dedicata.
+
+## Configurazione locale
+
+```bash
+cp fisio-web-legacy/src/main/resources/config.properties.example \
+   fisio-web-legacy/src/main/resources/config.properties
+```
+
+Impostare `db.url`, `db.username` e `db.password` nel file locale. Il file reale
+è ignorato da Git. `db.sql` elimina e ricrea il database: usarlo solo per un
+ambiente di sviluppo vuoto. Le migrazioni per dati esistenti si trovano in
+`fisio-web-legacy/src/main/resources/migrations/` e non vengono applicate da
+Maven.
+
+## Build
+
+```bash
+mvn clean package
+```
+
+Il comando compila tutti i moduli. Il WAR si trova in
+`fisio-web-legacy/target/Fisio-e-Sports.war`; il JAR autonomo si trova in
+`fisio-backend/target/`. Per il deploy Tomcat sono disponibili
+`./deploy-locale.sh --help` e `./deploy-remoto.sh --help`.
+
+Il backend autonomo si avvia seguendo [la guida del modulo](../../fisio-backend/README.md).
+`/health` controlla il processo; `/ready` controlla la connessione MySQL.
+La configurazione DB del backend usa variabili d'ambiente separate dalla
+configurazione della webapp.
+
+## Verifiche prima di un deploy
+
+1. Eseguire la build aggregata e verificare il WAR.
+2. Applicare solo le migrazioni richieste, dopo backup e in finestra senza
+   scritture applicative.
+3. Avviare la webapp e provare login, rubrica, calendario, anamnesi,
+   trattamenti, KPI e promemoria su dati di test.
+4. Provare due account terapista distinti: il secondo non deve leggere,
+   cercare, aggiornare, unire o eliminare il paziente del primo, nemmeno
+   inviando direttamente l'ID nelle richieste HTTP.
+5. Verificare che il nuovo backend risponda a `/health` e `/ready`.
+
+I test JUnit del servizio di autenticazione sono in `fisio-application/src/test`.
+Se Maven non può scaricare il provider JUnit 3 in un ambiente offline, la build
+con `-DskipTests` compila comunque i test ma non li esegue. In quel caso vanno
+eseguiti separatamente e l'esito va dichiarato con precisione.

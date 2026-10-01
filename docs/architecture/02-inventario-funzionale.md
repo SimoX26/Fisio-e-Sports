@@ -27,11 +27,11 @@ Le funzionalità elencate sono ricavate da routing e sorgenti. La verifica visua
 
 La pagina pubblica `index.jsp` è il punto di ingresso web: il desktop potrà aprire login o home secondo lo stato della sessione. Il menu condiviso contiene brand, ricerca, voci per ruolo, impostazioni e logout. Completano l'esperienza gli indicatori di caricamento, messaggi di successo/errore, conferme e gestione del ritorno dopo il salvataggio.
 
-Fonti: [Servlet](../../src/main/java/it/SimoSW/controller/graphic), [JSP](../../src/main/webapp/WEB-INF/jsp), [JavaScript](../../src/main/webapp/assets/js).
+Fonti: [Servlet](../../fisio-web-legacy/src/main/java/it/SimoSW/controller/graphic), [JSP](../../fisio-web-legacy/src/main/webapp/WEB-INF/jsp), [JavaScript](../../fisio-web-legacy/src/main/webapp/assets/js).
 
 ## 2. Calendario e completamento
 
-Il [calendario attuale](../../src/main/webapp/assets/js/calendar.js) apre normalmente la settimana, con lunedì come primo giorno; supporta anche giorno e mese. Mostra la fascia 08:00–21:00, scatti da 15 minuti e durata iniziale di 60 minuti. L'opzione FullCalendar `editable` è `false`: trascinamento e ridimensionamento degli eventi non sono funzioni operative da dare per già esistenti.
+Il [calendario attuale](../../fisio-web-legacy/src/main/webapp/assets/js/calendar.js) apre normalmente la settimana, con lunedì come primo giorno; supporta anche giorno e mese. Mostra la fascia 08:00–21:00, scatti da 15 minuti e durata iniziale di 60 minuti. L'opzione FullCalendar `editable` è `false`: trascinamento e ridimensionamento degli eventi non sono funzioni operative da dare per già esistenti.
 
 Elementi da riprodurre:
 
@@ -56,7 +56,7 @@ Il completamento oggi crea un nuovo piano e una seduta completata: con una sedut
 
 ## 3. Scheda paziente: copertura dei campi
 
-Fonte: [dialog di dettaglio paziente](../../src/main/webapp/WEB-INF/jsp/therapist/addressBook.jsp) e [parsing della Servlet](../../src/main/java/it/SimoSW/controller/graphic/AddressBookServlet.java).
+Fonte: [dialog di dettaglio paziente](../../fisio-web-legacy/src/main/webapp/WEB-INF/jsp/therapist/addressBook.jsp) e [parsing della Servlet](../../fisio-web-legacy/src/main/java/it/SimoSW/controller/graphic/AddressBookServlet.java).
 
 | Sezione | Campi da conservare |
 |---|---|
@@ -141,7 +141,7 @@ Questi endpoint mescolano form, HTML, JSON e redirect; non sono ancora un'API un
 
 ## 8. Parità grafica e comportamento trasversale
 
-Il [tema attuale](../../src/main/webapp/assets/css/style.css) fornisce riferimenti concreti: sfondo `#f5f7fa`, testo `#1f2d3d`, primario `#0d6efd`, superfici bianche, bordi arrotondati generalmente di 12 px e font con Segoe UI come prima scelta. Riutilizzare logo e palette, verificando il rendering alla risoluzione e al DPI effettivi.
+Il [tema attuale](../../fisio-web-legacy/src/main/webapp/assets/css/style.css) fornisce riferimenti concreti: sfondo `#f5f7fa`, testo `#1f2d3d`, primario `#0d6efd`, superfici bianche, bordi arrotondati generalmente di 12 px e font con Segoe UI come prima scelta. Riutilizzare logo e palette, verificando il rendering alla risoluzione e al DPI effettivi.
 
 Per ogni schermata verificare:
 
