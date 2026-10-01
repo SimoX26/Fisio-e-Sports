@@ -52,6 +52,7 @@
 
   <main class="container app-shell mt-4" id="homeScreen">
     <div class="home-topbar mb-3"><div><h1 class="home-title mb-1" id="homeGreeting"></h1><div class="home-subtitle" id="todayLabel"></div></div><div class="home-topbar-actions"><button class="home-action-pill" id="homeCreatePatientButton" type="button">Nuovo paziente</button></div></div>
+    <div class="alert alert-warning d-none" id="authNotice" role="status"></div>
     <div class="alert alert-success d-none" id="homePatientCreated" role="status">Paziente salvato correttamente.</div>
     <div class="home-kpi-row mb-4">
       <button class="glass-card section-card home-kpi-chip text-decoration-none" id="todayAppointmentsButton" type="button"><span class="home-kpi-chip__label">Appuntamenti oggi</span><span class="home-kpi-chip__value" id="appointmentsToday">–</span></button>
@@ -106,9 +107,16 @@
 
   <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered"><div class="modal-content glass-card">
-      <div class="modal-header"><h5 class="modal-title" id="eventModalTitle"></h5><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
-      <div class="modal-body"><p id="eventModalTime"></p><p id="eventModalNotes" class="text-muted"></p></div>
-      <div class="modal-footer"><button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Chiudi</button></div>
+      <div class="modal-header"><div class="event-title-block"><h5 class="modal-title mb-0" id="eventModalTitle"></h5><span id="eventModalTime" class="event-title-time"></span></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
+      <div class="modal-body"><p><strong>Note:</strong></p><p id="eventModalNotes" class="text-muted"></p></div>
+      <div class="modal-footer">
+        <span id="eventModalStateHint" class="me-auto text-muted small d-none"></span>
+        <button class="btn btn-outline-primary" id="sendSingleReminderBtn" type="button" disabled title="Disponibile dopo l'API promemoria">Invia promemoria</button>
+        <button class="btn btn-outline-secondary" id="openPatientDetailsBtn" type="button">Dettagli paziente</button>
+        <button class="btn btn-success" id="completeAppointmentBtn" type="button" disabled title="Disponibile dopo l'API trattamenti">Completa trattamento</button>
+        <button class="btn btn-outline-primary" id="editAppointmentBtn" type="button" disabled title="Disponibile dopo l'API di modifica">Modifica</button>
+        <button class="btn btn-outline-danger btn-icon-only btn-trash-icon" id="deleteAppointmentBtn" type="button" disabled title="Disponibile dopo l'API di cancellazione" aria-label="Elimina appuntamento"></button>
+      </div>
     </div></div>
   </div>
   <div class="modal fade" id="patientModal" tabindex="-1" aria-hidden="true">

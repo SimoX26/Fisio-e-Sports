@@ -9,8 +9,8 @@ non attesta un deploy in produzione.
 | Backend avviabile | Completato | `/health`, `/ready` e prima API calendario; da collaudare con credenziali reali |
 | Separazione Maven | Implementata, da collaudare in Tomcat | Build aggregata e contenuto WAR verificati |
 | Associazione paziente-terapista | Migrazione applicata al DB di test configurato; codice pronto | Deploy WAR e prova manuale con due utenti |
-| API autenticate | Identità, calendario e scheda paziente con modifica, unione ed eliminazione; lista d'attesa GET/POST/DELETE, da collaudare | Estendere i flussi secondo `architecture/04-api-roadmap.md`; sessioni e HTTPS prima del deploy in rete |
-| Client desktop | Login, home parziale, calendario e scheda paziente con riepilogo dei campi compilati e modifica completa, da collaudare manualmente | Verificare accesso e isolamento fra terapisti; poi completare altri flussi e packaging |
+| API autenticate | Identità, calendario, lista d'attesa e scheda paziente; token Bearer revocabile per accesso automatico locale, da collaudare | Estendere i flussi secondo `architecture/04-api-roadmap.md`; HTTPS prima del deploy in rete |
+| Client desktop | Login e accesso automatico con archivio protetto del sistema; home parziale, calendario e scheda paziente, da collaudare manualmente | Verificare riavvio, Logout e isolamento fra terapisti; poi completare altri flussi e packaging |
 | Client Android autonomo | Da fare | Sostituzione della WebView |
 | Dismissione webapp | Da fare | Solo dopo parità funzionale e collaudo |
 

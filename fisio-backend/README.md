@@ -1,7 +1,7 @@
 # Backend Java
 
 Il processo HTTP autonomo espone `/health`, `/ready`, `/api/me`,
-`/api/calendar`, `/api/waitlist` e `/api/patients`. Le API sono limitate ai terapisti
+`/api/auth/remember`, `/api/calendar`, `/api/waitlist` e `/api/patients`. Le API sono limitate ai terapisti
 autenticati; calendario, rubrica e lista d'attesa mostrano solo i loro dati. Il login può aggiornare un vecchio hash
 password, come nella webapp legacy.
 
@@ -54,7 +54,14 @@ il file accanto al JAR; si avvia con `java -jar fisio-backend-0.1.0.jar`.
 Il file con le credenziali non va caricato su GitHub. In questa fase il processo
 ascolta solo su loopback; accesso remoto, HTTPS e sessioni sono passi separati.
 
-L'API calendario accetta `GET` con autenticazione Basic e un intervallo massimo
+`POST /api/auth/remember` richiede Basic e rilascia un token di accesso automatico
+valido 30 giorni; `DELETE` con Bearer lo revoca. Il backend conserva solo l'hash
+del token. Le API protette accettano Basic o Bearer e verificano sempre ruolo e
+scadenza. Il client desktop conserva il token nell'archivio protetto dell'utente
+del sistema operativo. L'endpoint è utilizzabile solo sul backend locale; prima
+di esporlo in rete servono HTTPS e una revisione dell'autenticazione remota.
+
+L'API calendario accetta `GET` con autenticazione Basic o Bearer e un intervallo massimo
 di 62 giorni. L'ID del terapista è ricavato dall'account, mai dal client.
 La lista d'attesa usa `GET /api/waitlist`, `POST /api/waitlist` con campi form
 `fullName` e `phone`, e `DELETE /api/waitlist/{id}`. Anche in scrittura il

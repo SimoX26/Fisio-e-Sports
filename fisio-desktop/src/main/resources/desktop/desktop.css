@@ -1,2 +1,36 @@
 /* Adattamenti necessari alla prova locale; lo stile principale viene dalla webapp. */
 .app-navbar .navbar-brand, .app-navbar .nav-link { cursor: default; }
+
+/* La scheda ha un form tra modal-content e modal-body: serve un contenitore flessibile per lo scroll. */
+#patientModal .modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 3rem);
+  overflow: hidden;
+}
+
+#patientModal #patientSummary:not([hidden]),
+#patientModal #patientEditForm:not([hidden]) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#patientModal .modal-header,
+#patientModal .modal-footer {
+  flex: 0 0 auto;
+}
+
+#patientModal .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.desktop-patient-row { cursor: pointer; }
+.desktop-patient-row:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: -2px;
+}

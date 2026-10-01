@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let patientsRequest = 0;
   let patientDetailRequest = 0;
   let mergeCandidatesRequest = 0;
+  let manualLoginStarted = false;
 
   function localDateTime(date) {
     const pad = number => String(number).padStart(2, "0");
@@ -40,6 +41,55 @@ document.addEventListener("DOMContentLoaded", () => {
   async function getJson(path) {
     return (await apiRequest(path)).json();
   }
+
+  function enterApp(identity) {
+    sessionEpoch++;
+    document.getElementById("password").value = "";
+    const prefix = new Date().getHours() > 15 ? "Buonasera" : "Buongiorno";
+    const displayName = identity.username.charAt(0).toLocaleUpperCase("it-IT") + identity.username.slice(1).toLocaleLowerCase("it-IT");
+    document.getElementById("homeGreeting").textContent = `${prefix}, ${displayName}`;
+    document.getElementById("todayLabel").textContent = new Intl.DateTimeFormat("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date());
+    loginScreen.hidden = true;
+    appScreen.hidden = false;
+    document.body.classList.remove("auth-page", "d-flex", "align-items-center", "justify-content-center");
+    document.getElementById("authNotice").classList.add("d-none");
+    showHome();
+  }
+
+  function showAuthNotice(message) {
+    const notice = document.getElementById("authNotice");
+    notice.textContent = message;
+    notice.classList.remove("d-none");
+  }
+
+  window.desktopBridgeReady = () => window.desktopBridge.loadToken();
+  window.desktopTokenLoaded = async token => {
+    if (!token || manualLoginStarted || authorization || loginScreen.hidden) return;
+    authorization = `Bearer ${token}`;
+    const attemptAuthorization = authorization;
+    try {
+      const identity = await getJson("/api/me");
+      if (manualLoginStarted || loginScreen.hidden) return;
+      enterApp(identity);
+    } catch (failure) {
+      if (manualLoginStarted || authorization !== attemptAuthorization) return;
+      authorization = null;
+      if (failure.status === 401) {
+        window.desktopBridge.clearToken();
+      } else {
+        loginError.textContent = "Accesso automatico non riuscito. Controlla che il backend sia avviato.";
+        loginError.classList.remove("d-none");
+      }
+    }
+  };
+  window.desktopTokenStored = saved => {
+    if (!saved && !appScreen.hidden && authorization?.startsWith("Bearer ")) {
+      const cleared = window.desktopBridge.clearToken();
+      showAuthNotice(cleared
+        ? "Accesso automatico non disponibile: il sistema non ha salvato il token protetto."
+        : "Accesso automatico non disponibile: controlla l'archivio credenziali del sistema prima di riaprire l'app.");
+    }
+  };
 
   function showHome() {
     homeScreen.hidden = false;
@@ -241,9 +291,38 @@ document.addEventListener("DOMContentLoaded", () => {
         document.body.classList.toggle("calendar-view-month", info.view.type === "dayGridMonth");
       },
       eventClick(info) {
-        document.getElementById("eventModalTitle").textContent = info.event.title;
-        document.getElementById("eventModalTime").textContent = info.event.start.toLocaleString("it-IT") + " – " + info.event.end.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
-        document.getElementById("eventModalNotes").textContent = info.event.extendedProps.notes || "Nessuna nota";
+        info.jsEvent.preventDefault();
+        const event = info.event;
+        const completed = event.extendedProps.state === "COMPLETED";
+        const allDay = Boolean(event.allDay || event.extendedProps.allDay);
+        const generic = Boolean(event.extendedProps.nonTreatmentEvent);
+        const patientId = event.extendedProps.patientId;
+        const date = event.start?.toLocaleDateString("it-IT") || "";
+        const time = value => value?.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) || "";
+        document.getElementById("eventModalTitle").textContent = event.title || "";
+        document.getElementById("eventModalTime").textContent = allDay
+          ? `${date} • Tutto il giorno`
+          : `${date} • ${time(event.start)}${event.end ? ` - ${time(event.end)}` : ""}`;
+        document.getElementById("eventModalNotes").textContent = event.extendedProps.notes || "Nessuna nota";
+        const patientButton = document.getElementById("openPatientDetailsBtn");
+        patientButton.classList.toggle("d-none", patientId == null);
+        patientButton.onclick = patientId == null ? null : () => {
+          document.getElementById("eventModal").addEventListener("hidden.bs.modal", () => {
+            showPatients();
+            showPatientDetail(patientId);
+          }, { once: true });
+          eventModal.hide();
+        };
+        document.getElementById("sendSingleReminderBtn").classList.toggle("d-none", completed || allDay || generic || patientId == null);
+        document.getElementById("completeAppointmentBtn").classList.toggle("d-none", completed || allDay || generic);
+        document.getElementById("editAppointmentBtn").classList.toggle("d-none", completed);
+        document.getElementById("deleteAppointmentBtn").classList.toggle("d-none", completed && !generic);
+        const stateHints = [];
+        if (completed) stateHints.push(generic ? "Evento completato: cancellazione consentita." : "Appuntamento completato: azioni non disponibili.");
+        if (allDay) stateHints.push("Evento tutto il giorno: non collegato ai trattamenti.");
+        const hint = document.getElementById("eventModalStateHint");
+        hint.textContent = stateHints.join(" ");
+        hint.classList.toggle("d-none", stateHints.length === 0);
         eventModal.show();
       }
     });
@@ -303,6 +382,17 @@ document.addEventListener("DOMContentLoaded", () => {
       empty.classList.toggle("d-none", patients.length !== 0);
       for (const patient of patients) {
         const row = document.createElement("tr");
+        row.className = "desktop-patient-row";
+        row.tabIndex = 0;
+        row.setAttribute("aria-label", `Apri scheda di ${patient.fullName}`);
+        row.addEventListener("click", event => {
+          if (!event.target.closest("button, a, input, select, textarea")) showPatientDetail(patient.id);
+        });
+        row.addEventListener("keydown", event => {
+          if (event.target !== row || (event.key !== "Enter" && event.key !== " ")) return;
+          event.preventDefault();
+          showPatientDetail(patient.id);
+        });
         const nameCell = document.createElement("td");
         const nameButton = document.createElement("button");
         nameButton.type = "button";
@@ -587,6 +677,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("loginForm").addEventListener("submit", async event => {
     event.preventDefault();
+    manualLoginStarted = true;
     const loginButton = event.target.querySelector('button[type="submit"]');
     loginButton.disabled = true;
     loginError.classList.add("d-none");
@@ -596,17 +687,18 @@ document.addEventListener("DOMContentLoaded", () => {
     authorization = `Basic ${btoa(String.fromCharCode(...bytes))}`;
     try {
       const identity = await getJson("/api/me");
-      sessionEpoch++;
-      document.getElementById("password").value = "";
-      const prefix = new Date().getHours() > 15 ? "Buonasera" : "Buongiorno";
-      const displayName = identity.username.charAt(0).toLocaleUpperCase("it-IT") + identity.username.slice(1).toLocaleLowerCase("it-IT");
-      document.getElementById("homeGreeting").textContent = `${prefix}, ${displayName}`;
-      document.getElementById("todayLabel").textContent = new Intl.DateTimeFormat("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date());
-      loginScreen.hidden = true;
-      appScreen.hidden = false;
-      document.body.classList.remove("auth-page", "d-flex", "align-items-center", "justify-content-center");
-      document.title = "Dashboard • Fisio e Sports";
-      showHome();
+      let rememberUnavailable = false;
+      try {
+        const issued = await (await apiRequest("/api/auth/remember", { method: "POST" })).json();
+        if (!/^[A-Za-z0-9_-]{43}$/.test(issued.token)) throw new Error("invalid_token");
+        authorization = `Bearer ${issued.token}`;
+        if (window.desktopBridge) window.desktopBridge.saveToken(issued.token);
+        else rememberUnavailable = true;
+      } catch (failure) {
+        rememberUnavailable = true;
+      }
+      enterApp(identity);
+      if (rememberUnavailable) showAuthNotice("Accesso automatico non disponibile; questa sessione resta attiva fino all'uscita.");
     } catch (error) {
       authorization = null;
       loginError.textContent = error.status === 401
@@ -754,7 +846,10 @@ document.addEventListener("DOMContentLoaded", () => {
       button.disabled = false;
     }
   });
-  document.getElementById("logoutButton").addEventListener("click", () => {
+  document.getElementById("logoutButton").addEventListener("click", async () => {
+    const previousAuthorization = authorization;
+    const tokenCleared = window.desktopBridge ? window.desktopBridge.clearToken() : true;
+    manualLoginStarted = true;
     sessionEpoch++;
     patientsRequest++;
     patientDetailRequest++;
@@ -790,11 +885,32 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("createPatientError").classList.add("d-none");
     document.getElementById("homePatientCreated").classList.add("d-none");
     document.getElementById("patientsCreated").classList.add("d-none");
+    document.getElementById("authNotice").classList.add("d-none");
+    loginError.classList.add("d-none");
     appScreen.hidden = true;
     loginScreen.hidden = false;
     document.body.className = "auth-page app-page d-flex align-items-center justify-content-center";
     patientsScreen.hidden = true;
     document.title = "Login • Fisio e Sports";
+    let revoked = true;
+    if (previousAuthorization?.startsWith("Bearer ")) {
+      try {
+        const response = await fetch(`${apiBase}/api/auth/remember`, {
+          method: "DELETE", headers: { Authorization: previousAuthorization }, cache: "no-store"
+        });
+        revoked = response.ok;
+      } catch (failure) {
+        revoked = false;
+      }
+    }
+    if (!tokenCleared || !revoked) {
+      const message = "Uscita completata, ma il token automatico potrebbe essere ancora valido. Accedi e ripeti Logout quando il backend è disponibile.";
+      if (loginScreen.hidden) showAuthNotice(message);
+      else {
+        loginError.textContent = message;
+        loginError.classList.remove("d-none");
+      }
+    }
   });
   document.getElementById("searchForm").addEventListener("submit", event => event.preventDefault());
 });

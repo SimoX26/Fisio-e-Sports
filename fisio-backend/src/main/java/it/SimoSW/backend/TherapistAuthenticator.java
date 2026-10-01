@@ -21,6 +21,17 @@ final class TherapistAuthenticator {
 
     User authenticate(HttpExchange exchange) {
         String authorization = exchange.getRequestHeaders().getFirst("Authorization");
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring(7);
+            if (!token.matches("[A-Za-z0-9_-]{43}")) return null;
+            return authentication.authenticateByRememberMeToken(token)
+                    .filter(user -> user.getRole() == UserRole.THERAPIST).orElse(null);
+        }
+        return authenticateBasic(exchange);
+    }
+
+    User authenticateBasic(HttpExchange exchange) {
+        String authorization = exchange.getRequestHeaders().getFirst("Authorization");
         if (authorization == null || !authorization.startsWith("Basic ")) {
             return null;
         }
@@ -39,5 +50,13 @@ final class TherapistAuthenticator {
 
     Long therapistId(User user) {
         return users.findIdByUsernameAndRole(user.getUsername(), UserRole.THERAPIST).orElse(null);
+    }
+
+    String createRememberToken(User user) {
+        return authentication.createRememberMeToken(user);
+    }
+
+    void revokeRememberToken(String token) {
+        authentication.revokeRememberMeToken(token);
     }
 }

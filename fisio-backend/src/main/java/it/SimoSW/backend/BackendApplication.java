@@ -74,6 +74,7 @@ public final class BackendApplication {
                 new CalendarController(new DatabaseAppointmentDAO(), new DatabasePatientDAO(), users));
         server.createContext("/api/calendar", calendarApi);
         server.createContext("/api/me", calendarApi);
+        server.createContext("/api/auth/remember", new RememberApiHandler(authenticator));
         server.createContext("/api/waitlist", new WaitlistApiHandler(
                 authenticator, new WaitlistController(new DatabaseWaitlistEntryDAO(), users)));
         server.createContext("/api/patients", new PatientsApiHandler(authenticator,

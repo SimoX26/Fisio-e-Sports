@@ -7,8 +7,8 @@ comportamento descritti nell'[inventario](02-inventario-funzionale.md).
 
 | Area | Stato | Prossimo criterio di parità |
 |---|---|---|
-| Accesso terapista | `/api/me` disponibile con Basic locale | Sessione, logout e gestione scadenza per client remoti |
-| Calendario | Lettura per intervallo disponibile | Creazione, modifica, completamento, cancellazione, cestino, suggerimenti e conflitti |
+| Accesso terapista | `/api/me` con Basic o Bearer; token di 30 giorni emesso e revocato da `/api/auth/remember` per il desktop locale | HTTPS, indirizzo server configurabile e autenticazione remota |
+| Calendario | Lettura per intervallo e dettaglio desktop con collegamento alla scheda paziente | Creazione, modifica, completamento, cancellazione, cestino, suggerimenti e conflitti |
 | Home e lista d'attesa | Lista d'attesa GET/POST/DELETE disponibile | Riepilogo completo home, conversione in appuntamento e promemoria |
 | Pazienti e anamnesi | Rubrica e scheda legacy con creazione, modifica, ultima anamnesi, condizioni, unione ed eliminazione | Versioni storiche dell'anamnesi e cronologia trattamenti |
 | Trattamenti | Da fare | Storico, piani e sedute effettivamente usati dalla UI |
@@ -41,6 +41,9 @@ contatto scelto, dopo conferma. `GET /api/patients/{id}/merge-candidates`
 restituisce i candidati dello stesso terapista. `DELETE /api/patients/{id}`
 segue la conferma legacy; se sono presenti appuntamenti, richiede `force=1`.
 
-Il backend attuale ascolta solo su loopback e usa HTTP Basic per la prova
-locale. Prima di usare il desktop da altri PC servono HTTPS, configurazione
-dell'indirizzo server e un'autenticazione adatta a sessioni remote.
+Il backend attuale ascolta solo su loopback. Basic verifica il login e rilascia
+un token casuale tramite `POST /api/auth/remember`; il backend conserva solo
+l'hash, controlla ruolo e scadenza su ogni richiesta Bearer, e lo revoca con
+`DELETE /api/auth/remember`. Il desktop salva il token nell'archivio protetto
+del sistema operativo e lo elimina al Logout. Prima di usare il desktop da
+altri PC servono HTTPS e la configurazione dell'indirizzo server.
