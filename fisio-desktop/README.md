@@ -21,10 +21,31 @@ ritorno alla home. Verificare anche credenziali errate e Logout: i dati
 precedenti non devono restare visibili dopo l'uscita. Ripetere con un secondo
 terapista per verificare la separazione degli appuntamenti.
 
+Aprire **Rubrica**, cercare un paziente e cambiare l'ordinamento. Confrontare
+l'elenco con la webapp legacy usando lo stesso terapista. Ripetere con un
+secondo terapista: le schede dell'altro account non devono comparire.
+Selezionare un nome per aprire il modulo della scheda e confrontarlo con la
+webapp. Provare su una scheda di test la modifica dei dati anagrafici e di
+un campo anamnestico, quindi riaprire la scheda in entrambi i client. Provare
+anche una scheda senza anamnesi e i campi delle condizioni.
+Con due contatti di test con lo stesso nome, verificare i candidati di unione
+e la conferma prima di eseguire l'operazione. Provare l'eliminazione su una
+scheda di test senza appuntamenti e su una con appuntamenti, verificando la
+conferma estesa e il mantenimento dello storico.
+Provare **Nuovo paziente** dalla home e dalla rubrica: dopo il salvataggio la
+scheda deve comparire nella rubrica del terapista e nella webapp legacy, ma
+non nella rubrica di un secondo terapista. Email e telefono sono facoltativi.
+
+Nella home provare la lista d'attesa: aggiungere un contatto, controllare che
+appaia nella webapp legacy con lo stesso terapista, rimuoverlo dal desktop e
+verificare che scompaia anche nella webapp. Con un altro terapista il contatto
+non deve comparire. La trasformazione in appuntamento arriverà con l'API di
+scrittura del calendario.
+
 La password non viene salvata su disco; la credenziale HTTP resta nella memoria
 della finestra fino al Logout o alla chiusura. Questa prova usa il backend
-locale su `127.0.0.1:8081`. La home contiene per ora solo i dati coperti
-dall'API calendario; ricerca, scritture, altre schermate e pacchetto Windows
+locale su `127.0.0.1:8081`. La home contiene per ora i dati coperti
+dalle API calendario e lista d'attesa; ricerca globale, altre scritture, altre schermate e pacchetto Windows
 richiedono i prossimi incrementi. Le relative voci sono solo etichette.
 
 Le licenze degli asset incorporati sono in `src/main/resources/desktop/vendor/`.

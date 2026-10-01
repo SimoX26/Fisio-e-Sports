@@ -14,11 +14,16 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 import it.SimoSW.controller.application.AuthenticationController;
+import it.SimoSW.controller.application.AddressBookController;
 import it.SimoSW.controller.application.CalendarController;
+import it.SimoSW.controller.application.WaitlistController;
 import it.SimoSW.model.dao.database.DatabaseAppointmentDAO;
 import it.SimoSW.model.dao.database.DatabasePatientDAO;
+import it.SimoSW.model.dao.database.DatabasePatientAnamnesisDAO;
+import it.SimoSW.model.dao.database.DatabasePatientConditionDAO;
 import it.SimoSW.model.dao.database.DatabaseRememberMeTokenDAO;
 import it.SimoSW.model.dao.database.DatabaseUserDAO;
+import it.SimoSW.model.dao.database.DatabaseWaitlistEntryDAO;
 import it.SimoSW.util.AppProperties;
 
 public final class BackendApplication {
@@ -62,12 +67,18 @@ public final class BackendApplication {
             }
         });
         DatabaseUserDAO users = new DatabaseUserDAO();
+        TherapistAuthenticator authenticator = new TherapistAuthenticator(
+                new AuthenticationController(users, new DatabaseRememberMeTokenDAO()), users);
         CalendarApiHandler calendarApi = new CalendarApiHandler(
-                new AuthenticationController(users, new DatabaseRememberMeTokenDAO()),
-                new CalendarController(new DatabaseAppointmentDAO(), new DatabasePatientDAO(), users),
-                users);
+                authenticator,
+                new CalendarController(new DatabaseAppointmentDAO(), new DatabasePatientDAO(), users));
         server.createContext("/api/calendar", calendarApi);
         server.createContext("/api/me", calendarApi);
+        server.createContext("/api/waitlist", new WaitlistApiHandler(
+                authenticator, new WaitlistController(new DatabaseWaitlistEntryDAO(), users)));
+        server.createContext("/api/patients", new PatientsApiHandler(authenticator,
+                new AddressBookController(new DatabasePatientDAO(), new DatabasePatientAnamnesisDAO(),
+                        new DatabasePatientConditionDAO(), new DatabaseAppointmentDAO(), users)));
         Runtime.getRuntime().addShutdownHook(new Thread(() -> server.stop(0)));
         server.start();
         System.out.println("Fisio backend in ascolto su http://127.0.0.1:" + port);

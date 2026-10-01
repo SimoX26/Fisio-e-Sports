@@ -39,7 +39,7 @@
         <ul class="navbar-nav ms-auto align-items-lg-center app-navbar-links">
           <li class="nav-item"><button class="nav-link active" id="homeNav" type="button">Home</button></li>
           <li class="nav-item"><button class="nav-link" id="calendarNav" type="button">Calendario</button></li>
-          <li class="nav-item"><span class="nav-link">Rubrica</span></li>
+          <li class="nav-item"><button class="nav-link" id="patientsNav" type="button">Rubrica</button></li>
           <li class="nav-item"><span class="nav-link">Storico Trattamenti</span></li>
           <li class="nav-item"><span class="nav-link">Dati e Statistiche</span></li>
           <li class="nav-item d-none d-lg-block mx-2"><span class="nav-link disabled nav-separator">|</span></li>
@@ -51,12 +51,42 @@
   </nav>
 
   <main class="container app-shell mt-4" id="homeScreen">
-    <div class="home-topbar mb-3"><div><h1 class="home-title mb-1" id="homeGreeting"></h1><div class="home-subtitle" id="todayLabel"></div></div></div>
+    <div class="home-topbar mb-3"><div><h1 class="home-title mb-1" id="homeGreeting"></h1><div class="home-subtitle" id="todayLabel"></div></div><div class="home-topbar-actions"><button class="home-action-pill" id="homeCreatePatientButton" type="button">Nuovo paziente</button></div></div>
+    <div class="alert alert-success d-none" id="homePatientCreated" role="status">Paziente salvato correttamente.</div>
     <div class="home-kpi-row mb-4">
       <button class="glass-card section-card home-kpi-chip text-decoration-none" id="todayAppointmentsButton" type="button"><span class="home-kpi-chip__label">Appuntamenti oggi</span><span class="home-kpi-chip__value" id="appointmentsToday">–</span></button>
       <div class="glass-card section-card home-kpi-chip"><span class="home-kpi-chip__label">Pazienti oggi</span><span class="home-kpi-chip__value" id="patientsToday">–</span></div>
     </div>
-    <div class="glass-card section-card home-agenda-card"><div class="home-section-head"><h3 class="home-section-title mb-0">Agenda di oggi</h3><button class="home-link btn btn-link" id="openDayButton" type="button">Apri vista giornaliera</button></div><div class="home-agenda-list" id="todayAgenda"></div></div>
+    <div class="row g-3 align-items-start mb-4">
+      <div class="col-12 col-xl-7"><div class="glass-card section-card home-agenda-card"><div class="home-section-head"><h3 class="home-section-title mb-0">Agenda di oggi</h3><button class="home-link btn btn-link" id="openDayButton" type="button">Apri vista giornaliera</button></div><div class="home-agenda-list" id="todayAgenda"></div></div></div>
+      <div class="col-12 col-xl-5"><div class="glass-card section-card home-waitlist-card">
+        <div class="home-section-head"><h3 class="home-section-title mb-0">Lista di attesa</h3><span class="home-section-meta" id="waitlistCount"></span></div>
+        <form class="home-waitlist-form" id="waitlistForm">
+          <div class="row g-2">
+            <div class="col-12"><label class="form-label home-form-label" for="waitlistPatientName">Nome e Cognome Paziente</label><input id="waitlistPatientName" type="text" class="form-control" maxlength="180" required></div>
+            <div class="col-12"><label class="form-label home-form-label" for="waitlistPhone">Telefono</label><input id="waitlistPhone" type="text" class="form-control" maxlength="20" required></div>
+          </div>
+          <div class="home-waitlist-form__actions"><button type="submit" class="btn btn-primary btn-sm">Aggiungi alla lista</button></div>
+        </form>
+        <div class="alert alert-danger d-none mt-3" id="waitlistError" role="alert"></div>
+        <div class="home-waitlist-list" id="waitlistEntries"></div>
+      </div></div>
+    </div>
+  </main>
+
+  <main class="container app-shell mt-4" id="patientsScreen" hidden>
+    <div class="page-header-row mb-4"><h2 class="page-title">Rubrica Pazienti</h2><button class="btn btn-primary section-action-btn" id="patientsCreateButton" type="button">Nuovo paziente</button></div>
+    <div class="glass-card section-card address-book-card p-4">
+      <div class="alert alert-success d-none" id="patientsCreated" role="status">Paziente inserito correttamente.</div>
+      <form id="patientsSearchForm" class="row g-2 mb-3">
+        <div class="col-12 col-md"><input class="form-control" id="patientsQuery" type="search" maxlength="200" placeholder="Cerca paziente" aria-label="Cerca paziente"></div>
+        <div class="col-12 col-md-auto"><select class="form-select" id="patientsSort" aria-label="Ordina pazienti"><option value="created-desc">Più recenti</option><option value="created-asc">Meno recenti</option><option value="name-asc">Nome A–Z</option><option value="name-desc">Nome Z–A</option></select></div>
+        <div class="col-12 col-md-auto"><button class="btn btn-primary" type="submit">Cerca</button></div>
+      </form>
+      <div class="alert alert-danger d-none" id="patientsError" role="alert"></div>
+      <div class="table-responsive address-book-table-wrap"><table class="table table-borderless align-middle mb-0 address-book-table"><thead><tr><th>Nome</th><th>Data creazione</th><th>Telefono</th><th class="text-end">Azioni</th></tr></thead><tbody id="patientsRows"></tbody></table></div>
+      <div class="home-empty-state d-none" id="patientsEmpty">Nessun paziente presente.</div>
+    </div>
   </main>
 
   <div id="calendarScreen" hidden>
@@ -79,6 +109,419 @@
       <div class="modal-header"><h5 class="modal-title" id="eventModalTitle"></h5><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
       <div class="modal-body"><p id="eventModalTime"></p><p id="eventModalNotes" class="text-muted"></p></div>
       <div class="modal-footer"><button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Chiudi</button></div>
+    </div></div>
+  </div>
+  <div class="modal fade" id="patientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h5 class="modal-title" id="patientModalTitle">Dettagli paziente</h5>
+                <div class="d-flex align-items-center gap-2"><button type="button" class="btn btn-outline-primary btn-sm" id="patientEditToggle" hidden>Modifica</button><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
+            </div>
+            <div id="patientSummary">
+                <div class="modal-body">
+                    <div class="alert alert-danger d-none" id="patientSummaryError" role="alert"></div>
+                    <div class="alert alert-success d-none" id="patientSummarySuccess" role="status"></div>
+                    <div id="patientSummaryContent" class="text-muted">Caricamento scheda...</div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button></div>
+            </div>
+            <form id="patientEditForm" hidden>
+                <div class="modal-body">
+                    <input type="hidden" id="editPatientId">
+                    <div class="alert alert-danger d-none" id="patientEditError" role="alert"></div>
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Nome e Cognome</label>
+                            <input type="text" class="form-control" name="fullName" id="editPatientFullName" placeholder="Nome e cognome paziente" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" id="editPatientEmail">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Telefono</label>
+                            <input type="text" class="form-control" name="phone" id="editPatientPhone">
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="mergeTargetId" id="mergeTargetId">
+                    <div id="mergeCandidatesBox" class="alert alert-info mt-3 d-none" role="alert">
+                        <div class="fw-semibold mb-2">Possibile unione contatti</div>
+                        <p class="mb-2">Esistono contatti con lo stesso nome. Se vuoi, puoi unirli ora. Opzione facoltativa.</p>
+                        <label class="form-label" for="mergeCandidateSelect">Unisci questo contatto con:</label>
+                        <select id="mergeCandidateSelect" class="form-select">
+                            <option value="">Nessuna unione (mantieni contatti separati)</option>
+                        </select>
+                    </div>
+
+                    <hr class="my-4">
+                    <h6 class="mb-3">Scheda anamnesi</h6>
+
+                    <div class="mb-3">
+                        <label class="form-label">Data anamnesi</label>
+                        <input type="date" class="form-control" name="assessmentDate">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Motivo del consulto</label>
+                        <textarea class="form-control" name="chiefComplaint" rows="2"></textarea>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Localizzazione dolore</label>
+                            <input type="text" class="form-control" name="painLocation">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tipologia dolore</label>
+                            <input type="text" class="form-control" name="painQuality">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Sintomi associati</label>
+                            <textarea class="form-control" name="associatedSymptoms" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-4">
+                            <label class="form-label">Esordio</label>
+                            <select class="form-select" name="onsetType">
+                                <option value="">-</option>
+                                <option value="ACUTE">Acuto</option>
+                                <option value="SUBACUTE">Subacuto</option>
+                                <option value="CHRONIC">Cronico</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Contesto esordio</label>
+                            <input type="text" class="form-control" name="onsetContext" placeholder="Trauma, stress, casuale...">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-4">
+                            <label class="form-label">Dolore invalidante</label>
+                            <select class="form-select" name="isDisabling">
+                                <option value="">-</option>
+                                <option value="si">Si</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Frequenza dolore</label>
+                            <select class="form-select" name="painFrequency">
+                                <option value="">-</option>
+                                <option value="LOW">Bassa</option>
+                                <option value="MEDIUM">Media</option>
+                                <option value="HIGH">Alta</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Progressione dolore</label>
+                            <select class="form-select" name="painProgression">
+                                <option value="">-</option>
+                                <option value="CONSTANT">Costante</option>
+                                <option value="WORSE">Peggiorato</option>
+                                <option value="BETTER">Migliorato</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-4">
+                            <label class="form-label">Con movimento</label>
+                            <select class="form-select" name="painWithMovement">
+                                <option value="">-</option>
+                                <option value="WORSE">Peggiora</option>
+                                <option value="BETTER">Migliora</option>
+                                <option value="UNCHANGED">Invariato</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Con riposo</label>
+                            <select class="form-select" name="painWithRest">
+                                <option value="">-</option>
+                                <option value="WORSE">Peggiora</option>
+                                <option value="BETTER">Migliora</option>
+                                <option value="UNCHANGED">Invariato</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Intensita dolore (0-10)</label>
+                            <input type="number" class="form-control" name="painIntensity" min="0" max="10">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-3">
+                            <label class="form-label">Dolore notturno</label>
+                            <select class="form-select" name="nightPain">
+                                <option value="">-</option>
+                                <option value="si">Si</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Dolore al risveglio</label>
+                            <select class="form-select" name="morningPain">
+                                <option value="">-</option>
+                                <option value="si">Si</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Farmaci dolore</label>
+                            <select class="form-select" name="usesPainMeds">
+                                <option value="">-</option>
+                                <option value="si">Si</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Efficacia farmaco</label>
+                            <select class="form-select" name="painMedsEffect">
+                                <option value="">-</option>
+                                <option value="YES">Si</option>
+                                <option value="NO">No</option>
+                                <option value="PARTIAL">Poco</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-4">
+                            <label class="form-label">Esami strumentali</label>
+                            <textarea class="form-control" name="clinicalTests" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Visite specialistiche</label>
+                            <textarea class="form-control" name="specialistVisits" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Trattamenti precedenti</label>
+                            <textarea class="form-control" name="previousTreatments" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <label class="form-label">Patologie pregresse</label>
+                            <textarea class="form-control" name="pathologyHistory" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Farmaci regolari</label>
+                            <textarea class="form-control" name="currentRegularDrugs" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-4">
+                            <label class="form-label">Interventi chirurgici</label>
+                            <textarea class="form-control" name="surgeryHistory" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Traumi</label>
+                            <textarea class="form-control" name="traumaHistory" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Dispositivi usati</label>
+                            <textarea class="form-control" name="devicesHistory" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-3">
+                            <label class="form-label">Disturbi masticazione</label>
+                            <select class="form-select" name="chewingDisorders">
+                                <option value="">-</option>
+                                <option value="si">Si</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Infezioni/infiammazioni importanti</label>
+                            <textarea class="form-control" name="majorInfectionsHistory" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label">Familiarita malattie</label>
+                            <textarea class="form-control" name="familyHistory" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-2">
+                            <label class="form-label">Altezza (cm)</label>
+                            <input type="number" step="0.01" class="form-control" name="heightCm">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Peso (kg)</label>
+                            <input type="number" step="0.01" class="form-control" name="weightKg">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Stile vita</label>
+                            <select class="form-select" name="lifestyle">
+                                <option value="">-</option>
+                                <option value="SPORTY">Sportivo</option>
+                                <option value="SEDENTARY">Sedentario</option>
+                                <option value="MIXED">Misto</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Sport praticato</label>
+                            <input type="text" class="form-control" name="sportPractice">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Fumo/alcol/sostanze</label>
+                            <input type="text" class="form-control" name="substanceUse">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-2">
+                            <label class="form-label">Qualita sonno (0-4)</label>
+                            <input type="number" class="form-control" name="sleepQuality" min="0" max="4">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Stress (0-4)</label>
+                            <input type="number" class="form-control" name="stressLevel" min="0" max="4">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Alimentazione</label>
+                            <select class="form-select" name="dietQuality">
+                                <option value="">-</option>
+                                <option value="HEALTHY">Sana</option>
+                                <option value="IMBALANCED">Squilibrata</option>
+                                <option value="MIXED">Mista</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label">Note ciclo/andrologiche-ginecologiche</label>
+                            <input type="text" class="form-control" name="femaleCycleNotes">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <label class="form-label">Condizioni patologiche (separate da virgola o su righe diverse)</label>
+                            <textarea class="form-control" name="conditionsPathology" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Sintomi rilevanti (separati da virgola o su righe diverse)</label>
+                            <textarea class="form-control" name="conditionsSymptom" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <label class="form-label">Familiarita (separate da virgola o su righe diverse)</label>
+                            <textarea class="form-control" name="conditionsFamilyHistory" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Allergie/intolleranze (separate da virgola o su righe diverse)</label>
+                            <textarea class="form-control" name="conditionsAllergy" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <label class="form-label">Farmaci rilevanti (separati da virgola o su righe diverse)</label>
+                            <textarea class="form-control" name="conditionsDrug" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Revisione sistemica (separate da virgola o su righe diverse)</label>
+                            <textarea class="form-control" name="conditionsSystemReview" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 mt-3">
+                        <label class="form-label">Altre condizioni (separate da virgola o su righe diverse)</label>
+                        <textarea class="form-control" name="conditionsOther" rows="2"></textarea>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Note libere</label>
+                        <textarea class="form-control" name="freeNotesJson" rows="2" placeholder="Inserisci note testuali libere"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">Salva</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+  <div class="modal fade" id="confirmDeletePatientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h5 class="modal-title">Conferma eliminazione</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="deletePatientForm">
+                <div class="modal-body">
+                    <div class="alert alert-danger d-none" id="deletePatientError" role="alert"></div>
+                    <input type="hidden" id="deletePatientId">
+                    <input type="hidden" name="forceDeleteWithLinkedAppointments" id="forceDeleteWithLinkedAppointments" value="0">
+                    <p class="mb-0">
+                        <span id="deletePatientPromptText">Vuoi eliminare il paziente</span>
+                        <strong id="deletePatientName"></strong>?
+                    </p>
+                    <div id="deleteDangerZone" class="alert alert-warning mt-3 d-none mb-0" role="alert">
+                        Questo paziente ha <strong id="linkedAppointmentsCount"></strong>
+                        <span id="linkedAppointmentsLabel">appuntamenti collegati</span>.
+                        Eliminandolo, il paziente verrà rimosso definitivamente dal sistema.
+                        Gli appuntamenti e lo storico trattamenti resteranno disponibili, ma non saranno più associati a questo paziente.
+                        Vuoi continuare?
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit"
+                            class="btn btn-danger btn-icon-only btn-trash-icon"
+                            aria-label="Conferma eliminazione paziente"
+                            title="Conferma eliminazione paziente"></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmMergePatientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h5 class="modal-title">Conferma unione contatti</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">Stai per unire il contatto:</p>
+                <p class="mb-2"><strong id="mergeConfirmSourceName">-</strong></p>
+                <p class="mb-2">nel contatto:</p>
+                <p class="mb-2"><strong id="mergeConfirmTargetName">-</strong></p>
+                <p class="mb-0 text-muted">Questa operazione e irreversibile.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-danger" id="confirmMergePatientBtn">Conferma unione</button>
+            </div>
+        </div>
+    </div>
+</div>
+  <div class="modal fade" id="createPatientModal" tabindex="-1" aria-labelledby="createPatientModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content glass-card">
+      <div class="modal-header"><h5 class="modal-title" id="createPatientModalTitle">Nuovo paziente</h5><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
+      <form id="createPatientForm">
+        <div class="modal-body">
+          <div class="alert alert-danger d-none" id="createPatientError" role="alert"></div>
+          <div class="mb-3"><label class="form-label" for="createPatientFullName">Nome e Cognome</label><input class="form-control" id="createPatientFullName" type="text" required maxlength="201"></div>
+          <div class="mb-3"><label class="form-label" for="createPatientEmail">Email</label><input class="form-control" id="createPatientEmail" type="email" maxlength="150"></div>
+          <div><label class="form-label" for="createPatientPhone">Telefono</label><input class="form-control" id="createPatientPhone" type="text" maxlength="20"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Annulla</button><button class="btn btn-primary" type="submit">Salva paziente</button></div>
+      </form>
     </div></div>
   </div>
   </div>

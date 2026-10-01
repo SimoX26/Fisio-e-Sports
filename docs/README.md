@@ -11,6 +11,7 @@ la guida pertinente quando cambiano struttura, comportamento o procedure.
   fotografia del sistema precedente e rischi individuati.
 - [Inventario funzionale](architecture/02-inventario-funzionale.md): schermate,
   flussi e criteri di parità.
+- [Piano API](architecture/04-api-roadmap.md): copertura dei flussi legacy per i nuovi client.
 - [Stato dei lavori](migration-status.md): passi completati, aperti e verifiche.
 
 ## Operazioni

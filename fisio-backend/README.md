@@ -1,8 +1,8 @@
 # Backend Java
 
-Il processo HTTP autonomo espone `/health`, `/ready`, `/api/me` e
-`/api/calendar`. Le API sono limitate ai terapisti autenticati; il calendario
-mostra solo i loro appuntamenti. Il login può aggiornare un vecchio hash
+Il processo HTTP autonomo espone `/health`, `/ready`, `/api/me`,
+`/api/calendar`, `/api/waitlist` e `/api/patients`. Le API sono limitate ai terapisti
+autenticati; calendario, rubrica e lista d'attesa mostrano solo i loro dati. Il login può aggiornare un vecchio hash
 password, come nella webapp legacy.
 
 ## Configurazione
@@ -56,3 +56,24 @@ ascolta solo su loopback; accesso remoto, HTTPS e sessioni sono passi separati.
 
 L'API calendario accetta `GET` con autenticazione Basic e un intervallo massimo
 di 62 giorni. L'ID del terapista è ricavato dall'account, mai dal client.
+La lista d'attesa usa `GET /api/waitlist`, `POST /api/waitlist` con campi form
+`fullName` e `phone`, e `DELETE /api/waitlist/{id}`. Anche in scrittura il
+terapista viene ricavato dall'account. Dopo ogni modifica il desktop rilegge
+la lista dal backend.
+
+La rubrica usa `GET /api/patients` con `q` (ricerca), `sort` (nome o data
+creazione) e, facoltativamente, `treatedDate` oppure `treatedMonth`. L'API
+restituisce solo i pazienti del terapista autenticato.
+`GET /api/patients/{id}` legge il dettaglio anagrafico della scheda;
+un ID appartenente a un altro terapista restituisce 404.
+`GET /api/patients/{id}/anamnesis` restituisce l'ultima anamnesi e le
+condizioni della scheda in sola lettura; se manca l'anamnesi restituisce `{}`.
+`POST /api/patients` accetta campi form `fullName`, `email` e `phone` e
+restituisce HTTP 201 con l'ID della scheda creata. Il proprietario è ricavato
+dall'autenticazione.
+`PUT /api/patients/{id}` aggiorna anagrafica e anamnesi, oppure unisce il
+contatto quando è presente `mergeTargetId`. I candidati all'unione arrivano da
+`GET /api/patients/{id}/merge-candidates?fullName=...`.
+`DELETE /api/patients/{id}` elimina la scheda; con appuntamenti collegati richiede
+`force=1` dopo la conferma mostrata dal client. Tutte le operazioni verificano
+il terapista proprietario tramite i servizi condivisi.
