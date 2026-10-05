@@ -11,8 +11,12 @@ Prima interrompere l'eventuale vecchio backend, avviare
 secondo terminale dalla radice del repository:
 
 ```bash
-mvn -pl fisio-desktop javafx:run
+./run-desktop-locale.sh
 ```
+
+Lo script verifica `/ready` e apre la finestra JavaFX; il backend resta nel
+primo terminale. Per chiudere il desktop usare la finestra o `Ctrl+C` nel
+secondo terminale.
 
 Accedere con un terapista attivo. Dopo il login si apre la home con il saluto,
 gli appuntamenti e i pazienti di oggi e l'agenda, letti dal backend. Dal menu

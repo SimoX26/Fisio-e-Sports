@@ -35,6 +35,8 @@ poi copia `fisio-web-legacy/target/Fisio-e-Sports.war` in Tomcat.
 Il backend autonomo si avvia seguendo [la guida del modulo](../../fisio-backend/README.md).
 Per provarlo localmente, configurare `fisio-backend/config.properties`, usare
 `./run-backend-locale.sh` e verificare che `/ready` risponda `ok` prima del login desktop.
+In un secondo terminale `./run-desktop-locale.sh` verifica il backend e apre
+il desktop JavaFX.
 `/health` controlla il processo; `/ready` controlla la connessione MySQL.
 La configurazione DB del backend usa variabili d'ambiente separate dalla
 configurazione della webapp.
