@@ -74,6 +74,20 @@
   flex-wrap: wrap;
 }
 
+#eventModal .modal-content {
+  background: #ffffff;
+  backface-visibility: hidden;
+}
+
+#eventModal.fade .modal-dialog {
+  transform: translate3d(0, -50px, 0);
+  backface-visibility: hidden;
+}
+
+#eventModal.show .modal-dialog {
+  transform: translate3d(0, 0, 0);
+}
+
 .desktop-patient-row { cursor: pointer; }
 .desktop-patient-row:focus-visible {
   outline: 2px solid var(--brand-primary);

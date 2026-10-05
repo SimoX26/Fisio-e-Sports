@@ -44,6 +44,9 @@ Per un appuntamento che termina più tardi oggi o in un giorno futuro il
 pulsante non deve comparire; dopo l'orario di fine può comparire.
 Nel calendario la scheda di ogni appuntamento completato deve diventare verde;
 nel dettaglio i pulsanti devono restare dentro il riquadro anche con finestra stretta.
+Nel desktop il dettaglio appuntamento mantiene l'animazione di apertura.
+Provare lo scorrimento con rotellina o touchpad nella
+pagina, nel calendario e nei moduli lunghi.
 Confrontare anche uno storico già presente, poi ripetere con un secondo
 terapista: la cronologia del primo non deve essere accessibile. Eventi generici
 e tutto il giorno non devono mostrare il pulsante. I promemoria restano disabilitati.
