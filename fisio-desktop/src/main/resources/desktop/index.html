@@ -59,7 +59,7 @@
       <div class="glass-card section-card home-kpi-chip"><span class="home-kpi-chip__label">Pazienti oggi</span><span class="home-kpi-chip__value" id="patientsToday">–</span></div>
     </div>
     <div class="row g-3 align-items-start mb-4">
-      <div class="col-12 col-xl-7"><div class="glass-card section-card home-agenda-card"><div class="home-section-head"><h3 class="home-section-title mb-0">Agenda di oggi</h3><button class="home-link btn btn-link" id="openDayButton" type="button">Apri vista giornaliera</button></div><div class="home-agenda-list" id="todayAgenda"></div></div></div>
+      <div class="col-12 col-xl-7"><div class="glass-card section-card home-agenda-card"><div class="home-section-head"><h3 class="home-section-title mb-0">Agenda di oggi</h3><div><button class="home-link btn btn-link" id="openHomeReminderBtn" type="button">Promemoria</button><button class="home-link btn btn-link" id="openDayButton" type="button">Apri vista giornaliera</button></div></div><div class="home-agenda-list" id="todayAgenda"></div></div></div>
       <div class="col-12 col-xl-5"><div class="glass-card section-card home-waitlist-card">
         <div class="home-section-head"><h3 class="home-section-title mb-0">Lista di attesa</h3><span class="home-section-meta" id="waitlistCount"></span></div>
         <form class="home-waitlist-form" id="waitlistForm">
@@ -162,12 +162,27 @@
       <div class="modal-body"><p><strong>Note:</strong></p><p id="eventModalNotes" class="text-muted"></p></div>
       <div class="modal-footer">
         <span id="eventModalStateHint" class="me-auto text-muted small d-none"></span>
-        <button class="btn btn-outline-primary" id="sendSingleReminderBtn" type="button" disabled title="Disponibile dopo l'API promemoria">Invia promemoria</button>
+        <button class="btn btn-outline-primary" id="sendSingleReminderBtn" type="button">Anteprima promemoria</button>
         <button class="btn btn-outline-secondary" id="openPatientDetailsBtn" type="button">Dettagli paziente</button>
         <button class="btn btn-success" id="completeAppointmentBtn" type="button">Completa trattamento</button>
         <button class="btn btn-outline-primary" id="editAppointmentBtn" type="button">Modifica</button>
         <button class="btn btn-outline-danger btn-icon-only btn-trash-icon" id="deleteAppointmentBtn" type="button" title="Elimina appuntamento" aria-label="Elimina appuntamento"></button>
       </div>
+    </div></div>
+  </div>
+  <div class="modal" id="reminderPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content glass-card">
+      <div class="modal-header"><h5 class="modal-title">Anteprima promemoria</h5><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
+      <div class="modal-body">
+        <div class="alert alert-danger d-none" id="reminderPreviewError" role="alert"></div>
+        <div class="alert alert-info d-none" id="reminderSendResult" role="status"></div>
+        <div class="mb-3"><label class="form-label" for="reminderPreviewDate">Giorno</label><input class="form-control" id="reminderPreviewDate" type="date"></div>
+        <div class="mb-3"><label class="form-label" for="reminderPreviewTemplate">Modello salvato</label><textarea class="form-control" id="reminderPreviewTemplate" rows="3" readonly></textarea></div>
+        <h6>Appuntamenti</h6><div id="reminderPreviewAppointments"></div>
+        <div class="home-empty-state d-none" id="reminderPreviewEmpty">Nessun appuntamento programmato con paziente per questo giorno.</div>
+        <h6 class="mt-3">Anteprima messaggi</h6><div id="reminderPreviewMessages"></div>
+      </div>
+      <div class="modal-footer"><span class="text-muted small me-auto" id="reminderSendHint"></span><button class="btn btn-primary" id="sendRemindersBtn" type="button" disabled>Invia selezionati</button><button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Chiudi</button></div>
     </div></div>
   </div>
   <div class="modal" id="completeTreatmentModal" tabindex="-1" aria-hidden="true">

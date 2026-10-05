@@ -53,7 +53,15 @@ usano lo scorrimento nativo. Provare lo scorrimento nella pagina, nel calendario
 e nei moduli lunghi.
 Confrontare anche uno storico già presente, poi ripetere con un secondo
 terapista: la cronologia del primo non deve essere accessibile. Eventi generici
-e tutto il giorno non devono mostrare il pulsante. I promemoria restano disabilitati.
+e tutto il giorno non devono mostrare il pulsante di anteprima.
+Da **Promemoria** nella home o **Anteprima promemoria** nel dettaglio di un
+appuntamento programmato, confrontare modello e messaggi con la webapp legacy.
+Cambiare giorno e selezione degli appuntamenti; con un secondo terapista non
+devono comparire i pazienti del primo. Con gateway Baileys configurato nel
+backend, selezionare un proprio appuntamento di prova, premere **Invia
+selezionati** e confrontare il conteggio con il messaggio ricevuto. Senza
+configurazione il pulsante resta disabilitato. Se l'esito è incerto, controllare
+il gateway prima di ripetere l'invio.
 Chiudere e riaprire
 il desktop: con backend attivo deve entrare automaticamente nello stesso account.
 Premere **Logout** e riaprire: deve comparire il login. Ripetere con un secondo

@@ -7,3 +7,8 @@ db.password=password_database
 db.pool.maxSize=5
 db.pool.minIdle=1
 db.pool.connectionTimeoutMs=3000
+# Abilitare solo quando il gateway Baileys e' disponibile sul server.
+whatsapp.baileys.enabled=false
+whatsapp.baileys.therapistId=
+whatsapp.baileys.gatewayBaseUrl=http://127.0.0.1:3001
+whatsapp.baileys.gatewayTimeoutMs=4000

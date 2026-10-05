@@ -8,13 +8,13 @@ comportamento descritti nell'[inventario](02-inventario-funzionale.md).
 | Area | Stato | Prossimo criterio di parità |
 |---|---|---|
 | Accesso terapista | `/api/me` con Basic o Bearer; token di 30 giorni emesso e revocato da `/api/auth/remember` per il desktop locale | HTTPS, indirizzo server configurabile e autenticazione remota |
-| Calendario | Lettura, dettaglio, creazione, modifica, completamento e cestino con ripristino/eliminazione | Promemoria |
+| Calendario | Lettura, dettaglio, creazione, modifica, completamento, cestino, anteprima e invio promemoria | Modifica modello e gestione gateway |
 | Home e lista d'attesa | Lista d'attesa GET/POST/DELETE disponibile | Riepilogo completo home, conversione in appuntamento e promemoria |
 | Pazienti e anamnesi | Rubrica e scheda legacy con creazione, modifica, ultima anamnesi, condizioni, unione ed eliminazione | Versioni storiche dell'anamnesi |
 | Trattamenti | Storico generale e per paziente; completamento appuntamento con piano e seduta | Gestione autonoma dei piani e delle sedute |
 | Statistiche | Da fare | KPI personali/globali con le formule attuali |
 | Ricerca | Da fare | Risultati e navigazione al paziente o appuntamento |
-| Promemoria e impostazioni | Da fare | Modelli, anteprima, invio, stato e QR WhatsApp |
+| Promemoria e impostazioni | Anteprima e invio con modello salvato, solo per appuntamenti selezionati | Salvataggio modelli, stato e QR WhatsApp |
 | Amministrazione | Da fare | Richieste di accesso e revisione per ADMIN |
 
 Il primo collaudo della lista d'attesa richiede due terapisti: ciascuno vede e
@@ -63,3 +63,14 @@ applica la scadenza legacy di 30 giorni. `PUT /api/calendar/trash/{id}` ripristi
 se la fascia è libera (409 in caso di conflitto); `DELETE` sul singolo ID elimina
 definitivamente, mentre `DELETE /api/calendar/trash` svuota il cestino. Gli ID
 non appartenenti al terapista restituiscono 404.
+
+`GET /api/reminders/preview?date=YYYY-MM-DD` legge il modello salvato del
+terapista (o quello predefinito) e restituisce destinatari e messaggi già
+composti per gli appuntamenti programmati con paziente. Il filtro è condiviso
+con la webapp legacy. Indica anche se WhatsApp è configurato per il terapista.
+`POST /api/reminders/send` riceve `date` e uno o più `appointmentId` come form:
+valida tutti gli ID prima di inviare, usa il modello salvato e restituisce i
+conteggi `processedCount`, `sentCount`, `skippedCount` e `failedCount`. L'identità
+del terapista deriva dall'autenticazione; se WhatsApp è disabilitato risponde
+428. Un esito HTTP incerto dopo l'invio richiede un controllo manuale prima
+di ripetere la richiesta, per evitare duplicati.

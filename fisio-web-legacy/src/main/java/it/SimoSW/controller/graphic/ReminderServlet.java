@@ -146,12 +146,10 @@ public class ReminderServlet extends HttpServlet {
     private List<AppointmentOption> loadAppointmentOptions(long therapistId, LocalDate date) {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.plusDays(1).atStartOfDay();
-        List<Appointment> appointments = calendarController.getAppointmentsForTherapistInPeriod(therapistId, start, end);
+        List<Appointment> appointments = calendarController.getReminderCandidatesForTherapistInPeriod(therapistId, start, end);
         List<AppointmentOption> options = new ArrayList<>();
 
         appointments.stream()
-                .filter(appointment -> appointment.getState() == AppointmentState.SCHEDULED)
-                .filter(appointment -> appointment.getPatientId() != null)
                 .sorted(Comparator.comparing(Appointment::getStart, Comparator.nullsLast(LocalDateTime::compareTo)))
                 .forEach(appointment -> {
                     String patientName = calendarController.resolvePatientFullName(appointment.getPatientId(), therapistId);

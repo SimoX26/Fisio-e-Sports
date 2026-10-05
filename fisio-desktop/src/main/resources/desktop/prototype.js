@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const eventModal = new bootstrap.Modal(document.getElementById("eventModal"));
   const completeTreatmentModal = new bootstrap.Modal(document.getElementById("completeTreatmentModal"));
   const trashConfirmModal = new bootstrap.Modal(document.getElementById("trashConfirmModal"));
+  const reminderPreviewModal = new bootstrap.Modal(document.getElementById("reminderPreviewModal"));
   const confirmDeleteAppointmentModal = new bootstrap.Modal(document.getElementById("confirmDeleteAppointmentModal"));
   const createPatientModal = new bootstrap.Modal(document.getElementById("createPatientModal"));
   const deletePatientModal = new bootstrap.Modal(document.getElementById("confirmDeletePatientModal"));
@@ -31,6 +32,123 @@ document.addEventListener("DOMContentLoaded", () => {
   let treatmentsRequest = 0;
   let trashRequest = 0;
   let trashConfirmation = null;
+  let reminderPreviewRequest = 0;
+  let reminderEntries = [];
+  let preselectedReminderId = null;
+  let reminderSendEnabled = false;
+  let reminderSending = false;
+
+  function renderReminderPreview() {
+    const appointments = document.getElementById("reminderPreviewAppointments");
+    const messages = document.getElementById("reminderPreviewMessages");
+    appointments.replaceChildren();
+    messages.replaceChildren();
+    document.getElementById("reminderPreviewEmpty").classList.toggle("d-none", reminderEntries.length !== 0);
+    for (const entry of reminderEntries) {
+      const label = document.createElement("label");
+      label.className = "d-flex align-items-center gap-2 mb-2";
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "form-check-input";
+      checkbox.checked = preselectedReminderId == null || String(entry.appointmentId) === String(preselectedReminderId);
+      checkbox.addEventListener("change", renderMessages);
+      const text = document.createElement("span");
+      text.textContent = `${entry.timeRange} • ${entry.patientName} • ${entry.patientPhone || "numero mancante"}`;
+      label.append(checkbox, text);
+      appointments.appendChild(label);
+      entry.checkbox = checkbox;
+    }
+    renderMessages();
+  }
+
+  function renderMessages() {
+    const messages = document.getElementById("reminderPreviewMessages");
+    messages.replaceChildren();
+    for (const entry of reminderEntries.filter(item => item.checkbox?.checked)) {
+      const card = document.createElement("div");
+      card.className = "border rounded p-3 mb-2";
+      const name = document.createElement("strong");
+      name.textContent = `${entry.patientName} • ${entry.timeRange}`;
+      const body = document.createElement("div");
+      body.className = "mt-2";
+      body.textContent = entry.message;
+      card.append(name, body);
+      messages.appendChild(card);
+    }
+    document.getElementById("sendRemindersBtn").disabled = reminderSending || !reminderSendEnabled
+      || !reminderEntries.some(item => item.checkbox?.checked);
+  }
+
+  async function loadReminderPreview() {
+    const request = ++reminderPreviewRequest;
+    const currentSession = sessionEpoch;
+    const date = document.getElementById("reminderPreviewDate").value;
+    const error = document.getElementById("reminderPreviewError");
+    error.classList.add("d-none");
+    document.getElementById("reminderSendResult").classList.add("d-none");
+    reminderSendEnabled = false;
+    reminderEntries = [];
+    renderReminderPreview();
+    if (!date) return;
+    try {
+      const data = await getJson(`/api/reminders/preview?date=${encodeURIComponent(date)}`);
+      if (request !== reminderPreviewRequest || currentSession !== sessionEpoch) return;
+      reminderEntries = data.recipients;
+      reminderSendEnabled = data.sendEnabled;
+      document.getElementById("reminderSendHint").textContent = data.sendEnabled ? ""
+        : "WhatsApp non configurato per questo account nel backend.";
+      document.getElementById("reminderPreviewTemplate").value = data.template;
+      renderReminderPreview();
+    } catch (failure) {
+      if (request !== reminderPreviewRequest || currentSession !== sessionEpoch) return;
+      error.textContent = "Impossibile caricare l'anteprima dal backend.";
+      error.classList.remove("d-none");
+    }
+  }
+
+  async function sendSelectedReminders() {
+    if (reminderSending || !reminderSendEnabled) return;
+    const selected = reminderEntries.filter(item => item.checkbox?.checked);
+    if (!selected.length) return;
+    const date = document.getElementById("reminderPreviewDate").value;
+    const currentSession = sessionEpoch;
+    const error = document.getElementById("reminderPreviewError");
+    const result = document.getElementById("reminderSendResult");
+    error.classList.add("d-none");
+    result.classList.add("d-none");
+    reminderSending = true;
+    renderMessages();
+    try {
+      const body = new URLSearchParams({ date });
+      for (const entry of selected) body.append("appointmentId", entry.appointmentId);
+      const response = await apiRequest("/api/reminders/send", {
+        method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body
+      });
+      const data = await response.json();
+      if (currentSession !== sessionEpoch) return;
+      result.textContent = `Promemoria elaborati: ${data.processedCount}. Inviati: ${data.sentCount}. Senza numero: ${data.skippedCount}. Non riusciti: ${data.failedCount}.`;
+      result.classList.remove("d-none", "alert-info", "alert-danger");
+      result.classList.add(data.failedCount ? "alert-danger" : "alert-info");
+      selected.forEach(entry => { if (entry.checkbox) entry.checkbox.checked = false; });
+    } catch (failure) {
+      if (currentSession !== sessionEpoch) return;
+      error.textContent = failure.status === 428 ? "WhatsApp non configurato nel backend."
+        : failure.status === 404 ? "Gli appuntamenti selezionati sono cambiati. Ricarica l'anteprima."
+          : "Invio non riuscito o esito sconosciuto. Verifica lo stato del gateway prima di riprovare.";
+      error.classList.remove("d-none");
+    } finally {
+      reminderSending = false;
+      renderMessages();
+    }
+  }
+
+  function openReminderPreview(date, appointmentId = null) {
+    preselectedReminderId = appointmentId;
+    document.getElementById("reminderPreviewDate").value = date;
+    document.getElementById("reminderPreviewTemplate").value = "";
+    reminderPreviewModal.show();
+    loadReminderPreview();
+  }
 
   function localDateTime(date) {
     const pad = number => String(number).padStart(2, "0");
@@ -960,6 +1078,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("homeNav").addEventListener("click", showHome);
   document.getElementById("calendarNav").addEventListener("click", () => showCalendar());
+  document.getElementById("openHomeReminderBtn").addEventListener("click", () => openReminderPreview(appointmentDate(new Date())));
+  document.getElementById("reminderPreviewDate").addEventListener("change", () => {
+    preselectedReminderId = null;
+    loadReminderPreview();
+  });
+  document.getElementById("sendRemindersBtn").addEventListener("click", sendSelectedReminders);
+  document.getElementById("sendSingleReminderBtn").addEventListener("click", () => {
+    if (!selectedAppointment?.start) return;
+    const date = appointmentDate(selectedAppointment.start);
+    const id = selectedAppointment.id;
+    document.getElementById("eventModal").addEventListener("hidden.bs.modal",
+      () => openReminderPreview(date, id), { once: true });
+    eventModal.hide();
+  });
   document.getElementById("openTrashBtn").addEventListener("click", showTrash);
   document.getElementById("backToCalendarBtn").addEventListener("click", () => showCalendar());
   document.getElementById("trashSort").addEventListener("change", () => loadTrash());
@@ -1309,11 +1441,14 @@ document.addEventListener("DOMContentLoaded", () => {
     mergeCandidatesRequest++;
     treatmentsRequest++;
     trashRequest++;
+    reminderPreviewRequest++;
     patientModal.hide();
     appointmentModal.hide();
     eventModal.hide();
     completeTreatmentModal.hide();
     trashConfirmModal.hide();
+    reminderPreviewModal.hide();
+    reminderEntries = [];
     trashConfirmation = null;
     confirmDeleteAppointmentModal.hide();
     selectedAppointment = null;

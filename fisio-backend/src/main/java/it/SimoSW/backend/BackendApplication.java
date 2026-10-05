@@ -27,6 +27,7 @@ import it.SimoSW.model.dao.database.DatabaseUserDAO;
 import it.SimoSW.model.dao.database.DatabaseWaitlistEntryDAO;
 import it.SimoSW.model.dao.database.DatabaseTreatmentPlanDAO;
 import it.SimoSW.model.dao.database.DatabaseTreatmentSessionDAO;
+import it.SimoSW.model.dao.database.DatabaseReminderTemplateDAO;
 import it.SimoSW.util.AppProperties;
 
 public final class BackendApplication {
@@ -80,6 +81,11 @@ public final class BackendApplication {
         CalendarApiHandler calendarApi = new CalendarApiHandler(authenticator, calendar);
         server.createContext("/api/calendar", calendarApi);
         server.createContext("/api/calendar/trash", new CalendarTrashApiHandler(authenticator, calendar));
+        DatabaseReminderTemplateDAO reminderTemplates = new DatabaseReminderTemplateDAO();
+        server.createContext("/api/reminders/preview", new ReminderPreviewApiHandler(
+                authenticator, calendar, reminderTemplates));
+        server.createContext("/api/reminders/send", new ReminderSendApiHandler(
+                authenticator, calendar, reminderTemplates));
         server.createContext("/api/treatments", new TreatmentsApiHandler(authenticator, calendar, treatments, patients));
         server.createContext("/api/me", calendarApi);
         server.createContext("/api/auth/remember", new RememberApiHandler(authenticator));

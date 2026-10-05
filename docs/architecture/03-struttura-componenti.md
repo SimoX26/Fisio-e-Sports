@@ -8,7 +8,7 @@
 | `fisio-application` | Casi d'uso, contratti DAO e hashing password | `fisio-domain`, jBCrypt |
 | `fisio-persistence-mysql` | DAO JDBC, pool e lettura configurazione | `fisio-application`, MySQL Connector/J, HikariCP |
 | `fisio-web-legacy` | Servlet, JSP, bootstrap, KPI e integrazione WhatsApp | `fisio-persistence-mysql` e dipendenze web |
-| `fisio-backend` | Processo HTTP autonomo, salute DB e API per identità, calendario, lista d'attesa e rubrica | `fisio-persistence-mysql` |
+| `fisio-backend` | Processo HTTP autonomo, salute DB e API per identità, calendario, trattamenti, promemoria e rubrica | `fisio-persistence-mysql`, Jackson per la risposta del gateway |
 | `fisio-desktop` | Prototipo di interfaccia HTML/JavaScript locale in JavaFX WebView | JavaFX Web |
 
 Il `pom.xml` alla radice è l'aggregatore Maven. La webapp produce ancora
@@ -36,11 +36,9 @@ flowchart LR
   Backend[Backend autonomo] --> Application
   Backend --> Persistence
   Web --> Baileys[Gateway WhatsApp]
+  Backend --> Baileys
 ```
 
-Il prototipo desktop parte dal login; mostra una home parziale e il calendario
-con dati letti dal backend locale. Android usa ancora la webapp tramite WebView. Il
-backend offre l'identità del terapista, il calendario e la rubrica in lettura e
-la lista d'attesa, senza sessioni persistenti o altre API cliniche. Le UI desktop e
-Android dovranno usare API autenticate, senza
-connessione diretta a MySQL.
+Il desktop parte dal login e usa le API del backend per calendario, pazienti,
+trattamenti, anteprima e invio promemoria. Android usa ancora la webapp tramite
+WebView. I client non accedono direttamente a MySQL.

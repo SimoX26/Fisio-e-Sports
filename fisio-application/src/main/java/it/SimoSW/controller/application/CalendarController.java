@@ -47,6 +47,13 @@ public class CalendarController {
         return appointmentDAO.findByTherapistInPeriod(therapistId, start, end);
     }
 
+    public List<Appointment> getReminderCandidatesForTherapistInPeriod(long therapistId, LocalDateTime start, LocalDateTime end) {
+        return getAppointmentsForTherapistInPeriod(therapistId, start, end).stream()
+                .filter(appointment -> appointment.getState() == AppointmentState.SCHEDULED)
+                .filter(appointment -> appointment.getPatientId() != null)
+                .toList();
+    }
+
     public Appointment getAppointmentForTherapist(long appointmentId, long therapistId) {
         checkTherapistUserExists(therapistId);
         Appointment appointment = appointmentDAO.findById(appointmentId)

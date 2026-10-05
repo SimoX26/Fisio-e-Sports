@@ -98,6 +98,15 @@ Il cestino del calendario usa `GET /api/calendar/trash`,
 `PUT /api/calendar/trash/{id}` per ripristinare e `DELETE` sul singolo ID o
 sull'intero cestino. Il ripristino controlla i conflitti; la lettura applica
 la scadenza automatica di 30 giorni, come nel legacy.
+`GET /api/reminders/preview?date=YYYY-MM-DD` legge il modello salvato e
+compone l'anteprima dei promemoria degli appuntamenti programmati del
+terapista. `POST /api/reminders/send` riceve `date` e uno o più `appointmentId`
+come form e invia soltanto gli appuntamenti selezionati e ancora accessibili.
+Per abilitarlo, configurare `whatsapp.baileys.enabled=true` nel file privato
+del backend; `whatsapp.baileys.therapistId` limita opzionalmente l'account.
+`gatewayBaseUrl` deve puntare al servizio Baileys raggiungibile dal backend.
+Il backend non avvia il gateway: deve già essere attivo. In caso di risposta
+incerta, verificare sul gateway prima di riprovare per evitare doppioni.
 La lista d'attesa usa `GET /api/waitlist`, `POST /api/waitlist` con campi form
 `fullName` e `phone`, e `DELETE /api/waitlist/{id}`. Anche in scrittura il
 terapista viene ricavato dall'account. Dopo ogni modifica il desktop rilegge

@@ -563,18 +563,12 @@ public class CalendarServlet extends HttpServlet {
     private List<Map<String, Object>> buildReminderRecipients(long therapistId, LocalDate targetDate, String template, Set<Long> appointmentIds) {
         LocalDateTime start = targetDate.atStartOfDay();
         LocalDateTime end = targetDate.plusDays(1).atStartOfDay();
-        List<Appointment> appointments = calendarController.getAppointmentsForTherapistInPeriod(therapistId, start, end);
+        List<Appointment> appointments = calendarController.getReminderCandidatesForTherapistInPeriod(therapistId, start, end);
         List<Map<String, Object>> recipients = new ArrayList<>();
         String dayLabel = formatReminderDayLabel(targetDate);
 
         for (Appointment appointment : appointments) {
             if (appointmentIds != null && !appointmentIds.isEmpty() && !appointmentIds.contains(appointment.getId())) {
-                continue;
-            }
-            if (appointment.getState() != AppointmentState.SCHEDULED) {
-                continue;
-            }
-            if (appointment.getPatientId() == null) {
                 continue;
             }
             String patientName = calendarController.resolvePatientFullName(appointment.getPatientId(), therapistId);
