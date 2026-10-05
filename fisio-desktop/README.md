@@ -37,7 +37,16 @@ e provare una fascia occupata. Provare **Elimina** su un appuntamento di test:
 la conferma deve precedere la cancellazione e l'evento deve sparire dal
 calendario; il cestino resta un passo successivo. Verificare che un appuntamento
 completato non mostri Modifica o Elimina, mentre un evento generico completato
-può essere eliminato. Completamento e promemoria sono ancora disabilitati.
+può essere eliminato. Da un appuntamento pianificato con paziente, provare
+**Completa trattamento** con un piano da una seduta e verificare che appaia
+nella cronologia del paziente, nello storico generale e nella webapp legacy.
+Per un appuntamento che termina più tardi oggi o in un giorno futuro il
+pulsante non deve comparire; dopo l'orario di fine può comparire.
+Nel calendario la scheda di ogni appuntamento completato deve diventare verde;
+nel dettaglio i pulsanti devono restare dentro il riquadro anche con finestra stretta.
+Confrontare anche uno storico già presente, poi ripetere con un secondo
+terapista: la cronologia del primo non deve essere accessibile. Eventi generici
+e tutto il giorno non devono mostrare il pulsante. I promemoria restano disabilitati.
 Chiudere e riaprire
 il desktop: con backend attivo deve entrare automaticamente nello stesso account.
 Premere **Logout** e riaprire: deve comparire il login. Ripetere con un secondo
@@ -76,8 +85,8 @@ il desktop segnala che l'accesso automatico non è attivo e la sessione corrente
 resta utilizzabile. Logout elimina il token locale e ne chiede la revoca al
 backend; se la revoca fallisce viene mostrato un avviso. Questa prova usa il backend
 locale su `127.0.0.1:8081`. La home contiene per ora i dati coperti
-dalle API calendario e lista d'attesa; ricerca globale, altre scritture e altre
-schermate richiedono i prossimi incrementi. Le relative voci sono solo etichette.
+dalle API calendario e lista d'attesa; ricerca globale, statistiche e
+impostazioni richiedono i prossimi incrementi. Le relative voci sono solo etichette.
 
 Le licenze degli asset incorporati sono in `src/main/resources/desktop/vendor/`.
 

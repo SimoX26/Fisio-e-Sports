@@ -17,6 +17,7 @@ import it.SimoSW.controller.application.AuthenticationController;
 import it.SimoSW.controller.application.AddressBookController;
 import it.SimoSW.controller.application.CalendarController;
 import it.SimoSW.controller.application.WaitlistController;
+import it.SimoSW.controller.application.TreatmentController;
 import it.SimoSW.model.dao.database.DatabaseAppointmentDAO;
 import it.SimoSW.model.dao.database.DatabasePatientDAO;
 import it.SimoSW.model.dao.database.DatabasePatientAnamnesisDAO;
@@ -24,6 +25,8 @@ import it.SimoSW.model.dao.database.DatabasePatientConditionDAO;
 import it.SimoSW.model.dao.database.DatabaseRememberMeTokenDAO;
 import it.SimoSW.model.dao.database.DatabaseUserDAO;
 import it.SimoSW.model.dao.database.DatabaseWaitlistEntryDAO;
+import it.SimoSW.model.dao.database.DatabaseTreatmentPlanDAO;
+import it.SimoSW.model.dao.database.DatabaseTreatmentSessionDAO;
 import it.SimoSW.util.AppProperties;
 
 public final class BackendApplication {
@@ -69,10 +72,14 @@ public final class BackendApplication {
         DatabaseUserDAO users = new DatabaseUserDAO();
         TherapistAuthenticator authenticator = new TherapistAuthenticator(
                 new AuthenticationController(users, new DatabaseRememberMeTokenDAO()), users);
-        CalendarApiHandler calendarApi = new CalendarApiHandler(
-                authenticator,
-                new CalendarController(new DatabaseAppointmentDAO(), new DatabasePatientDAO(), users));
+        DatabaseAppointmentDAO appointments = new DatabaseAppointmentDAO();
+        DatabasePatientDAO patients = new DatabasePatientDAO();
+        CalendarController calendar = new CalendarController(appointments, patients, users);
+        TreatmentController treatments = new TreatmentController(new DatabaseTreatmentPlanDAO(),
+                new DatabaseTreatmentSessionDAO(), patients, appointments);
+        CalendarApiHandler calendarApi = new CalendarApiHandler(authenticator, calendar);
         server.createContext("/api/calendar", calendarApi);
+        server.createContext("/api/treatments", new TreatmentsApiHandler(authenticator, calendar, treatments, patients));
         server.createContext("/api/me", calendarApi);
         server.createContext("/api/auth/remember", new RememberApiHandler(authenticator));
         server.createContext("/api/waitlist", new WaitlistApiHandler(

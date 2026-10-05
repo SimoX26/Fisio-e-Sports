@@ -8,10 +8,10 @@ comportamento descritti nell'[inventario](02-inventario-funzionale.md).
 | Area | Stato | Prossimo criterio di parità |
 |---|---|---|
 | Accesso terapista | `/api/me` con Basic o Bearer; token di 30 giorni emesso e revocato da `/api/auth/remember` per il desktop locale | HTTPS, indirizzo server configurabile e autenticazione remota |
-| Calendario | Lettura, dettaglio, creazione, modifica e cancellazione logica desktop con controllo conflitti | Completamento, cestino e promemoria |
+| Calendario | Lettura, dettaglio, creazione, modifica, cancellazione logica e completamento con trattamento | Cestino e promemoria |
 | Home e lista d'attesa | Lista d'attesa GET/POST/DELETE disponibile | Riepilogo completo home, conversione in appuntamento e promemoria |
-| Pazienti e anamnesi | Rubrica e scheda legacy con creazione, modifica, ultima anamnesi, condizioni, unione ed eliminazione | Versioni storiche dell'anamnesi e cronologia trattamenti |
-| Trattamenti | Da fare | Storico, piani e sedute effettivamente usati dalla UI |
+| Pazienti e anamnesi | Rubrica e scheda legacy con creazione, modifica, ultima anamnesi, condizioni, unione ed eliminazione | Versioni storiche dell'anamnesi |
+| Trattamenti | Storico generale e per paziente; completamento appuntamento con piano e seduta | Gestione autonoma dei piani e delle sedute |
 | Statistiche | Da fare | KPI personali/globali con le formule attuali |
 | Ricerca | Da fare | Risultati e navigazione al paziente o appuntamento |
 | Promemoria e impostazioni | Da fare | Modelli, anteprima, invio, stato e QR WhatsApp |
@@ -47,3 +47,13 @@ l'hash, controlla ruolo e scadenza su ogni richiesta Bearer, e lo revoca con
 `DELETE /api/auth/remember`. Il desktop salva il token nell'archivio protetto
 del sistema operativo e lo elimina al Logout. Prima di usare il desktop da
 altri PC servono HTTPS e la configurazione dell'indirizzo server.
+
+`GET /api/treatments` restituisce lo storico del terapista autenticato; con
+`patientId` restituisce tutte le sedute del paziente e risponde 404 se la
+scheda appartiene a un altro terapista. `POST /api/treatments/appointments/{id}`
+completa un appuntamento pianificato e crea piano e seduta con gli stessi campi
+del modulo legacy. Il completamento è consentito solo dopo l'orario di fine
+dell'appuntamento, anche nel client legacy. Rifiuta eventi generici, tutto il giorno e appuntamenti
+non accessibili. Appuntamento, piano e seduta vengono salvati dai servizi
+legacy con connessioni distinte: in caso di errore del database durante il
+salvataggio, controllare lo stato prima di ripetere l'operazione.

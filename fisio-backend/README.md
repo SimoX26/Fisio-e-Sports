@@ -99,6 +99,13 @@ La lista d'attesa usa `GET /api/waitlist`, `POST /api/waitlist` con campi form
 terapista viene ricavato dall'account. Dopo ogni modifica il desktop rilegge
 la lista dal backend.
 
+`GET /api/treatments` legge lo storico del terapista; `patientId` limita la
+cronologia al paziente proprietario. `POST /api/treatments/appointments/{id}`
+completa un appuntamento pianificato e registra piano e seduta usando i campi
+form del legacy (`planTitle`, `totalSessionsPlanned`, `goals`, `frequencyPerWeek`,
+`expectedEndDate`, `painScorePre`, `painScorePost`, `sessionOutcome`,
+`homeExercises`, `notes`). L'ID del terapista deriva dall'autenticazione.
+
 La rubrica usa `GET /api/patients` con `q` (ricerca), `sort` (nome o data
 creazione) e, facoltativamente, `treatedDate` oppure `treatedMonth`. L'API
 restituisce solo i pazienti del terapista autenticato.

@@ -903,7 +903,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (completeAppointmentBtn) {
-                completeAppointmentBtn.classList.toggle('d-none', isCompleted || isAllDay || isNonTreatmentEvent);
+                completeAppointmentBtn.classList.toggle('d-none', state !== 'SCHEDULED' || isAllDay
+                    || isNonTreatmentEvent || !eventEnd || eventEnd > new Date());
             }
             if (editAppointmentBtn) {
                 editAppointmentBtn.classList.toggle('d-none', isCompleted);
@@ -1062,7 +1063,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (completeAppointmentBtn) {
         completeAppointmentBtn.addEventListener('click', () => {
-            if (!selectedEvent) {
+            if (!selectedEvent || !selectedEvent.end || selectedEvent.end > new Date()) {
                 return;
             }
 

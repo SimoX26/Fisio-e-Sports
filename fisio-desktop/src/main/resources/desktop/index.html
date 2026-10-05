@@ -40,7 +40,7 @@
           <li class="nav-item"><button class="nav-link active" id="homeNav" type="button">Home</button></li>
           <li class="nav-item"><button class="nav-link" id="calendarNav" type="button">Calendario</button></li>
           <li class="nav-item"><button class="nav-link" id="patientsNav" type="button">Rubrica</button></li>
-          <li class="nav-item"><span class="nav-link">Storico Trattamenti</span></li>
+          <li class="nav-item"><button class="nav-link" id="treatmentsNav" type="button">Storico Trattamenti</button></li>
           <li class="nav-item"><span class="nav-link">Dati e Statistiche</span></li>
           <li class="nav-item d-none d-lg-block mx-2"><span class="nav-link disabled nav-separator">|</span></li>
           <li class="nav-item"><span class="nav-link">Impostazioni</span></li>
@@ -90,6 +90,15 @@
     </div>
   </main>
 
+  <main class="container app-shell mt-4" id="treatmentsScreen" hidden>
+    <div class="page-header-row mb-4"><h2 class="page-title" id="treatmentsTitle">Storico trattamenti</h2></div>
+    <div class="glass-card section-card p-4">
+      <div class="alert alert-danger d-none" id="treatmentsError" role="alert"></div>
+      <div class="home-empty-state d-none" id="treatmentsEmpty">Nessun trattamento registrato.</div>
+      <div class="table-responsive" id="treatmentsTableWrap"><table class="table table-borderless align-middle mb-0"><thead><tr><th>Data</th><th>Paziente</th><th>Piano terapeutico</th><th>Dolore pre/post</th><th>Esito</th><th>Stato</th></tr></thead><tbody id="treatmentsRows"></tbody></table></div>
+    </div>
+  </main>
+
   <div id="calendarScreen" hidden>
   <div class="container app-shell calendar-gcal-header-shell mt-4">
     <div class="page-header-row calendar-gcal-head mb-3">
@@ -133,10 +142,25 @@
         <span id="eventModalStateHint" class="me-auto text-muted small d-none"></span>
         <button class="btn btn-outline-primary" id="sendSingleReminderBtn" type="button" disabled title="Disponibile dopo l'API promemoria">Invia promemoria</button>
         <button class="btn btn-outline-secondary" id="openPatientDetailsBtn" type="button">Dettagli paziente</button>
-        <button class="btn btn-success" id="completeAppointmentBtn" type="button" disabled title="Disponibile dopo l'API trattamenti">Completa trattamento</button>
+        <button class="btn btn-success" id="completeAppointmentBtn" type="button">Completa trattamento</button>
         <button class="btn btn-outline-primary" id="editAppointmentBtn" type="button">Modifica</button>
         <button class="btn btn-outline-danger btn-icon-only btn-trash-icon" id="deleteAppointmentBtn" type="button" title="Elimina appuntamento" aria-label="Elimina appuntamento"></button>
       </div>
+    </div></div>
+  </div>
+  <div class="modal fade" id="completeTreatmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content glass-card">
+      <div class="modal-header"><h5 class="modal-title">Completa trattamento</h5><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
+      <form id="completeTreatmentForm"><div class="modal-body">
+        <div class="alert alert-danger d-none" id="completeTreatmentError" role="alert"></div>
+        <div class="mb-3"><label class="form-label" for="treatmentPlanTitle">Titolo piano terapeutico</label><input class="form-control" id="treatmentPlanTitle" maxlength="150" required></div>
+        <div class="row g-3"><div class="col-12 col-md-6"><label class="form-label" for="treatmentTotalSessionsPlanned">Sedute pianificate</label><input class="form-control" id="treatmentTotalSessionsPlanned" type="number" min="1" max="65535" value="1" required></div><div class="col-12 col-md-6"><label class="form-label" for="treatmentFrequencyPerWeek">Frequenza settimanale</label><input class="form-control" id="treatmentFrequencyPerWeek" type="number" min="1" max="255" placeholder="Es. 2"></div></div>
+        <div class="row g-3 mt-1"><div class="col-12 col-md-6"><label class="form-label" for="treatmentExpectedEndDate">Fine prevista piano</label><input class="form-control" id="treatmentExpectedEndDate" type="date"></div><div class="col-12 col-md-3"><label class="form-label" for="treatmentPainScorePre">Dolore pre (0-10)</label><input class="form-control" id="treatmentPainScorePre" type="number" min="0" max="10"></div><div class="col-12 col-md-3"><label class="form-label" for="treatmentPainScorePost">Dolore post (0-10)</label><input class="form-control" id="treatmentPainScorePost" type="number" min="0" max="10"></div></div>
+        <div class="mt-3"><label class="form-label" for="treatmentGoals">Obiettivi trattamento</label><textarea class="form-control" id="treatmentGoals" rows="2"></textarea></div>
+        <div class="mt-3"><label class="form-label" for="treatmentSessionOutcome">Esito sessione</label><textarea class="form-control" id="treatmentSessionOutcome" rows="2" maxlength="255" placeholder="Descrivi l'esito della seduta"></textarea></div>
+        <div class="mt-3"><label class="form-label" for="treatmentHomeExercises">Esercizi domiciliari</label><textarea class="form-control" id="treatmentHomeExercises" rows="2"></textarea></div>
+        <div class="mt-3"><label class="form-label" for="treatmentNotes">Note trattamento</label><textarea class="form-control" id="treatmentNotes" rows="3"></textarea></div>
+      </div><div class="modal-footer"><button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Annulla</button><button class="btn btn-success" type="submit">Conferma completamento</button></div></form>
     </div></div>
   </div>
   <div class="modal fade" id="confirmDeleteAppointmentModal" tabindex="-1" aria-hidden="true">

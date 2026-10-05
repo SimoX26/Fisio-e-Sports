@@ -5,11 +5,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const homeScreen = document.getElementById("homeScreen");
   const calendarScreen = document.getElementById("calendarScreen");
   const patientsScreen = document.getElementById("patientsScreen");
+  const treatmentsScreen = document.getElementById("treatmentsScreen");
   const loginError = document.getElementById("loginError");
   const dataStatus = document.getElementById("dataStatus");
   const patientModal = new bootstrap.Modal(document.getElementById("patientModal"));
   const appointmentModal = new bootstrap.Modal(document.getElementById("appointmentModal"));
   const eventModal = new bootstrap.Modal(document.getElementById("eventModal"));
+  const completeTreatmentModal = new bootstrap.Modal(document.getElementById("completeTreatmentModal"));
   const confirmDeleteAppointmentModal = new bootstrap.Modal(document.getElementById("confirmDeleteAppointmentModal"));
   const createPatientModal = new bootstrap.Modal(document.getElementById("createPatientModal"));
   const deletePatientModal = new bootstrap.Modal(document.getElementById("confirmDeletePatientModal"));
@@ -24,6 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let mergeCandidatesRequest = 0;
   let manualLoginStarted = false;
   let appointmentSuggestionsRequest = 0;
+  let treatmentsRequest = 0;
 
   function localDateTime(date) {
     const pad = number => String(number).padStart(2, "0");
@@ -166,12 +169,14 @@ document.addEventListener("DOMContentLoaded", () => {
     homeScreen.hidden = false;
     calendarScreen.hidden = true;
     patientsScreen.hidden = true;
+    treatmentsScreen.hidden = true;
     document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month");
     document.body.classList.remove("address-book-page");
     document.body.classList.add("app-page");
     document.getElementById("homeNav").classList.add("active");
     document.getElementById("calendarNav").classList.remove("active");
     document.getElementById("patientsNav").classList.remove("active");
+    document.getElementById("treatmentsNav").classList.remove("active");
     document.title = "Dashboard • Fisio e Sports";
     loadTodayAgenda();
     loadWaitlist();
@@ -343,7 +348,7 @@ document.addEventListener("DOMContentLoaded", () => {
       },
       eventDidMount(info) {
         const generic = Boolean(info.event.extendedProps.nonTreatmentEvent);
-        const completed = info.event.extendedProps.state === "COMPLETED" && (info.event.end || info.event.start) < new Date();
+        const completed = info.event.extendedProps.state === "COMPLETED";
         const background = generic ? "#f1f3f5" : completed ? "#e6f4ea" : "#eaf1fb";
         const border = generic ? "#c9ced6" : completed ? "#8bc49a" : "#7f9fcd";
         const foreground = generic ? "#4b5563" : completed ? "#1f8f47" : "#1f2d3d";
@@ -388,7 +393,9 @@ document.addEventListener("DOMContentLoaded", () => {
           eventModal.hide();
         };
         document.getElementById("sendSingleReminderBtn").classList.toggle("d-none", completed || allDay || generic || patientId == null);
-        document.getElementById("completeAppointmentBtn").classList.toggle("d-none", completed || allDay || generic);
+        document.getElementById("completeAppointmentBtn").classList.toggle("d-none",
+          event.extendedProps.state !== "SCHEDULED" || allDay || generic || patientId == null
+          || !event.end || event.end > new Date());
         document.getElementById("editAppointmentBtn").classList.toggle("d-none", completed);
         document.getElementById("deleteAppointmentBtn").classList.toggle("d-none", completed && !generic);
         const stateHints = [];
@@ -406,12 +413,14 @@ document.addEventListener("DOMContentLoaded", () => {
     homeScreen.hidden = true;
     calendarScreen.hidden = false;
     patientsScreen.hidden = true;
+    treatmentsScreen.hidden = true;
     document.body.classList.remove("app-page");
     document.body.classList.remove("address-book-page");
     document.body.classList.add("calendar-gcal-page");
     document.getElementById("homeNav").classList.remove("active");
     document.getElementById("calendarNav").classList.add("active");
     document.getElementById("patientsNav").classList.remove("active");
+    document.getElementById("treatmentsNav").classList.remove("active");
     document.title = "Calendario • Fisio e Sports";
     if (!calendar) {
       calendar = createCalendar();
@@ -428,13 +437,62 @@ document.addEventListener("DOMContentLoaded", () => {
     homeScreen.hidden = true;
     calendarScreen.hidden = true;
     patientsScreen.hidden = false;
+    treatmentsScreen.hidden = true;
     document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month");
     document.body.classList.add("app-page", "address-book-page");
     document.getElementById("homeNav").classList.remove("active");
     document.getElementById("calendarNav").classList.remove("active");
     document.getElementById("patientsNav").classList.add("active");
+    document.getElementById("treatmentsNav").classList.remove("active");
     document.title = "Rubrica Pazienti • Fisio e Sports";
     loadPatients();
+  }
+
+  async function showTreatments(patientId = null, patientName = "") {
+    homeScreen.hidden = true;
+    calendarScreen.hidden = true;
+    patientsScreen.hidden = true;
+    treatmentsScreen.hidden = false;
+    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
+    document.body.classList.add("app-page");
+    for (const id of ["homeNav", "calendarNav", "patientsNav", "treatmentsNav"])
+      document.getElementById(id).classList.toggle("active", id === "treatmentsNav");
+    document.getElementById("treatmentsTitle").textContent = patientId == null
+      ? "Storico trattamenti" : `Cronologia trattamenti • ${patientName}`;
+    document.title = "Storico trattamenti • Fisio e Sports";
+    const request = ++treatmentsRequest;
+    const currentSession = sessionEpoch;
+    const rows = document.getElementById("treatmentsRows");
+    const error = document.getElementById("treatmentsError");
+    const empty = document.getElementById("treatmentsEmpty");
+    rows.replaceChildren();
+    error.classList.add("d-none");
+    empty.classList.add("d-none");
+    document.getElementById("treatmentsTableWrap").classList.add("d-none");
+    try {
+      const query = patientId == null ? "" : `?patientId=${encodeURIComponent(patientId)}`;
+      const entries = await getJson(`/api/treatments${query}`);
+      if (request !== treatmentsRequest || currentSession !== sessionEpoch) return;
+      empty.classList.toggle("d-none", entries.length !== 0);
+      document.getElementById("treatmentsTableWrap").classList.toggle("d-none", entries.length === 0);
+      for (const entry of entries) {
+        const row = document.createElement("tr");
+        const score = entry.painScorePre == null && entry.painScorePost == null
+          ? "-" : `${entry.painScorePre ?? "-"} / ${entry.painScorePost ?? "-"}`;
+        const date = new Date(entry.sessionStart).toLocaleDateString("it-IT");
+        for (const value of [date, entry.patientName, entry.planTitle, score, entry.outcome || "-", entry.state]) {
+          const cell = document.createElement("td");
+          cell.textContent = value;
+          row.appendChild(cell);
+        }
+        rows.appendChild(row);
+      }
+    } catch (failure) {
+      if (request !== treatmentsRequest || currentSession !== sessionEpoch) return;
+      error.textContent = failure.status === 404 ? "Paziente non disponibile per questo terapista."
+        : "Impossibile caricare lo storico trattamenti dal backend.";
+      error.classList.remove("d-none");
+    }
   }
 
   async function loadPatients() {
@@ -482,6 +540,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         const actions = document.createElement("td");
         actions.className = "text-end address-book-actions";
+        const history = document.createElement("button");
+        history.type = "button";
+        history.className = "btn btn-sm btn-outline-secondary me-2";
+        history.textContent = "Cronologia Trattamenti";
+        history.addEventListener("click", () => showTreatments(patient.id, patient.fullName));
+        actions.appendChild(history);
         const remove = document.createElement("button");
         remove.type = "button";
         remove.className = "btn btn-sm btn-outline-danger btn-icon-only btn-trash-icon";
@@ -789,7 +853,63 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("homeNav").addEventListener("click", showHome);
   document.getElementById("calendarNav").addEventListener("click", () => showCalendar());
+  document.getElementById("treatmentsNav").addEventListener("click", () => showTreatments());
   document.getElementById("openAppointmentModalBtn").addEventListener("click", () => openAppointmentModal());
+  document.getElementById("completeAppointmentBtn").addEventListener("click", () => {
+    const selected = selectedAppointment;
+    if (!selected || !selected.start || selected.extendedProps.state !== "SCHEDULED"
+        || selected.allDay || selected.extendedProps.nonTreatmentEvent || selected.extendedProps.patientId == null
+        || !selected.end || selected.end > new Date()) return;
+    const form = document.getElementById("completeTreatmentForm");
+    form.reset();
+    document.getElementById("treatmentPlanTitle").value = `Trattamento da appuntamento ${selected.start.toLocaleDateString("it-IT")}`;
+    document.getElementById("treatmentTotalSessionsPlanned").value = "1";
+    document.getElementById("treatmentExpectedEndDate").value = appointmentDate(selected.end || selected.start);
+    document.getElementById("treatmentSessionOutcome").value = "Sessione completata da appuntamento";
+    document.getElementById("treatmentNotes").value = selected.extendedProps.notes || "";
+    document.getElementById("completeTreatmentError").classList.add("d-none");
+    document.getElementById("eventModal").addEventListener("hidden.bs.modal", () => completeTreatmentModal.show(), { once: true });
+    eventModal.hide();
+  });
+  document.getElementById("completeTreatmentForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!selectedAppointment) return;
+    const currentSession = sessionEpoch;
+    const form = event.target;
+    const button = form.querySelector('button[type="submit"]');
+    const error = document.getElementById("completeTreatmentError");
+    const fields = new URLSearchParams();
+    for (const [key, id] of Object.entries({
+      planTitle: "treatmentPlanTitle", totalSessionsPlanned: "treatmentTotalSessionsPlanned",
+      frequencyPerWeek: "treatmentFrequencyPerWeek", expectedEndDate: "treatmentExpectedEndDate",
+      painScorePre: "treatmentPainScorePre", painScorePost: "treatmentPainScorePost",
+      goals: "treatmentGoals", sessionOutcome: "treatmentSessionOutcome",
+      homeExercises: "treatmentHomeExercises", notes: "treatmentNotes"
+    })) fields.set(key, document.getElementById(id).value.trim());
+    button.disabled = true;
+    error.classList.add("d-none");
+    try {
+      await apiRequest(`/api/treatments/appointments/${encodeURIComponent(selectedAppointment.id)}`, {
+        method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+        body: fields.toString()
+      });
+      if (currentSession !== sessionEpoch) return;
+      completeTreatmentModal.hide();
+      selectedAppointment = null;
+      document.getElementById("appointmentCreated").textContent = "Trattamento completato con successo.";
+      document.getElementById("appointmentCreated").classList.remove("d-none");
+      calendar.refetchEvents();
+      loadTodayAgenda();
+    } catch (failure) {
+      if (currentSession !== sessionEpoch) return;
+      error.textContent = failure.status === 404 ? "Appuntamento non disponibile per questo terapista."
+        : failure.status === 409 ? "Questo appuntamento non può essere completato nello stato attuale."
+          : failure.status === 400 ? "Verifica i dati del trattamento." : "Impossibile completare il trattamento. Riprova.";
+      error.classList.remove("d-none");
+    } finally {
+      button.disabled = false;
+    }
+  });
   document.getElementById("editAppointmentBtn").addEventListener("click", editSelectedAppointment);
   document.getElementById("deleteAppointmentBtn").addEventListener("click", () => {
     if (!selectedAppointment) return;
@@ -916,6 +1036,7 @@ document.addEventListener("DOMContentLoaded", () => {
     event.preventDefault();
     loadPatients();
   });
+  document.getElementById("patientsSort").addEventListener("change", loadPatients);
   document.getElementById("editPatientFullName").addEventListener("blur", refreshMergeCandidates);
   document.getElementById("patientEditToggle").addEventListener("click", () => {
     const form = document.getElementById("patientEditForm");
@@ -1050,9 +1171,11 @@ document.addEventListener("DOMContentLoaded", () => {
     patientsRequest++;
     patientDetailRequest++;
     mergeCandidatesRequest++;
+    treatmentsRequest++;
     patientModal.hide();
     appointmentModal.hide();
     eventModal.hide();
+    completeTreatmentModal.hide();
     confirmDeleteAppointmentModal.hide();
     selectedAppointment = null;
     editingAppointmentId = null;
@@ -1092,6 +1215,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loginScreen.hidden = false;
     document.body.className = "auth-page app-page d-flex align-items-center justify-content-center";
     patientsScreen.hidden = true;
+    treatmentsScreen.hidden = true;
     document.title = "Login • Fisio e Sports";
     let revoked = true;
     if (previousAuthorization?.startsWith("Bearer ")) {

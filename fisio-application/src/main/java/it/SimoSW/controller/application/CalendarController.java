@@ -135,6 +135,10 @@ public class CalendarController {
             return appointment;
         }
 
+        if (appointment.getEnd().isAfter(LocalDateTime.now())) {
+            throw new InvalidAppointmentStateException("L'appuntamento non può essere completato prima dell'orario di fine");
+        }
+
         appointment.setState(AppointmentState.COMPLETED);
         return appointmentDAO.update(appointment);
     }
