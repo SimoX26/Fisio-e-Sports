@@ -79,6 +79,7 @@ public final class BackendApplication {
                 new DatabaseTreatmentSessionDAO(), patients, appointments);
         CalendarApiHandler calendarApi = new CalendarApiHandler(authenticator, calendar);
         server.createContext("/api/calendar", calendarApi);
+        server.createContext("/api/calendar/trash", new CalendarTrashApiHandler(authenticator, calendar));
         server.createContext("/api/treatments", new TreatmentsApiHandler(authenticator, calendar, treatments, patients));
         server.createContext("/api/me", calendarApi);
         server.createContext("/api/auth/remember", new RememberApiHandler(authenticator));

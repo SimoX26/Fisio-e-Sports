@@ -8,7 +8,7 @@ comportamento descritti nell'[inventario](02-inventario-funzionale.md).
 | Area | Stato | Prossimo criterio di parità |
 |---|---|---|
 | Accesso terapista | `/api/me` con Basic o Bearer; token di 30 giorni emesso e revocato da `/api/auth/remember` per il desktop locale | HTTPS, indirizzo server configurabile e autenticazione remota |
-| Calendario | Lettura, dettaglio, creazione, modifica, cancellazione logica e completamento con trattamento | Cestino e promemoria |
+| Calendario | Lettura, dettaglio, creazione, modifica, completamento e cestino con ripristino/eliminazione | Promemoria |
 | Home e lista d'attesa | Lista d'attesa GET/POST/DELETE disponibile | Riepilogo completo home, conversione in appuntamento e promemoria |
 | Pazienti e anamnesi | Rubrica e scheda legacy con creazione, modifica, ultima anamnesi, condizioni, unione ed eliminazione | Versioni storiche dell'anamnesi |
 | Trattamenti | Storico generale e per paziente; completamento appuntamento con piano e seduta | Gestione autonoma dei piani e delle sedute |
@@ -57,3 +57,9 @@ dell'appuntamento, anche nel client legacy. Rifiuta eventi generici, tutto il gi
 non accessibili. Appuntamento, piano e seduta vengono salvati dai servizi
 legacy con connessioni distinte: in caso di errore del database durante il
 salvataggio, controllare lo stato prima di ripetere l'operazione.
+
+`GET /api/calendar/trash` elenca gli appuntamenti cancellati del terapista e
+applica la scadenza legacy di 30 giorni. `PUT /api/calendar/trash/{id}` ripristina
+se la fascia è libera (409 in caso di conflitto); `DELETE` sul singolo ID elimina
+definitivamente, mentre `DELETE /api/calendar/trash` svuota il cestino. Gli ID
+non appartenenti al terapista restituiscono 404.

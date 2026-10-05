@@ -9,8 +9,8 @@ non attesta un deploy in produzione.
 | Backend avviabile | Completato; script di deploy remoto del solo JAR preparato | Collaudare `fisio-backend.service` e `/ready` sul server con configurazione DB remota |
 | Separazione Maven | Implementata, da collaudare in Tomcat | Build aggregata e contenuto WAR verificati |
 | Associazione paziente-terapista | Migrazione applicata al DB di test configurato; codice pronto | Deploy WAR e prova manuale con due utenti |
-| API autenticate | Identità, calendario con completamento e trattamenti, lista d'attesa e scheda paziente; token Bearer revocabile per accesso automatico locale, da collaudare | Verificare storico e completamento con dati reali; HTTPS prima del deploy in rete |
-| Client desktop | Login e accesso automatico con archivio protetto del sistema; home parziale, calendario con completamento, storico trattamenti e scheda paziente; script di packaging Windows pronto, da collaudare su Windows | Verificare storico, completamento, installer e isolamento fra terapisti; poi completare gli altri flussi |
+| API autenticate | Identità, calendario con completamento, trattamenti e cestino, lista d'attesa e scheda paziente; token Bearer revocabile per accesso automatico locale, da collaudare | Verificare cestino e completamento con dati reali; HTTPS prima del deploy in rete |
+| Client desktop | Login e accesso automatico con archivio protetto del sistema; home parziale, calendario con completamento e cestino, storico trattamenti e scheda paziente; script di packaging Windows pronto, da collaudare su Windows | Verificare cestino, installer e isolamento fra terapisti; poi completare gli altri flussi |
 | Client Android autonomo | Da fare | Sostituzione della WebView |
 | Dismissione webapp | Da fare | Solo dopo parità funzionale e collaudo |
 

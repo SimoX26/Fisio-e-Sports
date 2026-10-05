@@ -94,6 +94,10 @@ di 62 giorni. `POST /api/calendar` crea un appuntamento con campi form
 verificano il proprietario, rispondono 404 per gli ID non accessibili e 409
 per uno stato o una fascia non validi. L'ID del terapista è ricavato
 dall'account, mai dal client.
+Il cestino del calendario usa `GET /api/calendar/trash`,
+`PUT /api/calendar/trash/{id}` per ripristinare e `DELETE` sul singolo ID o
+sull'intero cestino. Il ripristino controlla i conflitti; la lettura applica
+la scadenza automatica di 30 giorni, come nel legacy.
 La lista d'attesa usa `GET /api/waitlist`, `POST /api/waitlist` con campi form
 `fullName` e `phone`, e `DELETE /api/waitlist/{id}`. Anche in scrittura il
 terapista viene ricavato dall'account. Dopo ogni modifica il desktop rilegge

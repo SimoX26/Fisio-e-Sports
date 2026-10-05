@@ -35,7 +35,11 @@ terapista e non nel calendario di un altro. Provare **Modifica** sullo stesso
 appuntamento: cambiare orario e note, verificare il risultato anche nel legacy
 e provare una fascia occupata. Provare **Elimina** su un appuntamento di test:
 la conferma deve precedere la cancellazione e l'evento deve sparire dal
-calendario; il cestino resta un passo successivo. Verificare che un appuntamento
+calendario. Aprire **Cestino**, ordinare per paziente e ripristinare l'evento;
+deve tornare nel calendario e nel legacy. Riprovare con una fascia occupata:
+deve comparire un conflitto e l'evento deve restare nel cestino. Per una prova
+separata, eliminare definitivamente un evento di test e svuotare il cestino
+solo se contiene esclusivamente dati eliminabili. Verificare che un appuntamento
 completato non mostri Modifica o Elimina, mentre un evento generico completato
 può essere eliminato. Da un appuntamento pianificato con paziente, provare
 **Completa trattamento** con un piano da una seduta e verificare che appaia
