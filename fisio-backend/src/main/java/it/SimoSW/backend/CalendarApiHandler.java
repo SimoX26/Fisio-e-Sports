@@ -3,6 +3,8 @@ package it.SimoSW.backend;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import it.SimoSW.controller.application.CalendarController;
+import it.SimoSW.exception.AppointmentNotFoundException;
+import it.SimoSW.exception.InvalidAppointmentStateException;
 import it.SimoSW.exception.TimeSlotNotAvailableException;
 import it.SimoSW.model.Appointment;
 import it.SimoSW.model.CalendarEventView;
@@ -31,14 +33,14 @@ final class CalendarApiHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         try {
-            ApiJson.allowLocalFileOrigin(exchange, "GET, POST, OPTIONS", "Authorization, Content-Type");
+            ApiJson.allowLocalFileOrigin(exchange, "GET, POST, PUT, DELETE, OPTIONS", "Authorization, Content-Type");
             if ("OPTIONS".equals(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(204, -1);
                 return;
             }
             String method = exchange.getRequestMethod();
-            if (!"GET".equals(method) && !"POST".equals(method)) {
-                exchange.getResponseHeaders().set("Allow", "GET, POST");
+            if (!List.of("GET", "POST", "PUT", "DELETE").contains(method)) {
+                exchange.getResponseHeaders().set("Allow", "GET, POST, PUT, DELETE");
                 ApiJson.send(exchange, 405, "{\"error\":\"method_not_allowed\"}");
                 return;
             }
@@ -57,7 +59,8 @@ final class CalendarApiHandler implements HttpHandler {
                 ApiJson.send(exchange, 200, "{\"username\":" + ApiJson.quote(therapist.getUsername()) + ",\"role\":\"THERAPIST\"}");
                 return;
             }
-            if (!"/api/calendar".equals(exchange.getRequestURI().getPath())) {
+            String path = exchange.getRequestURI().getPath();
+            if (!"/api/calendar".equals(path) && !path.startsWith("/api/calendar/")) {
                 ApiJson.send(exchange, 404, "{\"error\":\"not_found\"}");
                 return;
             }
@@ -66,8 +69,40 @@ final class CalendarApiHandler implements HttpHandler {
                 ApiJson.send(exchange, 401, "{\"error\":\"unauthorized\"}");
                 return;
             }
+            if (path.startsWith("/api/calendar/")) {
+                long appointmentId;
+                try {
+                    appointmentId = Long.parseLong(path.substring("/api/calendar/".length()));
+                    if (appointmentId <= 0) throw new NumberFormatException();
+                } catch (NumberFormatException exception) {
+                    ApiJson.send(exchange, 400, "{\"error\":\"invalid_id\"}");
+                    return;
+                }
+                if ("PUT".equals(method) || "DELETE".equals(method)) {
+                    try {
+                        calendar.getAppointmentForTherapist(appointmentId, therapistId);
+                    } catch (IllegalArgumentException exception) {
+                        ApiJson.send(exchange, 404, "{\"error\":\"not_found\"}");
+                        return;
+                    }
+                }
+                if ("PUT".equals(method)) update(exchange, therapistId, appointmentId);
+                else if ("DELETE".equals(method)) {
+                    calendar.cancelAppointment(appointmentId, therapistId);
+                    exchange.sendResponseHeaders(204, -1);
+                } else {
+                    exchange.getResponseHeaders().set("Allow", "PUT, DELETE");
+                    ApiJson.send(exchange, 405, "{\"error\":\"method_not_allowed\"}");
+                }
+                return;
+            }
             if ("POST".equals(method)) {
                 create(exchange, therapistId);
+                return;
+            }
+            if (!"GET".equals(method)) {
+                exchange.getResponseHeaders().set("Allow", "GET, POST");
+                ApiJson.send(exchange, 405, "{\"error\":\"method_not_allowed\"}");
                 return;
             }
 
@@ -82,6 +117,10 @@ final class CalendarApiHandler implements HttpHandler {
 
             List<CalendarEventView> events = calendar.getCalendarEventViewsForTherapistInPeriod(therapistId, start, end);
             ApiJson.send(exchange, 200, toJson(events));
+        } catch (AppointmentNotFoundException exception) {
+            ApiJson.send(exchange, 404, "{\"error\":\"not_found\"}");
+        } catch (InvalidAppointmentStateException exception) {
+            ApiJson.send(exchange, 409, "{\"error\":\"invalid_state\"}");
         } catch (TimeSlotNotAvailableException exception) {
             ApiJson.send(exchange, 409, "{\"error\":\"time_slot_unavailable\"}");
         } catch (IllegalArgumentException exception) {
@@ -94,18 +133,29 @@ final class CalendarApiHandler implements HttpHandler {
         }
     }
 
+    private void update(HttpExchange exchange, long therapistId, long appointmentId) throws IOException {
+        Map<String, String> fields = readForm(exchange);
+        if (fields == null) return;
+        String name = fields.get("patientName");
+        String notes = fields.get("notes");
+        if (name == null || name.isBlank() || name.length() > 180 || notes != null && notes.length() > 3000) {
+            ApiJson.send(exchange, 400, "{\"error\":\"invalid_input\"}");
+            return;
+        }
+        LocalDateTime start = parseDateTime(fields.get("start"));
+        LocalDateTime end = parseDateTime(fields.get("end"));
+        if (start == null || end == null) {
+            ApiJson.send(exchange, 400, "{\"error\":\"invalid_period\"}");
+            return;
+        }
+        calendar.rescheduleAppointment(appointmentId, therapistId, name, start, end,
+                Boolean.parseBoolean(fields.get("allDay")), Boolean.parseBoolean(fields.get("nonTreatmentEvent")), notes);
+        exchange.sendResponseHeaders(204, -1);
+    }
+
     private void create(HttpExchange exchange, long therapistId) throws IOException {
-        String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
-        if (contentType == null || !contentType.startsWith("application/x-www-form-urlencoded")) {
-            ApiJson.send(exchange, 415, "{\"error\":\"unsupported_media_type\"}");
-            return;
-        }
-        byte[] body = exchange.getRequestBody().readNBytes(4097);
-        if (body.length > 4096) {
-            ApiJson.send(exchange, 413, "{\"error\":\"body_too_large\"}");
-            return;
-        }
-        Map<String, String> fields = parseQuery(new String(body, StandardCharsets.UTF_8));
+        Map<String, String> fields = readForm(exchange);
+        if (fields == null) return;
         String name = fields.get("patientName");
         String phone = fields.get("patientPhone");
         String notes = fields.get("notes");
@@ -135,6 +185,20 @@ final class CalendarApiHandler implements HttpHandler {
         appointment.setNotes(notes == null || notes.isBlank() ? null : notes.trim());
         Appointment saved = calendar.scheduleAppointment(appointment);
         ApiJson.send(exchange, 201, "{\"id\":" + saved.getId() + "}");
+    }
+
+    private static Map<String, String> readForm(HttpExchange exchange) throws IOException {
+        String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
+        if (contentType == null || !contentType.startsWith("application/x-www-form-urlencoded")) {
+            ApiJson.send(exchange, 415, "{\"error\":\"unsupported_media_type\"}");
+            return null;
+        }
+        byte[] body = exchange.getRequestBody().readNBytes(4097);
+        if (body.length > 4096) {
+            ApiJson.send(exchange, 413, "{\"error\":\"body_too_large\"}");
+            return null;
+        }
+        return parseQuery(new String(body, StandardCharsets.UTF_8));
     }
 
     private static Map<String, String> parseQuery(String rawQuery) {
@@ -181,6 +245,7 @@ final class CalendarApiHandler implements HttpHandler {
                     .append(event.getPatientId() == null ? "null" : event.getPatientId())
                     .append(",\"nonTreatmentEvent\":").append(event.getPatientId() == null)
                     .append(",\"state\":").append(ApiJson.quote(event.getState().name()))
+                    .append(",\"patientPhone\":").append(ApiJson.quote(event.getPatientPhone()))
                     .append(",\"notes\":").append(ApiJson.quote(event.getNotes()))
                     .append("}}");
         }

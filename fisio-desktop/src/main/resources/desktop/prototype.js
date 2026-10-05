@@ -9,11 +9,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const dataStatus = document.getElementById("dataStatus");
   const patientModal = new bootstrap.Modal(document.getElementById("patientModal"));
   const appointmentModal = new bootstrap.Modal(document.getElementById("appointmentModal"));
+  const eventModal = new bootstrap.Modal(document.getElementById("eventModal"));
+  const confirmDeleteAppointmentModal = new bootstrap.Modal(document.getElementById("confirmDeleteAppointmentModal"));
   const createPatientModal = new bootstrap.Modal(document.getElementById("createPatientModal"));
   const deletePatientModal = new bootstrap.Modal(document.getElementById("confirmDeletePatientModal"));
   const mergeConfirmModal = new bootstrap.Modal(document.getElementById("confirmMergePatientModal"));
   let authorization = null;
   let calendar = null;
+  let selectedAppointment = null;
+  let editingAppointmentId = null;
   let sessionEpoch = 0;
   let patientsRequest = 0;
   let patientDetailRequest = 0;
@@ -53,10 +57,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function openAppointmentModal(start = new Date()) {
+    editingAppointmentId = null;
     const rounded = new Date(start);
     rounded.setMinutes(Math.ceil(rounded.getMinutes() / 15) * 15, 0, 0);
     const end = new Date(rounded.getTime() + 60 * 60000);
     document.getElementById("appointmentForm").reset();
+    document.getElementById("appointmentModalTitle").textContent = "Nuovo appuntamento";
+    document.getElementById("appointmentPatientPhone").disabled = false;
     document.getElementById("appointmentDate").value = appointmentDate(rounded);
     document.getElementById("appointmentStartTime").value = appointmentTime(rounded);
     document.getElementById("appointmentEndTime").value = appointmentTime(end);
@@ -64,6 +71,28 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("appointmentCreated").classList.add("d-none");
     updateAppointmentForm();
     appointmentModal.show();
+  }
+
+  function editSelectedAppointment() {
+    const selected = selectedAppointment;
+    if (!selected || !selected.start || selected.extendedProps.state !== "SCHEDULED") return;
+    editingAppointmentId = selected.id;
+    document.getElementById("appointmentForm").reset();
+    document.getElementById("appointmentModalTitle").textContent = "Modifica appuntamento";
+    document.getElementById("appointmentPatientName").value = selected.title || "";
+    document.getElementById("appointmentPatientPhone").value = selected.extendedProps.patientPhone || "";
+    document.getElementById("appointmentPatientPhone").disabled = true;
+    document.getElementById("appointmentGeneric").checked = Boolean(selected.extendedProps.nonTreatmentEvent);
+    document.getElementById("appointmentAllDay").checked = Boolean(selected.allDay);
+    document.getElementById("appointmentDate").value = appointmentDate(selected.start);
+    document.getElementById("appointmentStartTime").value = appointmentTime(selected.start);
+    document.getElementById("appointmentEndTime").value = appointmentTime(selected.end || new Date(selected.start.getTime() + 60 * 60000));
+    document.getElementById("appointmentNotes").value = selected.extendedProps.notes || "";
+    document.getElementById("appointmentFormError").classList.add("d-none");
+    document.getElementById("appointmentCreated").classList.add("d-none");
+    updateAppointmentForm();
+    document.getElementById("eventModal").addEventListener("hidden.bs.modal", () => appointmentModal.show(), { once: true });
+    eventModal.hide();
   }
 
   async function apiRequest(path, options = {}) {
@@ -261,7 +290,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function createCalendar() {
-    const eventModal = new bootstrap.Modal(document.getElementById("eventModal"));
     return new FullCalendar.Calendar(document.getElementById("calendar"), {
       locale: "it",
       allDayText: "Tutto il giorno",
@@ -338,6 +366,7 @@ document.addEventListener("DOMContentLoaded", () => {
       eventClick(info) {
         info.jsEvent.preventDefault();
         const event = info.event;
+        selectedAppointment = event;
         const completed = event.extendedProps.state === "COMPLETED";
         const allDay = Boolean(event.allDay || event.extendedProps.allDay);
         const generic = Boolean(event.extendedProps.nonTreatmentEvent);
@@ -761,6 +790,38 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("homeNav").addEventListener("click", showHome);
   document.getElementById("calendarNav").addEventListener("click", () => showCalendar());
   document.getElementById("openAppointmentModalBtn").addEventListener("click", () => openAppointmentModal());
+  document.getElementById("editAppointmentBtn").addEventListener("click", editSelectedAppointment);
+  document.getElementById("deleteAppointmentBtn").addEventListener("click", () => {
+    if (!selectedAppointment) return;
+    document.getElementById("deleteAppointmentError").classList.add("d-none");
+    document.getElementById("eventModal").addEventListener("hidden.bs.modal", () => confirmDeleteAppointmentModal.show(), { once: true });
+    eventModal.hide();
+  });
+  document.getElementById("confirmDeleteAppointmentBtn").addEventListener("click", async () => {
+    if (!selectedAppointment) return;
+    const currentSession = sessionEpoch;
+    const button = document.getElementById("confirmDeleteAppointmentBtn");
+    button.disabled = true;
+    try {
+      await apiRequest(`/api/calendar/${encodeURIComponent(selectedAppointment.id)}`, { method: "DELETE" });
+      if (currentSession !== sessionEpoch) return;
+      confirmDeleteAppointmentModal.hide();
+      selectedAppointment = null;
+      document.getElementById("appointmentCreated").textContent = "Appuntamento eliminato correttamente.";
+      document.getElementById("appointmentCreated").classList.remove("d-none");
+      calendar.refetchEvents();
+      loadTodayAgenda();
+    } catch (failure) {
+      if (currentSession !== sessionEpoch) return;
+      const error = document.getElementById("deleteAppointmentError");
+      error.textContent = failure.status === 404 ? "Appuntamento non disponibile per questo terapista."
+        : failure.status === 409 ? "Questo appuntamento non può essere eliminato nello stato attuale."
+          : "Impossibile eliminare l'appuntamento. Riprova.";
+      error.classList.remove("d-none");
+    } finally {
+      button.disabled = false;
+    }
+  });
   document.getElementById("appointmentAllDay").addEventListener("change", updateAppointmentForm);
   document.getElementById("appointmentGeneric").addEventListener("change", updateAppointmentForm);
   document.getElementById("appointmentStartTime").addEventListener("change", () => {
@@ -806,6 +867,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("appointmentForm").addEventListener("submit", async event => {
     event.preventDefault();
     const currentSession = sessionEpoch;
+    const appointmentId = editingAppointmentId;
     const button = document.getElementById("saveAppointmentBtn");
     const date = document.getElementById("appointmentDate").value;
     const allDay = document.getElementById("appointmentAllDay").checked;
@@ -828,17 +890,22 @@ document.addEventListener("DOMContentLoaded", () => {
     button.disabled = true;
     document.getElementById("appointmentFormError").classList.add("d-none");
     try {
-      await apiRequest("/api/calendar", {
-        method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" }, body: body.toString()
+      await apiRequest(appointmentId == null ? "/api/calendar" : `/api/calendar/${encodeURIComponent(appointmentId)}`, {
+        method: appointmentId == null ? "POST" : "PUT",
+        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" }, body: body.toString()
       });
       if (currentSession !== sessionEpoch) return;
       appointmentModal.hide();
+      editingAppointmentId = null;
+      document.getElementById("appointmentCreated").textContent = appointmentId == null
+        ? "Appuntamento salvato correttamente." : "Appuntamento modificato correttamente.";
       document.getElementById("appointmentCreated").classList.remove("d-none");
       calendar.refetchEvents();
       loadTodayAgenda();
     } catch (failure) {
-      if (currentSession === sessionEpoch) showAppointmentError(failure.status === 409 ? "Fascia oraria già occupata. Scegli un altro orario."
+      if (currentSession === sessionEpoch) showAppointmentError(failure.status === 409 ? "Fascia oraria occupata o appuntamento non più modificabile. Aggiorna il calendario e riprova."
         : failure.status === 400 && allDay && !generic ? "Per un evento tutto il giorno scegli un paziente già presente e controlla la data."
+          : failure.status === 404 ? "Appuntamento non disponibile per questo terapista."
           : "Impossibile salvare l'appuntamento. Controlla i dati e riprova.");
     } finally {
       button.disabled = false;
@@ -985,6 +1052,10 @@ document.addEventListener("DOMContentLoaded", () => {
     mergeCandidatesRequest++;
     patientModal.hide();
     appointmentModal.hide();
+    eventModal.hide();
+    confirmDeleteAppointmentModal.hide();
+    selectedAppointment = null;
+    editingAppointmentId = null;
     createPatientModal.hide();
     deletePatientModal.hide();
     mergeConfirmModal.hide();

@@ -14,7 +14,7 @@ secondo terminale dalla radice del repository:
 ./run-desktop-locale.sh
 ```
 
-Lo script verifica `/ready` e apre la finestra JavaFX; il backend resta nel
+Lo script verifica `/ready` e apre la finestra JavaFX con `GDK_SCALE=2`; il backend resta nel
 primo terminale. Per chiudere il desktop usare la finestra o `Ctrl+C` nel
 secondo terminale.
 
@@ -31,9 +31,14 @@ suggerimenti dei pazienti, la creazione di un paziente nuovo con telefono, un
 evento generico e uno tutto il giorno con paziente già presente. Provare una
 fascia occupata: il modulo deve restare aperto e mostrare l'errore. Controllare
 che l'appuntamento salvato compaia anche nella webapp legacy dello stesso
-terapista e non nel calendario di un altro. Modifica, cancellazione,
-completamento e promemoria sono ancora disabilitati: richiedono le rispettive
-API e saranno collegati nei prossimi passi. Chiudere e riaprire
+terapista e non nel calendario di un altro. Provare **Modifica** sullo stesso
+appuntamento: cambiare orario e note, verificare il risultato anche nel legacy
+e provare una fascia occupata. Provare **Elimina** su un appuntamento di test:
+la conferma deve precedere la cancellazione e l'evento deve sparire dal
+calendario; il cestino resta un passo successivo. Verificare che un appuntamento
+completato non mostri Modifica o Elimina, mentre un evento generico completato
+può essere eliminato. Completamento e promemoria sono ancora disabilitati.
+Chiudere e riaprire
 il desktop: con backend attivo deve entrare automaticamente nello stesso account.
 Premere **Logout** e riaprire: deve comparire il login. Ripetere con un secondo
 terapista e verificare che non riappaiano i dati del primo. Se il backend è

@@ -1,6 +1,6 @@
 # Stato della migrazione
 
-Aggiornato: 1 ottobre 2026. Questo registro descrive il codice del repository;
+Aggiornato: 5 ottobre 2026. Questo registro descrive il codice del repository;
 non attesta un deploy in produzione.
 
 | Passo | Stato | Verifica o lavoro rimasto |
@@ -9,8 +9,8 @@ non attesta un deploy in produzione.
 | Backend avviabile | Completato; script di deploy remoto del solo JAR preparato | Collaudare `fisio-backend.service` e `/ready` sul server con configurazione DB remota |
 | Separazione Maven | Implementata, da collaudare in Tomcat | Build aggregata e contenuto WAR verificati |
 | Associazione paziente-terapista | Migrazione applicata al DB di test configurato; codice pronto | Deploy WAR e prova manuale con due utenti |
-| API autenticate | Identità, calendario con creazione, lista d'attesa e scheda paziente; token Bearer revocabile per accesso automatico locale, da collaudare | Estendere i flussi secondo `architecture/04-api-roadmap.md`; HTTPS prima del deploy in rete |
-| Client desktop | Login e accesso automatico con archivio protetto del sistema; home parziale, calendario con creazione e scheda paziente; script di packaging Windows pronto, da collaudare su Windows | Verificare installer, creazione e isolamento fra terapisti; poi completare gli altri flussi |
+| API autenticate | Identità, calendario con creazione, modifica e cancellazione logica, lista d'attesa e scheda paziente; token Bearer revocabile per accesso automatico locale, da collaudare | Estendere i flussi secondo `architecture/04-api-roadmap.md`; HTTPS prima del deploy in rete |
+| Client desktop | Login e accesso automatico con archivio protetto del sistema; home parziale, calendario con creazione, modifica e cancellazione, scheda paziente; script di packaging Windows pronto, da collaudare su Windows | Verificare installer, calendario e isolamento fra terapisti; poi completare gli altri flussi |
 | Client Android autonomo | Da fare | Sostituzione della WebView |
 | Dismissione webapp | Da fare | Solo dopo parità funzionale e collaudo |
 

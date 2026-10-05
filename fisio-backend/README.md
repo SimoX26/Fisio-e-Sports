@@ -89,7 +89,11 @@ L'API calendario accetta `GET` con autenticazione Basic o Bearer e un intervallo
 di 62 giorni. `POST /api/calendar` crea un appuntamento con campi form
 `patientName`, `patientPhone`, `start`, `end`, `allDay`, `nonTreatmentEvent` e
 `notes`. Usa le regole legacy per paziente, scatti di 15 minuti e conflitti
-(HTTP 409). L'ID del terapista è ricavato dall'account, mai dal client.
+(HTTP 409). `PUT /api/calendar/{id}` modifica un appuntamento pianificato;
+`DELETE /api/calendar/{id}` lo sposta nel cestino. Entrambe le operazioni
+verificano il proprietario, rispondono 404 per gli ID non accessibili e 409
+per uno stato o una fascia non validi. L'ID del terapista è ricavato
+dall'account, mai dal client.
 La lista d'attesa usa `GET /api/waitlist`, `POST /api/waitlist` con campi form
 `fullName` e `phone`, e `DELETE /api/waitlist/{id}`. Anche in scrittura il
 terapista viene ricavato dall'account. Dopo ogni modifica il desktop rilegge

@@ -8,7 +8,7 @@ comportamento descritti nell'[inventario](02-inventario-funzionale.md).
 | Area | Stato | Prossimo criterio di parità |
 |---|---|---|
 | Accesso terapista | `/api/me` con Basic o Bearer; token di 30 giorni emesso e revocato da `/api/auth/remember` per il desktop locale | HTTPS, indirizzo server configurabile e autenticazione remota |
-| Calendario | Lettura, dettaglio e creazione desktop con controllo conflitti | Modifica, completamento, cancellazione, cestino e promemoria |
+| Calendario | Lettura, dettaglio, creazione, modifica e cancellazione logica desktop con controllo conflitti | Completamento, cestino e promemoria |
 | Home e lista d'attesa | Lista d'attesa GET/POST/DELETE disponibile | Riepilogo completo home, conversione in appuntamento e promemoria |
 | Pazienti e anamnesi | Rubrica e scheda legacy con creazione, modifica, ultima anamnesi, condizioni, unione ed eliminazione | Versioni storiche dell'anamnesi e cronologia trattamenti |
 | Trattamenti | Da fare | Storico, piani e sedute effettivamente usati dalla UI |
