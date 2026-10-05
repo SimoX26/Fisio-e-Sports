@@ -32,46 +32,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let trashRequest = 0;
   let trashConfirmation = null;
 
-  const wheelAnimations = new WeakMap();
-  document.addEventListener("wheel", event => {
-    if (event.defaultPrevented || event.ctrlKey || event.metaKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
-    const direction = Math.sign(event.deltaY);
-    if (!direction) return;
-    let scroller = event.target instanceof Element ? event.target : document.body;
-    while (scroller && scroller !== document.documentElement) {
-      const overflow = getComputedStyle(scroller).overflowY;
-      const canScroll = (overflow === "auto" || overflow === "scroll")
-        && scroller.scrollHeight > scroller.clientHeight + 1;
-      if (canScroll && (direction > 0
-        ? scroller.scrollTop < scroller.scrollHeight - scroller.clientHeight - 1
-        : scroller.scrollTop > 1)) break;
-      scroller = scroller.parentElement;
-    }
-    if ((!scroller || scroller === document.documentElement)
-        && event.target instanceof Element && event.target.closest(".modal.show")) return;
-    if (!scroller || scroller === document.documentElement) scroller = document.scrollingElement;
-    if (!scroller || scroller.scrollHeight <= scroller.clientHeight + 1) return;
-    const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? scroller.clientHeight : 1);
-    const animation = wheelAnimations.get(scroller) || { target: scroller.scrollTop, frame: 0 };
-    if (!animation.frame) animation.target = scroller.scrollTop;
-    const limit = scroller.scrollHeight - scroller.clientHeight;
-    animation.target = Math.max(0, Math.min(limit, animation.target + delta));
-    wheelAnimations.set(scroller, animation);
-    event.preventDefault();
-    if (animation.frame) return;
-    const advance = () => {
-      const remaining = animation.target - scroller.scrollTop;
-      if (Math.abs(remaining) < 0.75) {
-        scroller.scrollTop = animation.target;
-        animation.frame = 0;
-        return;
-      }
-      scroller.scrollTop += remaining * 0.3;
-      animation.frame = requestAnimationFrame(advance);
-    };
-    animation.frame = requestAnimationFrame(advance);
-  }, { passive: false });
-
   function localDateTime(date) {
     const pad = number => String(number).padStart(2, "0");
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;

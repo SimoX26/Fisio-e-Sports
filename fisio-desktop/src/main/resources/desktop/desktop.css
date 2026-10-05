@@ -1,6 +1,13 @@
 /* Adattamenti necessari alla prova locale; lo stile principale viene dalla webapp. */
 .app-navbar .navbar-brand, .app-navbar .nav-link { cursor: default; }
 
+/* La WebView desktop non usa animazioni o transizioni CSS. */
+*, *::before, *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
 /* La scheda ha un form tra modal-content e modal-body: serve un contenitore flessibile per lo scroll. */
 #patientModal .modal-content {
   display: flex;
@@ -77,15 +84,6 @@
 #eventModal .modal-content {
   background: #ffffff;
   backface-visibility: hidden;
-}
-
-#eventModal.fade .modal-dialog {
-  transform: translate3d(0, -50px, 0);
-  backface-visibility: hidden;
-}
-
-#eventModal.show .modal-dialog {
-  transform: translate3d(0, 0, 0);
 }
 
 .desktop-patient-row { cursor: pointer; }
