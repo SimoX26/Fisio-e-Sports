@@ -1,6 +1,9 @@
 # Guida alle statistiche KPI
 
 La pagina `/dashboard/insights` visualizza i dati restituiti dall'endpoint `/dashboard/kpi`.
+Il backend autonomo espone anche `GET /api/kpi?months=12` per leggere gli
+snapshot personali già salvati, con `computedAt`. Non calcola ancora nuovi
+snapshot né le metriche derivate della pagina legacy.
 
 ## Ambito e periodo
 

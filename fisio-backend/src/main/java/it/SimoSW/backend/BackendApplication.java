@@ -18,6 +18,7 @@ import it.SimoSW.controller.application.AddressBookController;
 import it.SimoSW.controller.application.CalendarController;
 import it.SimoSW.controller.application.WaitlistController;
 import it.SimoSW.controller.application.TreatmentController;
+import it.SimoSW.controller.application.KpiReadController;
 import it.SimoSW.model.dao.database.DatabaseAppointmentDAO;
 import it.SimoSW.model.dao.database.DatabasePatientDAO;
 import it.SimoSW.model.dao.database.DatabasePatientAnamnesisDAO;
@@ -28,6 +29,7 @@ import it.SimoSW.model.dao.database.DatabaseWaitlistEntryDAO;
 import it.SimoSW.model.dao.database.DatabaseTreatmentPlanDAO;
 import it.SimoSW.model.dao.database.DatabaseTreatmentSessionDAO;
 import it.SimoSW.model.dao.database.DatabaseReminderTemplateDAO;
+import it.SimoSW.model.dao.database.DatabaseKpiMonthlySnapshotDAO;
 import it.SimoSW.util.AppProperties;
 
 public final class BackendApplication {
@@ -91,6 +93,8 @@ public final class BackendApplication {
         server.createContext("/api/whatsapp/status", new WhatsAppStatusApiHandler(authenticator));
         server.createContext("/api/whatsapp/control", new WhatsAppControlApiHandler(authenticator));
         server.createContext("/api/treatments", new TreatmentsApiHandler(authenticator, calendar, treatments, patients));
+        server.createContext("/api/kpi", new KpiApiHandler(authenticator,
+                new KpiReadController(new DatabaseKpiMonthlySnapshotDAO())));
         server.createContext("/api/me", calendarApi);
         server.createContext("/api/auth/remember", new RememberApiHandler(authenticator));
         server.createContext("/api/waitlist", new WaitlistApiHandler(

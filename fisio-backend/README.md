@@ -1,9 +1,21 @@
 # Backend Java
 
 Il processo HTTP autonomo espone `/health`, `/ready`, `/api/me`,
-`/api/auth/remember`, `/api/calendar`, `/api/waitlist` e `/api/patients`. Le API sono limitate ai terapisti
+`/api/auth/remember`, `/api/calendar`, `/api/waitlist`, `/api/patients` e `/api/kpi`. Le API sono limitate ai terapisti
 autenticati; calendario, rubrica e lista d'attesa mostrano solo i loro dati. Il login può aggiornare un vecchio hash
 password, come nella webapp legacy.
+
+`GET /api/kpi?months=12` legge gli snapshot mensili del terapista autenticato
+(da 1 a 36 mesi; predefinito 12). Restituisce solo i valori salvati e
+`computedAt`: l'aggiornamento automatico è ancora eseguito dalla webapp legacy.
+Per una prova locale, con il backend avviato:
+
+```bash
+curl -u marco 'http://127.0.0.1:8081/api/kpi?months=12'
+```
+
+`curl` chiede la password senza includerla nel comando. Confrontare anno, mese,
+conteggi e data di calcolo con gli snapshot usati dalla pagina legacy.
 
 ## Configurazione
 

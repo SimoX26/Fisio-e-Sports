@@ -20,6 +20,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 public class CalendarController {
     private static final int APPOINTMENT_BOUNDARY_MINUTES = 15;
@@ -51,7 +52,7 @@ public class CalendarController {
         return getAppointmentsForTherapistInPeriod(therapistId, start, end).stream()
                 .filter(appointment -> appointment.getState() == AppointmentState.SCHEDULED)
                 .filter(appointment -> appointment.getPatientId() != null)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     public Appointment getAppointmentForTherapist(long appointmentId, long therapistId) {
