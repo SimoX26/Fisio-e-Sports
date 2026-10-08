@@ -527,6 +527,10 @@ document.addEventListener("DOMContentLoaded", () => {
       if (currentSession !== sessionEpoch) return;
       document.getElementById("appointmentsToday").textContent = events.length;
       document.getElementById("patientsToday").textContent = new Set(events.map(item => item.extendedProps.patientId).filter(id => id != null)).size;
+      const now = new Date();
+      document.getElementById("remindersToday").textContent = events.filter(item =>
+        item.extendedProps.state !== "CANCELLED" && item.extendedProps.patientId != null
+          && new Date(item.start) > now).length;
       if (events.length === 0) {
         const empty = document.createElement("div");
         empty.className = "home-empty-state";
@@ -1250,6 +1254,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!appScreen.hidden && !settingsScreen.hidden) loadWhatsAppStatus();
   }, 5000);
   document.getElementById("openHomeReminderBtn").addEventListener("click", () => openReminderPreview(appointmentDate(new Date())));
+  document.getElementById("homeSendRemindersButton").addEventListener("click", () => openReminderPreview(appointmentDate(new Date())));
+  document.getElementById("todayRemindersButton").addEventListener("click", () => openReminderPreview(appointmentDate(new Date())));
   document.getElementById("reminderPreviewDate").addEventListener("change", () => {
     preselectedReminderId = null;
     loadReminderPreview();
@@ -1556,6 +1562,7 @@ document.addEventListener("DOMContentLoaded", () => {
     createPatientModal.show();
   }
   document.getElementById("homeCreatePatientButton").addEventListener("click", openCreatePatient);
+  document.getElementById("homeCreateAppointmentButton").addEventListener("click", () => openAppointmentModal());
   document.getElementById("patientsCreateButton").addEventListener("click", openCreatePatient);
   document.getElementById("createPatientForm").addEventListener("submit", async event => {
     event.preventDefault();
@@ -1661,6 +1668,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("todayAgenda").replaceChildren();
     document.getElementById("appointmentsToday").textContent = "–";
     document.getElementById("patientsToday").textContent = "–";
+    document.getElementById("remindersToday").textContent = "–";
     document.getElementById("waitlistEntries").replaceChildren();
     document.getElementById("waitlistCount").textContent = "";
     document.getElementById("waitlistForm").reset();

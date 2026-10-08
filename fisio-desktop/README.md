@@ -19,6 +19,10 @@ desktop usare la finestra o `Ctrl+C` nel terminale di avvio.
 
 Accedere con un terapista attivo. Dopo il login si apre la home con il saluto,
 gli appuntamenti e i pazienti di oggi e l'agenda, letti dal backend.
+Confrontare i tre contatori della home con la webapp legacy: i promemoria
+contano gli appuntamenti futuri di oggi con paziente. Provare **Nuovo
+appuntamento**, **Nuovo paziente** e **Invia promemoria** dalla barra superiore;
+il contatore dei promemoria deve aprire l'anteprima di oggi.
 Nella lista d'attesa premere **Trasforma in appuntamento** su un contatto di
 prova: nome e telefono devono comparire nel modulo. Salvare una fascia libera,
 verificare il messaggio di conferma nella home, l'appuntamento nel calendario e

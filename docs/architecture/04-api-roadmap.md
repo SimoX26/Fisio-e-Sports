@@ -9,7 +9,7 @@ comportamento descritti nell'[inventario](02-inventario-funzionale.md).
 |---|---|---|
 | Accesso terapista | `/api/me` con Basic o Bearer; token di 30 giorni emesso e revocato da `/api/auth/remember` per il desktop locale | HTTPS, indirizzo server configurabile e autenticazione remota |
 | Calendario | Lettura, dettaglio, creazione, modifica, completamento, cestino, anteprima e invio promemoria con modello modificabile | Collaudo completo con gateway reale |
-| Home e lista d'attesa | Lista d'attesa GET/POST/DELETE e apertura del nuovo appuntamento precompilato dal contatto | Riepilogo completo home e azioni rapide |
+| Home e lista d'attesa | Lista d'attesa GET/POST/DELETE, apertura del nuovo appuntamento precompilato, tre contatori giornalieri e azioni rapide | Filtri della rubrica dai contatori e resto della parità home |
 | Pazienti e anamnesi | Rubrica e scheda legacy con creazione, modifica, ultima anamnesi, condizioni, unione ed eliminazione | Versioni storiche dell'anamnesi |
 | Trattamenti | Storico generale e per paziente; completamento appuntamento con piano e seduta | Gestione autonoma dei piani e delle sedute |
 | Statistiche | Da fare | KPI personali/globali con le formule attuali |

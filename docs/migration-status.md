@@ -10,7 +10,7 @@ non attesta un deploy in produzione.
 | Separazione Maven | Implementata, da collaudare in Tomcat | Build aggregata e contenuto WAR verificati |
 | Associazione paziente-terapista | Migrazione applicata al DB di test configurato; codice pronto | Deploy WAR e prova manuale con due utenti |
 | API autenticate | Identità, calendario con completamento, cestino, modello e invio promemoria, stato e QR WhatsApp; controllo manuale opzionale, gateway systemd remoto preparato; trattamenti, lista d'attesa e scheda paziente | Collaudare gateway systemd e invio; HTTPS prima del collegamento da altri PC |
-| Client desktop | Si apre sul login anche senza backend; accesso automatico con archivio protetto; home con lista d'attesa trasformabile in appuntamento, calendario, promemoria, Impostazioni WhatsApp, storico trattamenti e scheda paziente | Verificare trasformazione del contatto e isolamento fra terapisti; riepilogo home, URL remoto e HTTPS restano da fare |
+| Client desktop | Si apre sul login anche senza backend; accesso automatico con archivio protetto; home con lista d'attesa trasformabile in appuntamento, tre contatori e azioni rapide, calendario, promemoria, Impostazioni WhatsApp, storico trattamenti e scheda paziente | Verificare home e isolamento fra terapisti; filtri rubrica dai contatori, URL remoto e HTTPS restano da fare |
 | Client Android autonomo | Da fare | Sostituzione della WebView |
 | Dismissione webapp | Da fare | Solo dopo parità funzionale e collaudo |
 
