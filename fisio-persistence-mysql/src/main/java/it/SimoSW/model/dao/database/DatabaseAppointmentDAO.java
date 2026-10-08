@@ -233,30 +233,7 @@ public class DatabaseAppointmentDAO implements AppointmentDAO {
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    String firstName = repairMojibake(rs.getString("first_name"));
-                    String lastName = repairMojibake(rs.getString("last_name"));
-                    String fullName = ((firstName == null ? "" : firstName.trim()) + " " + (lastName == null ? "" : lastName.trim())).trim();
-                    if (fullName.isEmpty()) {
-                        fullName = repairMojibake(rs.getString("title"));
-                    }
-                    if (fullName == null || fullName.isBlank()) {
-                        long patientId = rs.getLong("patient_id");
-                        fullName = rs.wasNull() ? "Evento" : "Paziente #" + patientId;
-                    }
-                    long rawPatientId = rs.getLong("patient_id");
-                    Long patientId = rs.wasNull() ? null : rawPatientId;
-                    result.add(new CalendarEventView(
-                            rs.getLong("id"),
-                            patientId,
-                            rs.getLong("therapist_id"),
-                            rs.getTimestamp("start_time").toLocalDateTime(),
-                            rs.getTimestamp("end_time").toLocalDateTime(),
-                            rs.getBoolean("all_day"),
-                            rs.getString("notes"),
-                            AppointmentState.valueOf(rs.getString("state")),
-                            fullName,
-                            rs.getString("phone")
-                    ));
+                    result.add(mapEventView(rs));
                 }
             }
 
@@ -265,6 +242,54 @@ public class DatabaseAppointmentDAO implements AppointmentDAO {
         } catch (SQLException e) {
             throw new RuntimeException("Errore caricamento eventi calendario terapista", e);
         }
+    }
+
+    @Override
+    public List<CalendarEventView> searchEventViewsForTherapist(long therapistId, String query) {
+        String sql = """
+            SELECT a.id, a.patient_id, a.therapist_id, a.start_time, a.end_time,
+                   a.all_day, a.title, a.notes, a.state,
+                   p.first_name, p.last_name, p.phone
+            FROM appointments a
+            INNER JOIN patients p ON p.id = a.patient_id AND p.therapist_id = a.therapist_id
+            WHERE a.therapist_id = ?
+              AND (LOWER(CONCAT(p.first_name, ' ', p.last_name)) LIKE ?
+                   OR LOWER(COALESCE(a.notes, '')) LIKE ?
+                   OR LOWER(a.state) LIKE ?)
+            ORDER BY a.start_time DESC
+            LIMIT 20
+            """;
+        List<CalendarEventView> result = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, therapistId);
+            String like = "%" + query.toLowerCase(java.util.Locale.ROOT) + "%";
+            for (int index = 2; index <= 4; index++) ps.setString(index, like);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) result.add(mapEventView(rs));
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException("Errore ricerca appuntamenti terapista", e);
+        }
+    }
+
+    private CalendarEventView mapEventView(ResultSet rs) throws SQLException {
+        String firstName = repairMojibake(rs.getString("first_name"));
+        String lastName = repairMojibake(rs.getString("last_name"));
+        String fullName = ((firstName == null ? "" : firstName.trim()) + " " + (lastName == null ? "" : lastName.trim())).trim();
+        if (fullName.isEmpty()) fullName = repairMojibake(rs.getString("title"));
+        if (fullName == null || fullName.isBlank()) {
+            long patientId = rs.getLong("patient_id");
+            fullName = rs.wasNull() ? "Evento" : "Paziente #" + patientId;
+        }
+        long rawPatientId = rs.getLong("patient_id");
+        Long patientId = rs.wasNull() ? null : rawPatientId;
+        return new CalendarEventView(rs.getLong("id"), patientId, rs.getLong("therapist_id"),
+                rs.getTimestamp("start_time").toLocalDateTime(),
+                rs.getTimestamp("end_time").toLocalDateTime(), rs.getBoolean("all_day"),
+                rs.getString("notes"), AppointmentState.valueOf(rs.getString("state")),
+                fullName, rs.getString("phone"));
     }
 
     @Override

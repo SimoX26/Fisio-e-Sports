@@ -1698,24 +1698,6 @@ button.home-action-pill{
         min-width: 0;
     }
 
-    .app-global-search{
-        flex: 1 1 560px;
-        max-width: 640px;
-        margin-left: auto !important;
-        margin-right: auto !important;
-    }
-
-    .app-global-search-input{
-        min-height: 38px;
-        font-size: var(--font-size-ui);
-    }
-
-    .app-global-search-btn{
-        min-height: 38px;
-        padding-left: .9rem;
-        padding-right: .9rem;
-    }
-
     .app-navbar-links{
         margin-left: auto !important;
         gap: .45rem;

@@ -27,6 +27,8 @@ Premere **Pazienti oggi**: la rubrica deve mostrare solo i pazienti con
 appuntamenti odierni, con avviso del filtro attivo. **Rimuovi filtro** e una
 ricerca normale devono ripristinare l'elenco completo; cambiare ordinamento
 deve conservare il filtro finché è attivo.
+Nell'agenda della home, un appuntamento completato deve mostrare l'etichetta
+**COMPLETATO**, come nella webapp legacy; uno programmato non mostra etichette.
 Nella lista d'attesa premere **Trasforma in appuntamento** su un contatto di
 prova: nome e telefono devono comparire nel modulo. Salvare una fascia libera,
 verificare il messaggio di conferma nella home, l'appuntamento nel calendario e
@@ -117,8 +119,8 @@ non nella rubrica di un secondo terapista. Email e telefono sono facoltativi.
 Nella home provare la lista d'attesa: aggiungere un contatto, controllare che
 appaia nella webapp legacy con lo stesso terapista, rimuoverlo dal desktop e
 verificare che scompaia anche nella webapp. Con un altro terapista il contatto
-non deve comparire. La trasformazione in appuntamento arriverà con l'API di
-scrittura del calendario.
+non deve comparire. Trasformare un contatto in appuntamento e verificare che,
+dopo il salvataggio, scompaia dalla lista d'attesa.
 
 La password non viene salvata su disco. Il login crea un token revocabile di
 30 giorni: Windows lo protegge con DPAPI nel profilo utente, Linux usa
@@ -126,9 +128,9 @@ Secret Service tramite `secret-tool`. Se l'archivio protetto non è disponibile,
 il desktop segnala che l'accesso automatico non è attivo e la sessione corrente
 resta utilizzabile. Logout elimina il token locale e ne chiede la revoca al
 backend; se la revoca fallisce viene mostrato un avviso. Questa prova usa il backend
-locale su `127.0.0.1:8081`. La home contiene per ora i dati coperti
-dalle API calendario e lista d'attesa; ricerca globale, statistiche e
-impostazioni richiedono i prossimi incrementi. Le relative voci sono solo etichette.
+locale su `127.0.0.1:8081`. La ricerca dei pazienti resta nella rubrica;
+la barra di ricerca globale non è presente nel desktop.
+La voce **Dati e Statistiche** non è ancora operativa.
 
 Le licenze degli asset incorporati sono in `src/main/resources/desktop/vendor/`.
 

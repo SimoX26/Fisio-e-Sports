@@ -70,6 +70,14 @@ public class CalendarController {
         return appointmentDAO.findEventViewsByTherapistInPeriod(therapistId, start, end);
     }
 
+    public List<CalendarEventView> searchEventViewsForTherapist(long therapistId, String query) {
+        checkTherapistUserExists(therapistId);
+        if (query == null || query.isBlank() || query.length() > 200) {
+            throw new IllegalArgumentException("Query di ricerca non valida");
+        }
+        return appointmentDAO.searchEventViewsForTherapist(therapistId, query.trim());
+    }
+
     public Appointment scheduleAppointment(Appointment appointment) {
         if (appointment == null) {
             throw new IllegalArgumentException("Appointment cannot be null");

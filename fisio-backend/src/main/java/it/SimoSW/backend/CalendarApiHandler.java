@@ -69,6 +69,22 @@ final class CalendarApiHandler implements HttpHandler {
                 ApiJson.send(exchange, 401, "{\"error\":\"unauthorized\"}");
                 return;
             }
+            if ("/api/calendar/search".equals(path)) {
+                if (!"GET".equals(method)) {
+                    exchange.getResponseHeaders().set("Allow", "GET");
+                    ApiJson.send(exchange, 405, "{\"error\":\"method_not_allowed\"}");
+                    return;
+                }
+                String query = parseQuery(exchange.getRequestURI().getRawQuery()).get("q");
+                if (query == null || query.isBlank()) {
+                    ApiJson.send(exchange, 200, "[]");
+                } else if (query.length() > 200) {
+                    ApiJson.send(exchange, 400, "{\"error\":\"invalid_query\"}");
+                } else {
+                    ApiJson.send(exchange, 200, toJson(calendar.searchEventViewsForTherapist(therapistId, query)));
+                }
+                return;
+            }
             if (path.startsWith("/api/calendar/")) {
                 long appointmentId;
                 try {

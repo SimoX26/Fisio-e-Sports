@@ -554,6 +554,16 @@ document.addEventListener("DOMContentLoaded", () => {
         subtitle.textContent = event.extendedProps.nonTreatmentEvent ? "Evento" : "Paziente";
         main.append(title, subtitle);
         row.append(time, main);
+        const state = event.extendedProps.state;
+        if (state === "COMPLETED" || state === "CANCELLED") {
+          const side = document.createElement("div");
+          side.className = "home-agenda-side";
+          const badge = document.createElement("span");
+          badge.className = `home-status-badge home-status-badge--${state}`;
+          badge.textContent = state === "COMPLETED" ? "COMPLETATO" : "CANCELLATO";
+          side.appendChild(badge);
+          row.appendChild(side);
+        }
         agenda.appendChild(row);
       }
     } catch (error) {
@@ -1738,5 +1748,4 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   });
-  document.getElementById("searchForm").addEventListener("submit", event => event.preventDefault());
 });

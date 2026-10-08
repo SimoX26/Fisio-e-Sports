@@ -9,13 +9,18 @@ comportamento descritti nell'[inventario](02-inventario-funzionale.md).
 |---|---|---|
 | Accesso terapista | `/api/me` con Basic o Bearer; token di 30 giorni emesso e revocato da `/api/auth/remember` per il desktop locale | HTTPS, indirizzo server configurabile e autenticazione remota |
 | Calendario | Lettura, dettaglio, creazione, modifica, completamento, cestino, anteprima e invio promemoria con modello modificabile | Collaudo completo con gateway reale |
-| Home e lista d'attesa | Lista d'attesa GET/POST/DELETE, apertura del nuovo appuntamento precompilato, tre contatori giornalieri e azioni rapide; Pazienti oggi apre la rubrica filtrata | Resto della parità home |
+| Home e lista d'attesa | Lista d'attesa GET/POST/DELETE, apertura del nuovo appuntamento precompilato, tre contatori giornalieri e azioni rapide; Pazienti oggi apre la rubrica filtrata; agenda con stato degli appuntamenti | Collaudo home con dati reali e due terapisti |
 | Pazienti e anamnesi | Rubrica e scheda legacy con creazione, modifica, ultima anamnesi, condizioni, unione ed eliminazione | Versioni storiche dell'anamnesi |
 | Trattamenti | Storico generale e per paziente; completamento appuntamento con piano e seduta | Gestione autonoma dei piani e delle sedute |
 | Statistiche | Da fare | KPI personali/globali con le formule attuali |
-| Ricerca | Da fare | Risultati e navigazione al paziente o appuntamento |
+| Ricerca | La rubrica desktop usa `GET /api/patients?q`; l'API `GET /api/calendar/search?q` resta disponibile nel backend. La barra globale desktop è stata rimossa su richiesta | Nessuna ricerca globale prevista nel desktop |
 | Promemoria e impostazioni | Anteprima, salvataggio modello e invio; stato, QR, avvio e arresto WhatsApp | Collaudo del gateway sul server |
 | Amministrazione | Da fare | Richieste di accesso e revisione per ADMIN |
+
+`GET /api/calendar/search?q` restituisce al massimo 20 appuntamenti ordinati
+dal più recente. Cerca nome del paziente, note e stato, limita il risultato al
+terapista autenticato e verifica che anche il paziente gli appartenga. Include
+gli appuntamenti annullati, che il desktop apre nel cestino.
 
 Il primo collaudo della lista d'attesa richiede due terapisti: ciascuno vede e
 modifica solo i propri contatti. **Trasforma in appuntamento** usa nome e
