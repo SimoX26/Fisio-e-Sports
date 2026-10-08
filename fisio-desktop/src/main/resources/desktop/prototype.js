@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let convertingWaitlistId = null;
   let sessionEpoch = 0;
   let patientsRequest = 0;
+  let patientsTreatedDate = null;
   let patientDetailRequest = 0;
   let mergeCandidatesRequest = 0;
   let manualLoginStarted = false;
@@ -706,7 +707,16 @@ document.addEventListener("DOMContentLoaded", () => {
     calendar.updateSize();
   }
 
-  function showPatients() {
+  function setPatientsFilter(date) {
+    patientsTreatedDate = date;
+    document.getElementById("patientsFilterNotice").classList.toggle("d-none", date == null);
+    document.getElementById("patientsFilterLabel").textContent = date == null ? ""
+      : `Filtro attivo: pazienti con appuntamenti il ${new Date(`${date}T00:00:00`).toLocaleDateString("it-IT")}`;
+  }
+
+  function showPatients(treatedDate = null) {
+    if (treatedDate != null) document.getElementById("patientsQuery").value = "";
+    setPatientsFilter(treatedDate);
     homeScreen.hidden = true;
     calendarScreen.hidden = true;
     patientsScreen.hidden = false;
@@ -902,6 +912,7 @@ document.addEventListener("DOMContentLoaded", () => {
         q: document.getElementById("patientsQuery").value,
         sort: document.getElementById("patientsSort").value
       });
+      if (patientsTreatedDate != null) query.set("treatedDate", patientsTreatedDate);
       const patients = await getJson(`/api/patients?${query}`);
       if (currentSession !== sessionEpoch || currentRequest !== patientsRequest) return;
       empty.classList.toggle("d-none", patients.length !== 0);
@@ -1498,9 +1509,15 @@ document.addEventListener("DOMContentLoaded", () => {
       button.disabled = false;
     }
   });
-  document.getElementById("patientsNav").addEventListener("click", showPatients);
+  document.getElementById("patientsNav").addEventListener("click", () => showPatients());
+  document.getElementById("todayPatientsButton").addEventListener("click", () => showPatients(appointmentDate(new Date())));
+  document.getElementById("patientsClearFilter").addEventListener("click", () => {
+    setPatientsFilter(null);
+    loadPatients();
+  });
   document.getElementById("patientsSearchForm").addEventListener("submit", event => {
     event.preventDefault();
+    setPatientsFilter(null);
     loadPatients();
   });
   document.getElementById("patientsSort").addEventListener("change", loadPatients);
@@ -1590,6 +1607,7 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         document.getElementById("patientsQuery").value = "";
         document.getElementById("patientsSort").value = "created-desc";
+        setPatientsFilter(null);
         document.getElementById("patientsCreated").classList.remove("d-none");
         loadPatients();
       }
@@ -1679,6 +1697,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("patientsRows").replaceChildren();
     document.getElementById("patientsQuery").value = "";
     document.getElementById("patientsSort").value = "created-desc";
+    setPatientsFilter(null);
     document.getElementById("patientsError").classList.add("d-none");
     document.getElementById("patientsEmpty").classList.add("d-none");
     document.getElementById("patientEditForm").reset();

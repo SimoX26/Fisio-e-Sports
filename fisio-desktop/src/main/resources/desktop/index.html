@@ -57,7 +57,7 @@
     <div class="alert alert-success d-none" id="homeAppointmentCreated" role="status">Appuntamento salvato correttamente.</div>
     <div class="home-kpi-row mb-4">
       <button class="glass-card section-card home-kpi-chip text-decoration-none" id="todayAppointmentsButton" type="button"><span class="home-kpi-chip__label">Appuntamenti oggi</span><span class="home-kpi-chip__value" id="appointmentsToday">–</span></button>
-      <div class="glass-card section-card home-kpi-chip"><span class="home-kpi-chip__label">Pazienti oggi</span><span class="home-kpi-chip__value" id="patientsToday">–</span></div>
+      <button class="glass-card section-card home-kpi-chip text-decoration-none" id="todayPatientsButton" type="button"><span class="home-kpi-chip__label">Pazienti oggi</span><span class="home-kpi-chip__value" id="patientsToday">–</span></button>
       <button class="glass-card section-card home-kpi-chip text-decoration-none" id="todayRemindersButton" type="button"><span class="home-kpi-chip__label">Promemoria da inviare oggi</span><span class="home-kpi-chip__value" id="remindersToday">–</span></button>
     </div>
     <div class="row g-3 align-items-start mb-4">
@@ -93,6 +93,7 @@
     <div class="page-header-row mb-4"><h2 class="page-title">Rubrica Pazienti</h2><button class="btn btn-primary section-action-btn" id="patientsCreateButton" type="button">Nuovo paziente</button></div>
     <div class="glass-card section-card address-book-card p-4">
       <div class="alert alert-success d-none" id="patientsCreated" role="status">Paziente inserito correttamente.</div>
+      <div class="alert alert-info d-none" id="patientsFilterNotice" role="status"><div class="d-flex justify-content-between align-items-center gap-2"><span id="patientsFilterLabel"></span><button class="btn btn-sm btn-outline-secondary" id="patientsClearFilter" type="button">Rimuovi filtro</button></div></div>
       <form id="patientsSearchForm" class="row g-2 mb-3">
         <div class="col-12 col-md"><input class="form-control" id="patientsQuery" type="search" maxlength="200" placeholder="Cerca paziente" aria-label="Cerca paziente"></div>
         <div class="col-12 col-md-auto"><select class="form-select" id="patientsSort" aria-label="Ordina pazienti"><option value="created-desc">Più recenti</option><option value="created-asc">Meno recenti</option><option value="name-asc">Nome A–Z</option><option value="name-desc">Nome Z–A</option></select></div>

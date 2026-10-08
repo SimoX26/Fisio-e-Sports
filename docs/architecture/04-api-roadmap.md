@@ -9,7 +9,7 @@ comportamento descritti nell'[inventario](02-inventario-funzionale.md).
 |---|---|---|
 | Accesso terapista | `/api/me` con Basic o Bearer; token di 30 giorni emesso e revocato da `/api/auth/remember` per il desktop locale | HTTPS, indirizzo server configurabile e autenticazione remota |
 | Calendario | Lettura, dettaglio, creazione, modifica, completamento, cestino, anteprima e invio promemoria con modello modificabile | Collaudo completo con gateway reale |
-| Home e lista d'attesa | Lista d'attesa GET/POST/DELETE, apertura del nuovo appuntamento precompilato, tre contatori giornalieri e azioni rapide | Filtri della rubrica dai contatori e resto della parità home |
+| Home e lista d'attesa | Lista d'attesa GET/POST/DELETE, apertura del nuovo appuntamento precompilato, tre contatori giornalieri e azioni rapide; Pazienti oggi apre la rubrica filtrata | Resto della parità home |
 | Pazienti e anamnesi | Rubrica e scheda legacy con creazione, modifica, ultima anamnesi, condizioni, unione ed eliminazione | Versioni storiche dell'anamnesi |
 | Trattamenti | Storico generale e per paziente; completamento appuntamento con piano e seduta | Gestione autonoma dei piani e delle sedute |
 | Statistiche | Da fare | KPI personali/globali con le formule attuali |
@@ -27,8 +27,8 @@ non riesce, segnala che l'appuntamento è salvato e chiede di verificare la list
 `GET /api/patients` accetta `q`, `sort` (`created-desc`, `created-asc`,
 `name-asc`, `name-desc`), `treatedDate` (`YYYY-MM-DD`) o `treatedMonth`
 (`YYYY-MM`). Usa gli stessi casi d'uso della rubrica legacy e ricava il
-terapista dalle credenziali. Il desktop espone per ora elenco, ricerca e
-ordinamento; i filtri sono pronti per i collegamenti dalla home.
+terapista dalle credenziali. Il desktop espone elenco, ricerca, ordinamento e
+il filtro giornaliero dalla home; la rubrica mostra quando il filtro è attivo.
 `GET /api/patients/{id}` restituisce i dati anagrafici della singola scheda
 solo al terapista proprietario; un ID non appartenente all'account restituisce 404.
 `GET /api/patients/{id}/anamnesis` restituisce l'ultima anamnesi e le condizioni

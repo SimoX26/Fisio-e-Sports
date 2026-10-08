@@ -23,6 +23,10 @@ Confrontare i tre contatori della home con la webapp legacy: i promemoria
 contano gli appuntamenti futuri di oggi con paziente. Provare **Nuovo
 appuntamento**, **Nuovo paziente** e **Invia promemoria** dalla barra superiore;
 il contatore dei promemoria deve aprire l'anteprima di oggi.
+Premere **Pazienti oggi**: la rubrica deve mostrare solo i pazienti con
+appuntamenti odierni, con avviso del filtro attivo. **Rimuovi filtro** e una
+ricerca normale devono ripristinare l'elenco completo; cambiare ordinamento
+deve conservare il filtro finché è attivo.
 Nella lista d'attesa premere **Trasforma in appuntamento** su un contatto di
 prova: nome e telefono devono comparire nel modulo. Salvare una fascia libera,
 verificare il messaggio di conferma nella home, l'appuntamento nel calendario e
