@@ -27,6 +27,10 @@ if ! command -v node >/dev/null 2>&1; then
   echo "[baileys-service] node non trovato nel PATH: $PATH" >&2
   exit 127
 fi
+if ! node -e 'const [major,minor]=process.versions.node.split(".").map(Number); if(major<20 || (major===20 && minor<9)) process.exit(1)'; then
+  echo "[baileys-service] serve Node.js 20.9 o successivo" >&2
+  exit 1
+fi
 
 install_dependencies() {
   if [ -f package-lock.json ]; then

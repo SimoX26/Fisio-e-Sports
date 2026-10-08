@@ -72,6 +72,7 @@
                 </dl>
 
                 <div class="d-flex flex-wrap gap-2">
+                    <c:if test="${baileysManualControl}">
                     <form method="post" action="<%= request.getContextPath() %>/settings">
                         <input type="hidden" name="action" value="start-baileys">
                         <button type="submit" class="btn btn-primary" id="startBaileysBtn">
@@ -84,6 +85,7 @@
                             Arresta servizio
                         </button>
                     </form>
+                    </c:if>
                     <a class="btn btn-outline-secondary" href="<%= request.getContextPath() %>/settings" id="refreshBaileysStatusBtn">
                         Aggiorna stato
                     </a>

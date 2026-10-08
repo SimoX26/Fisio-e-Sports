@@ -89,6 +89,7 @@ public final class BackendApplication {
         server.createContext("/api/reminders/template", new ReminderTemplateApiHandler(
                 authenticator, reminderTemplates));
         server.createContext("/api/whatsapp/status", new WhatsAppStatusApiHandler(authenticator));
+        server.createContext("/api/whatsapp/control", new WhatsAppControlApiHandler(authenticator));
         server.createContext("/api/treatments", new TreatmentsApiHandler(authenticator, calendar, treatments, patients));
         server.createContext("/api/me", calendarApi);
         server.createContext("/api/auth/remember", new RememberApiHandler(authenticator));

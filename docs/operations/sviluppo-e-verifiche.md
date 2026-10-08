@@ -35,8 +35,8 @@ poi copia `fisio-web-legacy/target/Fisio-e-Sports.war` in Tomcat.
 Il backend autonomo si avvia seguendo [la guida del modulo](../../fisio-backend/README.md).
 Per provarlo localmente, configurare `fisio-backend/config.properties`, usare
 `./run-backend-locale.sh` e verificare che `/ready` risponda `ok` prima del login desktop.
-In un secondo terminale `./run-desktop-locale.sh` verifica il backend e apre
-il desktop JavaFX.
+`./run-desktop-locale.sh` apre il desktop JavaFX anche senza backend. Per
+accedere ai dati, avviare il backend e verificare `/ready` prima del login.
 Per i promemoria WhatsApp, avviare separatamente il gateway con
 `./run-baileys-locale.sh` dalla radice del progetto. Lo script usa
 `baileys-service/start-baileys.sh`, installa le dipendenze Node.js se mancano e

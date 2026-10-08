@@ -54,6 +54,7 @@
     <div class="home-topbar mb-3"><div><h1 class="home-title mb-1" id="homeGreeting"></h1><div class="home-subtitle" id="todayLabel"></div></div><div class="home-topbar-actions"><button class="home-action-pill" id="homeCreatePatientButton" type="button">Nuovo paziente</button></div></div>
     <div class="alert alert-warning d-none" id="authNotice" role="status"></div>
     <div class="alert alert-success d-none" id="homePatientCreated" role="status">Paziente salvato correttamente.</div>
+    <div class="alert alert-success d-none" id="homeAppointmentCreated" role="status">Appuntamento salvato correttamente.</div>
     <div class="home-kpi-row mb-4">
       <button class="glass-card section-card home-kpi-chip text-decoration-none" id="todayAppointmentsButton" type="button"><span class="home-kpi-chip__label">Appuntamenti oggi</span><span class="home-kpi-chip__value" id="appointmentsToday">–</span></button>
       <div class="glass-card section-card home-kpi-chip"><span class="home-kpi-chip__label">Pazienti oggi</span><span class="home-kpi-chip__value" id="patientsToday">–</span></div>
@@ -81,7 +82,8 @@
       <div class="d-flex justify-content-between align-items-center gap-3 mb-3"><h3 class="h5 mb-0">Servizio WhatsApp</h3><span class="badge text-bg-secondary" id="whatsAppBadge">Caricamento</span></div>
       <p class="mb-2">Stato: <strong id="whatsAppState">—</strong></p>
       <p class="text-muted" id="whatsAppMessage"></p>
-      <button class="btn btn-outline-secondary mb-3" id="refreshWhatsAppBtn" type="button">Aggiorna stato</button>
+      <div class="d-flex flex-wrap gap-2 mb-3"><span id="whatsAppControls" hidden><button class="btn btn-primary me-2" id="startWhatsAppBtn" type="button" disabled>Avvia servizio WhatsApp</button><button class="btn btn-outline-danger me-2" id="stopWhatsAppBtn" type="button" disabled>Arresta servizio</button></span><button class="btn btn-outline-secondary" id="refreshWhatsAppBtn" type="button">Aggiorna stato</button></div>
+      <div class="alert alert-info d-none" id="whatsAppControlResult" role="status"></div>
       <div id="whatsAppQrPanel" hidden><p>Scansiona il QR con WhatsApp sul telefono.</p><img class="img-fluid bg-white rounded p-3" id="whatsAppQrImage" alt="QR per collegare WhatsApp" style="max-width: 390px"></div>
     </section>
   </main>

@@ -105,7 +105,9 @@ async function startBaileys() {
           margin: 4,
           scale: 10
         });
-        qrcodeTerminal.generate(qr, { small: true });
+        if (process.env.BAILEYS_PRINT_QR_TERMINAL !== "0") {
+          qrcodeTerminal.generate(qr, { small: true });
+        }
         console.log("[baileys-service] QR #" + runtimeState.qrCounter
             + " disponibile anche su http://localhost:" + port + "/api/qr");
       }

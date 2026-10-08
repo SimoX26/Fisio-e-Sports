@@ -8,18 +8,21 @@ comportamento descritti nell'[inventario](02-inventario-funzionale.md).
 | Area | Stato | Prossimo criterio di parità |
 |---|---|---|
 | Accesso terapista | `/api/me` con Basic o Bearer; token di 30 giorni emesso e revocato da `/api/auth/remember` per il desktop locale | HTTPS, indirizzo server configurabile e autenticazione remota |
-| Calendario | Lettura, dettaglio, creazione, modifica, completamento, cestino, anteprima e invio promemoria con modello modificabile | Avvio e arresto del gateway |
-| Home e lista d'attesa | Lista d'attesa GET/POST/DELETE disponibile | Riepilogo completo home, conversione in appuntamento e promemoria |
+| Calendario | Lettura, dettaglio, creazione, modifica, completamento, cestino, anteprima e invio promemoria con modello modificabile | Collaudo completo con gateway reale |
+| Home e lista d'attesa | Lista d'attesa GET/POST/DELETE e apertura del nuovo appuntamento precompilato dal contatto | Riepilogo completo home e azioni rapide |
 | Pazienti e anamnesi | Rubrica e scheda legacy con creazione, modifica, ultima anamnesi, condizioni, unione ed eliminazione | Versioni storiche dell'anamnesi |
 | Trattamenti | Storico generale e per paziente; completamento appuntamento con piano e seduta | Gestione autonoma dei piani e delle sedute |
 | Statistiche | Da fare | KPI personali/globali con le formule attuali |
 | Ricerca | Da fare | Risultati e navigazione al paziente o appuntamento |
-| Promemoria e impostazioni | Anteprima, salvataggio modello e invio; stato e QR WhatsApp | Avvio e arresto del gateway |
+| Promemoria e impostazioni | Anteprima, salvataggio modello e invio; stato, QR, avvio e arresto WhatsApp | Collaudo del gateway sul server |
 | Amministrazione | Da fare | Richieste di accesso e revisione per ADMIN |
 
 Il primo collaudo della lista d'attesa richiede due terapisti: ciascuno vede e
-modifica solo i propri contatti. La trasformazione in appuntamento richiederà
-l'API di creazione calendario e verrà completata insieme a quel flusso.
+modifica solo i propri contatti. **Trasforma in appuntamento** usa nome e
+telefono del contatto per precompilare il modulo calendario; il salvataggio
+passa dall'API calendario già disponibile. Dopo il salvataggio riuscito, il
+desktop elimina il contatto tramite l'API della lista d'attesa. Se la rimozione
+non riesce, segnala che l'appuntamento è salvato e chiede di verificare la lista.
 
 `GET /api/patients` accetta `q`, `sort` (`created-desc`, `created-asc`,
 `name-asc`, `name-desc`), `treatedDate` (`YYYY-MM-DD`) o `treatedMonth`
@@ -83,3 +86,11 @@ restituisce `configured`, `reachable`, `ready`, `qrRequired`, `state`, `lastErro
 e, se disponibile, `qrDataUrl`. Richiede il terapista autenticato e applica
 `whatsapp.baileys.therapistId`. Il desktop aggiorna lo stato mentre la pagina
 Impostazioni è aperta. Il QR collega la sessione WhatsApp centrale sul server.
+`controlAvailable` indica se l'utente del backend può scrivere nella cartella
+Baileys configurata. `POST /api/whatsapp/control` con `action=start` o `stop`
+richiede lo stesso terapista autorizzato: l'avvio esegue lo script nella
+cartella Baileys, l'arresto chiama `/api/shutdown` sul gateway. La risposta
+202 conferma la richiesta, non lo stato finale; il desktop lo aggiorna dopo.
+Questi comandi sono disponibili solo con `managementMode=manual`. Sul server
+`managementMode=systemd` lascia il controllo del processo a systemd e nasconde
+i pulsanti; stato e QR continuano a funzionare.

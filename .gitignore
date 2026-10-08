@@ -53,6 +53,8 @@ pnpm-debug.log*
 node_modules/
 baileys-service/node_modules/
 baileys-service/auth-session/
+baileys-service/baileys-service.pid
+baileys-service/baileys-service.log
 baileys-service/.wwebjs_auth/
 baileys-service/.wwebjs_cache/
 

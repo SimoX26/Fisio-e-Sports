@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let calendar = null;
   let selectedAppointment = null;
   let editingAppointmentId = null;
+  let convertingWaitlistId = null;
   let sessionEpoch = 0;
   let patientsRequest = 0;
   let patientDetailRequest = 0;
@@ -43,6 +44,14 @@ document.addEventListener("DOMContentLoaded", () => {
   let reminderDayLabel = "";
   let reminderDefaultTemplate = "";
   let whatsAppStatusRequest = 0;
+  let whatsAppStatus = null;
+  let whatsAppControlBusy = false;
+
+  function updateWhatsAppControlButtons() {
+    const available = whatsAppStatus?.configured && whatsAppStatus?.controlAvailable && !whatsAppControlBusy;
+    document.getElementById("startWhatsAppBtn").disabled = !available || whatsAppStatus.reachable;
+    document.getElementById("stopWhatsAppBtn").disabled = !available || !whatsAppStatus.reachable;
+  }
 
   async function loadWhatsAppStatus() {
     const request = ++whatsAppStatusRequest;
@@ -50,6 +59,9 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const status = await getJson("/api/whatsapp/status");
       if (request !== whatsAppStatusRequest || currentSession !== sessionEpoch || settingsScreen.hidden) return;
+      whatsAppStatus = status;
+      updateWhatsAppControlButtons();
+      document.getElementById("whatsAppControls").hidden = status.managementMode !== "manual";
       const badge = document.getElementById("whatsAppBadge");
       const label = !status.configured ? "Non configurato" : status.ready ? "Connesso"
         : status.reachable ? "Da autenticare" : "Non attivo";
@@ -58,6 +70,8 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("whatsAppState").textContent = status.state || "UNKNOWN";
       document.getElementById("whatsAppMessage").textContent = !status.configured
         ? "WhatsApp non è abilitato per questo account nel backend."
+        : status.managementMode === "systemd" ? status.lastError || "Servizio gestito automaticamente dal server."
+        : !status.controlAvailable ? "Avvio e arresto non disponibili: configura la cartella Baileys nel backend e i permessi di scrittura."
         : status.lastError || (status.reachable ? "" : "Servizio WhatsApp non raggiungibile dal backend.");
       const panel = document.getElementById("whatsAppQrPanel");
       const image = document.getElementById("whatsAppQrImage");
@@ -66,10 +80,43 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!status.qrDataUrl) image.removeAttribute("src");
     } catch (failure) {
       if (request !== whatsAppStatusRequest || currentSession !== sessionEpoch || settingsScreen.hidden) return;
+      whatsAppStatus = null;
+      updateWhatsAppControlButtons();
+      document.getElementById("whatsAppControls").hidden = true;
       document.getElementById("whatsAppBadge").textContent = "Non disponibile";
       document.getElementById("whatsAppState").textContent = "UNKNOWN";
       document.getElementById("whatsAppMessage").textContent = "Impossibile leggere lo stato WhatsApp dal backend.";
       document.getElementById("whatsAppQrPanel").hidden = true;
+    }
+  }
+
+  async function controlWhatsApp(action) {
+    if (whatsAppControlBusy || !whatsAppStatus?.configured || !whatsAppStatus?.controlAvailable) return;
+    const currentSession = sessionEpoch;
+    const result = document.getElementById("whatsAppControlResult");
+    whatsAppControlBusy = true;
+    updateWhatsAppControlButtons();
+    result.classList.add("d-none");
+    try {
+      await apiRequest("/api/whatsapp/control", {
+        method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ action })
+      });
+      if (currentSession !== sessionEpoch) return;
+      result.textContent = action === "start" ? "Avvio richiesto. Attendi l'aggiornamento dello stato."
+        : "Arresto richiesto. Attendi l'aggiornamento dello stato.";
+      result.classList.remove("d-none", "alert-danger");
+      result.classList.add("alert-info");
+      loadWhatsAppStatus();
+    } catch (failure) {
+      if (currentSession !== sessionEpoch) return;
+      result.textContent = failure.status === 409 ? "Controllo non disponibile: verifica cartella e permessi Baileys sul backend."
+        : "Impossibile controllare il servizio WhatsApp dal backend.";
+      result.classList.remove("d-none", "alert-info");
+      result.classList.add("alert-danger");
+    } finally {
+      whatsAppControlBusy = false;
+      updateWhatsAppControlButtons();
     }
   }
 
@@ -264,6 +311,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function openAppointmentModal(start = new Date()) {
     editingAppointmentId = null;
+    convertingWaitlistId = null;
     const rounded = new Date(start);
     rounded.setMinutes(Math.ceil(rounded.getMinutes() / 15) * 15, 0, 0);
     const end = new Date(rounded.getTime() + 60 * 60000);
@@ -275,6 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("appointmentEndTime").value = appointmentTime(end);
     document.getElementById("appointmentFormError").classList.add("d-none");
     document.getElementById("appointmentCreated").classList.add("d-none");
+    document.getElementById("homeAppointmentCreated").classList.add("d-none");
     updateAppointmentForm();
     appointmentModal.show();
   }
@@ -283,6 +332,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const selected = selectedAppointment;
     if (!selected || !selected.start || selected.extendedProps.state !== "SCHEDULED") return;
     editingAppointmentId = selected.id;
+    convertingWaitlistId = null;
     document.getElementById("appointmentForm").reset();
     document.getElementById("appointmentModalTitle").textContent = "Modifica appuntamento";
     document.getElementById("appointmentPatientName").value = selected.title || "";
@@ -421,13 +471,23 @@ document.addEventListener("DOMContentLoaded", () => {
         main.append(name, metadata);
         const actions = document.createElement("div");
         actions.className = "home-waitlist-actions";
+        const convert = document.createElement("button");
+        convert.type = "button";
+        convert.className = "btn btn-outline-primary btn-sm";
+        convert.textContent = "Trasforma in appuntamento";
+        convert.addEventListener("click", () => {
+          openAppointmentModal();
+          convertingWaitlistId = entry.id;
+          document.getElementById("appointmentPatientName").value = entry.fullName;
+          document.getElementById("appointmentPatientPhone").value = entry.phone || "";
+        });
         const remove = document.createElement("button");
         remove.type = "button";
         remove.className = "btn btn-outline-danger btn-sm btn-icon-only btn-trash-icon";
         remove.setAttribute("aria-label", "Rimuovi contatto dalla lista di attesa");
         remove.title = "Rimuovi contatto dalla lista di attesa";
         remove.addEventListener("click", () => removeWaitlistEntry(entry.id));
-        actions.appendChild(remove);
+        actions.append(convert, remove);
         row.append(main, actions);
         list.appendChild(row);
       }
@@ -1184,6 +1244,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("calendarNav").addEventListener("click", () => showCalendar());
   document.getElementById("settingsNav").addEventListener("click", showSettings);
   document.getElementById("refreshWhatsAppBtn").addEventListener("click", loadWhatsAppStatus);
+  document.getElementById("startWhatsAppBtn").addEventListener("click", () => controlWhatsApp("start"));
+  document.getElementById("stopWhatsAppBtn").addEventListener("click", () => controlWhatsApp("stop"));
   window.setInterval(() => {
     if (!appScreen.hidden && !settingsScreen.hidden) loadWhatsAppStatus();
   }, 5000);
@@ -1367,6 +1429,7 @@ document.addEventListener("DOMContentLoaded", () => {
     event.preventDefault();
     const currentSession = sessionEpoch;
     const appointmentId = editingAppointmentId;
+    const waitlistId = appointmentId == null ? convertingWaitlistId : null;
     const button = document.getElementById("saveAppointmentBtn");
     const date = document.getElementById("appointmentDate").value;
     const allDay = document.getElementById("appointmentAllDay").checked;
@@ -1396,11 +1459,30 @@ document.addEventListener("DOMContentLoaded", () => {
       if (currentSession !== sessionEpoch) return;
       appointmentModal.hide();
       editingAppointmentId = null;
+      convertingWaitlistId = null;
       document.getElementById("appointmentCreated").textContent = appointmentId == null
         ? "Appuntamento salvato correttamente." : "Appuntamento modificato correttamente.";
-      document.getElementById("appointmentCreated").classList.remove("d-none");
-      calendar.refetchEvents();
+      const homeConfirmation = document.getElementById("homeAppointmentCreated");
+      homeConfirmation.classList.remove("alert-warning");
+      homeConfirmation.classList.add("alert-success");
+      homeConfirmation.textContent = appointmentId == null
+        ? "Appuntamento salvato correttamente." : "Appuntamento modificato correttamente.";
+      if (homeScreen.hidden) document.getElementById("appointmentCreated").classList.remove("d-none");
+      else homeConfirmation.classList.remove("d-none");
+      if (calendar) calendar.refetchEvents();
       loadTodayAgenda();
+      if (waitlistId != null) {
+        try {
+          await apiRequest(`/api/waitlist/${encodeURIComponent(waitlistId)}`, { method: "DELETE" });
+        } catch (failure) {
+          if (currentSession !== sessionEpoch) return;
+          homeConfirmation.classList.remove("alert-success");
+          homeConfirmation.classList.add("alert-warning");
+          homeConfirmation.textContent = "Appuntamento salvato, ma non è stato possibile confermare la rimozione dalla lista d'attesa. Verifica la lista prima di rimuovere il contatto manualmente.";
+          homeConfirmation.classList.remove("d-none");
+        }
+        if (currentSession === sessionEpoch) loadWaitlist();
+      }
     } catch (failure) {
       if (currentSession === sessionEpoch) showAppointmentError(failure.status === 409 ? "Fascia oraria occupata o appuntamento non più modificabile. Aggiorna il calendario e riprova."
         : failure.status === 400 && allDay && !generic ? "Per un evento tutto il giorno scegli un paziente già presente e controlla la data."
@@ -1554,6 +1636,8 @@ document.addEventListener("DOMContentLoaded", () => {
     trashRequest++;
     reminderPreviewRequest++;
     whatsAppStatusRequest++;
+    whatsAppStatus = null;
+    updateWhatsAppControlButtons();
     patientModal.hide();
     appointmentModal.hide();
     eventModal.hide();
@@ -1565,6 +1649,7 @@ document.addEventListener("DOMContentLoaded", () => {
     confirmDeleteAppointmentModal.hide();
     selectedAppointment = null;
     editingAppointmentId = null;
+    convertingWaitlistId = null;
     createPatientModal.hide();
     deletePatientModal.hide();
     mergeConfirmModal.hide();
@@ -1594,6 +1679,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("createPatientForm").reset();
     document.getElementById("createPatientError").classList.add("d-none");
     document.getElementById("homePatientCreated").classList.add("d-none");
+    document.getElementById("homeAppointmentCreated").classList.add("d-none");
     document.getElementById("patientsCreated").classList.add("d-none");
     document.getElementById("authNotice").classList.add("d-none");
     loginError.classList.add("d-none");

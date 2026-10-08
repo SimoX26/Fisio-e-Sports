@@ -2,6 +2,7 @@ package it.SimoSW.controller.graphic;
 
 import it.SimoSW.service.whatsapp.WhatsAppBaileysService;
 import it.SimoSW.util.bootstrap.ApplicationInitializer;
+import it.SimoSW.util.AppProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.servlet.ServletException;
@@ -40,11 +41,16 @@ public class SettingsServlet extends HttpServlet {
         }
 
         request.setAttribute("baileysStatus", whatsAppBaileysService.getStatus());
+        request.setAttribute("baileysManualControl", manualControl());
         request.getRequestDispatcher("/WEB-INF/jsp/settings.jsp").forward(request, response);
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        if (!manualControl()) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Servizio WhatsApp gestito dal server");
+            return;
+        }
         String action = request.getParameter("action");
         if ("start-baileys".equals(action)) {
             try {
@@ -63,5 +69,9 @@ public class SettingsServlet extends HttpServlet {
         }
 
         doGet(request, response);
+    }
+
+    private boolean manualControl() {
+        return "manual".equals(AppProperties.get("whatsapp.baileys.managementMode", "manual"));
     }
 }

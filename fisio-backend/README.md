@@ -107,12 +107,25 @@ modello fornito e invia soltanto agli appuntamenti selezionati e ancora accessib
 Per abilitarlo, configurare `whatsapp.baileys.enabled=true` nel file privato
 del backend; `whatsapp.baileys.therapistId` limita opzionalmente l'account.
 `gatewayBaseUrl` deve puntare al servizio Baileys raggiungibile dal backend.
-Il backend non avvia il gateway: deve già essere attivo. In caso di risposta
-incerta, verificare sul gateway prima di riprovare per evitare doppioni.
-In locale si avvia separatamente con `./run-baileys-locale.sh` dalla radice.
+In caso di risposta incerta all'invio, verificare sul gateway prima di
+riprovare per evitare doppioni. In locale si può avviare il servizio
+separatamente con `./run-baileys-locale.sh` dalla radice.
 `GET /api/whatsapp/status` legge stato e QR dal gateway usando la configurazione
 privata del backend. Il QR è disponibile solo per il terapista autorizzato e
 collega la sessione WhatsApp centrale del server.
+Sul server impostare `whatsapp.baileys.managementMode=systemd`: il gateway parte
+con `fisio-baileys.service` e il desktop mostra solo stato e QR. Per abilitare
+**Avvia** e **Arresta** nell'ambiente locale, scegliere
+`whatsapp.baileys.managementMode=manual` e impostare
+`whatsapp.baileys.serviceDirectory` al percorso assoluto della cartella
+`baileys-service` nel file privato del backend. L'utente che esegue il backend
+deve poter scrivere nella cartella, nel log e nella directory di sessione.
+`POST /api/whatsapp/control` esegue lo script `start-baileys.sh` o chiede al
+gateway di arrestarsi tramite `/api/shutdown`. Risponde 202 alla richiesta;
+controllare poi lo stato. Il deploy remoto distribuisce solo il backend:
+l'installazione di Baileys sul server è gestita separatamente da
+`./deploy-baileys-remoto.sh`. La procedura completa è nella
+[guida WhatsApp](../docs/operations/whatsapp-baileys.md).
 La lista d'attesa usa `GET /api/waitlist`, `POST /api/waitlist` con campi form
 `fullName` e `phone`, e `DELETE /api/waitlist/{id}`. Anche in scrittura il
 terapista viene ricavato dall'account. Dopo ogni modifica il desktop rilegge

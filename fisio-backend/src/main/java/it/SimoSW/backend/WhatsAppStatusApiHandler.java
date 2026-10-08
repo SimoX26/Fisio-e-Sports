@@ -43,9 +43,12 @@ final class WhatsAppStatusApiHandler implements HttpHandler {
                 return;
             }
             if (!ReminderSendApiHandler.isConfigured(therapistId)) {
-                ApiJson.send(exchange, 200, "{\"configured\":false,\"reachable\":false,\"ready\":false,\"qrRequired\":false,\"state\":\"DISABLED\",\"qrDataUrl\":null}");
+                ApiJson.send(exchange, 200, "{\"configured\":false,\"managementMode\":\"systemd\",\"controlAvailable\":false,\"reachable\":false,\"ready\":false,\"qrRequired\":false,\"state\":\"DISABLED\",\"qrDataUrl\":null}");
                 return;
             }
+            String controlAvailable = ",\"managementMode\":"
+                    + ApiJson.quote(AppProperties.get("whatsapp.baileys.managementMode", "systemd"))
+                    + ",\"controlAvailable\":" + WhatsAppControlApiHandler.isAvailable();
             try {
                 JsonNode status = JSON.readTree(request("/api/status", 65536));
                 if (status == null || !status.isObject()) throw new IOException("invalid_status");
@@ -60,13 +63,13 @@ final class WhatsAppStatusApiHandler implements HttpHandler {
                         // Il gateway può essere raggiungibile mentre il QR si sta aggiornando.
                     }
                 }
-                ApiJson.send(exchange, 200, "{\"configured\":true,\"reachable\":true,\"ready\":" + ready
+                ApiJson.send(exchange, 200, "{\"configured\":true" + controlAvailable + ",\"reachable\":true,\"ready\":" + ready
                         + ",\"qrRequired\":" + qrRequired
                         + ",\"state\":" + ApiJson.quote(status.path("state").asText("UNKNOWN"))
                         + ",\"lastError\":" + ApiJson.quote(status.path("lastError").asText(null))
                         + ",\"qrDataUrl\":" + ApiJson.quote(qrDataUrl) + "}");
             } catch (IOException exception) {
-                ApiJson.send(exchange, 200, "{\"configured\":true,\"reachable\":false,\"ready\":false,\"qrRequired\":false,\"state\":\"OFFLINE\",\"qrDataUrl\":null}");
+                ApiJson.send(exchange, 200, "{\"configured\":true" + controlAvailable + ",\"reachable\":false,\"ready\":false,\"qrRequired\":false,\"state\":\"OFFLINE\",\"qrDataUrl\":null}");
             }
         } catch (RuntimeException exception) {
             System.err.println("Errore API stato WhatsApp: " + exception.getClass().getSimpleName());

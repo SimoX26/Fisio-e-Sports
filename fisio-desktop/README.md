@@ -5,21 +5,25 @@ FullCalendar 6.1.11 e una copia del CSS della webapp. Si apre sul login del
 terapista. Il backend verifica l'account nel database e restituisce i dati
 mostrati nella home e nel calendario. Il desktop non accede a MySQL.
 
-Prima interrompere l'eventuale vecchio backend, avviare
-`./run-backend-locale.sh` in un terminale e controllare che
-`http://127.0.0.1:8081/ready` risponda `{"status":"ok"}`. Poi, in un
-secondo terminale dalla radice del repository:
+Avviare il desktop dalla radice del repository:
 
 ```bash
 ./run-desktop-locale.sh
 ```
 
-Lo script verifica `/ready` e apre la finestra JavaFX con `GDK_SCALE=2`; il backend resta nel
-primo terminale. Per chiudere il desktop usare la finestra o `Ctrl+C` nel
-secondo terminale.
+Lo script apre la finestra JavaFX con `GDK_SCALE=2` anche se il backend non è
+disponibile. Per effettuare il login e usare i dati, avviare il backend con
+`./run-backend-locale.sh` in un altro terminale e controllare che
+`http://127.0.0.1:8081/ready` risponda `{"status":"ok"}`. Per chiudere il
+desktop usare la finestra o `Ctrl+C` nel terminale di avvio.
 
 Accedere con un terapista attivo. Dopo il login si apre la home con il saluto,
-gli appuntamenti e i pazienti di oggi e l'agenda, letti dal backend. Dal menu
+gli appuntamenti e i pazienti di oggi e l'agenda, letti dal backend.
+Nella lista d'attesa premere **Trasforma in appuntamento** su un contatto di
+prova: nome e telefono devono comparire nel modulo. Salvare una fascia libera,
+verificare il messaggio di conferma nella home, l'appuntamento nel calendario e
+la rimozione del contatto dalla lista. Ripetere con un secondo
+terapista per controllare che non compaiano i contatti del primo. Dal menu
 aprire il calendario e controllare giorno, settimana, mese, dettaglio evento e
 ritorno alla home. Verificare anche credenziali errate e Logout: i dati
 precedenti non devono restare visibili dopo l'uscita. Ripetere con un secondo
@@ -71,6 +75,12 @@ Aprire **Impostazioni**: verificare lo stato WhatsApp e usare **Aggiorna stato**
 Con gateway non autenticato compare il QR da scansionare sul telefono; dopo
 l'accesso deve apparire **Connesso**. Senza configurazione, lo stato è
 **Non configurato**. La pagina aggiorna lo stato ogni cinque secondi.
+In modalità locale `managementMode=manual`, con `serviceDirectory` configurata
+e scrivibile dall'utente del backend, provare **Arresta servizio**, attendere
+**Non attivo**, poi **Avvia servizio WhatsApp** e attendere il QR o
+**Connesso**. Questi comandi agiscono sulla sessione WhatsApp centrale. Sul
+server `managementMode=systemd` li nasconde; stato e QR restano disponibili.
+Configurazione e verifica sono nella [guida WhatsApp](../docs/operations/whatsapp-baileys.md).
 Chiudere e riaprire
 il desktop: con backend attivo deve entrare automaticamente nello stesso account.
 Premere **Logout** e riaprire: deve comparire il login. Ripetere con un secondo

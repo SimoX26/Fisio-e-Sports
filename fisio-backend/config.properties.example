@@ -12,3 +12,7 @@ whatsapp.baileys.enabled=false
 whatsapp.baileys.therapistId=
 whatsapp.baileys.gatewayBaseUrl=http://127.0.0.1:3001
 whatsapp.baileys.gatewayTimeoutMs=4000
+# Sul server usare systemd; in locale scegliere manual per i pulsanti desktop.
+whatsapp.baileys.managementMode=systemd
+# In modalita' manual serve il percorso assoluto e scrivibile dal backend.
+# whatsapp.baileys.serviceDirectory=/percorso/assoluto/baileys-service
