@@ -108,8 +108,14 @@ final class ReminderSendApiHandler implements HttpHandler {
                 ApiJson.send(exchange, 404, "{\"error\":\"appointment_not_found\"}");
                 return;
             }
-            String template = templates.findTemplateByTherapistId(therapistId)
-                    .filter(value -> !value.isBlank()).orElse(ReminderPreviewApiHandler.DEFAULT_TEMPLATE);
+            String template;
+            if (form.containsKey("template")) {
+                template = ReminderPreviewApiHandler.normalizeTemplate(form.get("template").get(0));
+                templates.saveTemplate(therapistId, template);
+            } else {
+                template = templates.findTemplateByTherapistId(therapistId)
+                        .filter(value -> !value.isBlank()).orElse(ReminderPreviewApiHandler.DEFAULT_TEMPLATE);
+            }
             int sent = 0;
             int skipped = 0;
             int failed = 0;
@@ -140,7 +146,7 @@ final class ReminderSendApiHandler implements HttpHandler {
         }
     }
 
-    private static Map<String, List<String>> parseForm(String body) {
+    static Map<String, List<String>> parseForm(String body) {
         Map<String, List<String>> values = new HashMap<>();
         for (String part : body.split("&")) {
             int separator = part.indexOf('=');

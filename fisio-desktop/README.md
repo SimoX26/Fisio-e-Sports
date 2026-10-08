@@ -56,12 +56,21 @@ terapista: la cronologia del primo non deve essere accessibile. Eventi generici
 e tutto il giorno non devono mostrare il pulsante di anteprima.
 Da **Promemoria** nella home o **Anteprima promemoria** nel dettaglio di un
 appuntamento programmato, confrontare modello e messaggi con la webapp legacy.
+Modificare il modello e controllare che l'anteprima cambi subito. Premere
+**Salva modello**, chiudere e riaprire la finestra: il testo deve persistere.
+Lasciare vuoto e salvare per ripristinare il modello predefinito. Verificare
+che il secondo terapista conservi un modello separato.
 Cambiare giorno e selezione degli appuntamenti; con un secondo terapista non
 devono comparire i pazienti del primo. Con gateway Baileys configurato nel
 backend, selezionare un proprio appuntamento di prova, premere **Invia
-selezionati** e confrontare il conteggio con il messaggio ricevuto. Senza
+selezionati** dopo una modifica del modello e confrontare testo e conteggio con
+il messaggio ricevuto. L'invio salva anche il modello corrente. Senza
 configurazione il pulsante resta disabilitato. Se l'esito è incerto, controllare
 il gateway prima di ripetere l'invio.
+Aprire **Impostazioni**: verificare lo stato WhatsApp e usare **Aggiorna stato**.
+Con gateway non autenticato compare il QR da scansionare sul telefono; dopo
+l'accesso deve apparire **Connesso**. Senza configurazione, lo stato è
+**Non configurato**. La pagina aggiorna lo stato ogni cinque secondi.
 Chiudere e riaprire
 il desktop: con backend attivo deve entrare automaticamente nello stesso account.
 Premere **Logout** e riaprire: deve comparire il login. Ripetere con un secondo

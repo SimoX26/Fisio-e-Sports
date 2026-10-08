@@ -78,12 +78,15 @@ final class ReminderPreviewApiHandler implements HttpHandler {
                         .append(",\"patientPhone\":").append(ApiJson.quote(
                                 calendar.resolvePatientPhone(appointment.getPatientId(), therapistId)))
                         .append(",\"timeRange\":").append(ApiJson.quote(range))
+                        .append(",\"startTime\":").append(ApiJson.quote(start))
+                        .append(",\"endTime\":").append(ApiJson.quote(end))
                         .append(",\"message\":").append(ApiJson.quote(message)).append('}');
             }
             recipients.append(']');
             ApiJson.send(exchange, 200, "{\"date\":" + ApiJson.quote(date.toString())
                     + ",\"dayLabel\":" + ApiJson.quote(dayLabel)
                     + ",\"template\":" + ApiJson.quote(template)
+                    + ",\"defaultTemplate\":" + ApiJson.quote(DEFAULT_TEMPLATE)
                     + ",\"sendEnabled\":" + ReminderSendApiHandler.isConfigured(therapistId)
                     + ",\"recipients\":" + recipients + "}");
         } catch (RuntimeException exception) {
@@ -98,6 +101,10 @@ final class ReminderPreviewApiHandler implements HttpHandler {
         return template.replace("{nome paziente}", patientName).replace("{giorno}", dayLabel)
                 .replace("{ora inizio}", start).replace("{ora fine}", end)
                 .replace("{ora inizio - ora fine}", start + " - " + end);
+    }
+
+    static String normalizeTemplate(String template) {
+        return template == null || template.isBlank() ? DEFAULT_TEMPLATE : template.trim();
     }
 
     private static Map<String, String> parseQuery(String raw) {

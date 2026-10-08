@@ -37,6 +37,12 @@ Per provarlo localmente, configurare `fisio-backend/config.properties`, usare
 `./run-backend-locale.sh` e verificare che `/ready` risponda `ok` prima del login desktop.
 In un secondo terminale `./run-desktop-locale.sh` verifica il backend e apre
 il desktop JavaFX.
+Per i promemoria WhatsApp, avviare separatamente il gateway con
+`./run-baileys-locale.sh` dalla radice del progetto. Lo script usa
+`baileys-service/start-baileys.sh`, installa le dipendenze Node.js se mancano e
+resta in primo piano. Il gateway risponde su `127.0.0.1:3001`; lo stato si
+controlla con `curl http://127.0.0.1:3001/api/status`. Fermarlo con
+`./baileys-service/stop-baileys.sh` da un altro terminale.
 `/health` controlla il processo; `/ready` controlla la connessione MySQL.
 La configurazione DB del backend usa variabili d'ambiente separate dalla
 configurazione della webapp.

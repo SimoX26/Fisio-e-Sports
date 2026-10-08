@@ -1,6 +1,6 @@
 # Stato della migrazione
 
-Aggiornato: 5 ottobre 2026. Questo registro descrive il codice del repository;
+Aggiornato: 8 ottobre 2026. Questo registro descrive il codice del repository;
 non attesta un deploy in produzione.
 
 | Passo | Stato | Verifica o lavoro rimasto |
@@ -9,8 +9,8 @@ non attesta un deploy in produzione.
 | Backend avviabile | Completato; script di deploy remoto del solo JAR preparato | Collaudare `fisio-backend.service` e `/ready` sul server con configurazione DB remota |
 | Separazione Maven | Implementata, da collaudare in Tomcat | Build aggregata e contenuto WAR verificati |
 | Associazione paziente-terapista | Migrazione applicata al DB di test configurato; codice pronto | Deploy WAR e prova manuale con due utenti |
-| API autenticate | Identità, calendario con completamento, cestino, anteprima e invio promemoria, trattamenti, lista d'attesa e scheda paziente; token Bearer revocabile per accesso automatico locale, da collaudare | Verificare invio e cestino con dati reali; HTTPS prima del deploy in rete |
-| Client desktop | Login e accesso automatico con archivio protetto del sistema; home parziale, calendario con cestino e invio promemoria, storico trattamenti e scheda paziente; script di packaging Windows pronto, da collaudare su Windows | Verificare invio, installer e isolamento fra terapisti; poi completare modello modificabile e altri flussi |
+| API autenticate | Identità, calendario con completamento, cestino, modello e invio promemoria, stato e QR WhatsApp, trattamenti, lista d'attesa e scheda paziente; token Bearer revocabile per accesso automatico locale, da collaudare | Verificare stato, QR e invio con gateway reale; HTTPS prima del deploy in rete |
+| Client desktop | Login e accesso automatico con archivio protetto del sistema; home parziale, calendario con cestino e promemoria, Impostazioni con stato e QR WhatsApp, storico trattamenti e scheda paziente; script di packaging Windows pronto, da collaudare su Windows | Verificare Impostazioni e isolamento fra terapisti; poi valutare avvio e arresto del gateway |
 | Client Android autonomo | Da fare | Sostituzione della WebView |
 | Dismissione webapp | Da fare | Solo dopo parità funzionale e collaudo |
 

@@ -100,13 +100,19 @@ sull'intero cestino. Il ripristino controlla i conflitti; la lettura applica
 la scadenza automatica di 30 giorni, come nel legacy.
 `GET /api/reminders/preview?date=YYYY-MM-DD` legge il modello salvato e
 compone l'anteprima dei promemoria degli appuntamenti programmati del
-terapista. `POST /api/reminders/send` riceve `date` e uno o più `appointmentId`
-come form e invia soltanto gli appuntamenti selezionati e ancora accessibili.
+terapista. `POST /api/reminders/template` salva il modello del terapista;
+un testo vuoto ripristina quello predefinito. `POST /api/reminders/send` riceve
+`date`, uno o più `appointmentId` e l'eventuale `template` come form. Salva il
+modello fornito e invia soltanto agli appuntamenti selezionati e ancora accessibili.
 Per abilitarlo, configurare `whatsapp.baileys.enabled=true` nel file privato
 del backend; `whatsapp.baileys.therapistId` limita opzionalmente l'account.
 `gatewayBaseUrl` deve puntare al servizio Baileys raggiungibile dal backend.
 Il backend non avvia il gateway: deve già essere attivo. In caso di risposta
 incerta, verificare sul gateway prima di riprovare per evitare doppioni.
+In locale si avvia separatamente con `./run-baileys-locale.sh` dalla radice.
+`GET /api/whatsapp/status` legge stato e QR dal gateway usando la configurazione
+privata del backend. Il QR è disponibile solo per il terapista autorizzato e
+collega la sessione WhatsApp centrale del server.
 La lista d'attesa usa `GET /api/waitlist`, `POST /api/waitlist` con campi form
 `fullName` e `phone`, e `DELETE /api/waitlist/{id}`. Anche in scrittura il
 terapista viene ricavato dall'account. Dopo ogni modifica il desktop rilegge

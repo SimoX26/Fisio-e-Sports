@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const patientsScreen = document.getElementById("patientsScreen");
   const treatmentsScreen = document.getElementById("treatmentsScreen");
   const trashScreen = document.getElementById("trashScreen");
+  const settingsScreen = document.getElementById("settingsScreen");
   const loginError = document.getElementById("loginError");
   const dataStatus = document.getElementById("dataStatus");
   const patientModal = new bootstrap.Modal(document.getElementById("patientModal"));
@@ -37,6 +38,40 @@ document.addEventListener("DOMContentLoaded", () => {
   let preselectedReminderId = null;
   let reminderSendEnabled = false;
   let reminderSending = false;
+  let reminderSaving = false;
+  let reminderLoaded = false;
+  let reminderDayLabel = "";
+  let reminderDefaultTemplate = "";
+  let whatsAppStatusRequest = 0;
+
+  async function loadWhatsAppStatus() {
+    const request = ++whatsAppStatusRequest;
+    const currentSession = sessionEpoch;
+    try {
+      const status = await getJson("/api/whatsapp/status");
+      if (request !== whatsAppStatusRequest || currentSession !== sessionEpoch || settingsScreen.hidden) return;
+      const badge = document.getElementById("whatsAppBadge");
+      const label = !status.configured ? "Non configurato" : status.ready ? "Connesso"
+        : status.reachable ? "Da autenticare" : "Non attivo";
+      badge.textContent = label;
+      badge.className = `badge ${status.ready ? "text-bg-success" : status.reachable ? "text-bg-warning" : "text-bg-secondary"}`;
+      document.getElementById("whatsAppState").textContent = status.state || "UNKNOWN";
+      document.getElementById("whatsAppMessage").textContent = !status.configured
+        ? "WhatsApp non è abilitato per questo account nel backend."
+        : status.lastError || (status.reachable ? "" : "Servizio WhatsApp non raggiungibile dal backend.");
+      const panel = document.getElementById("whatsAppQrPanel");
+      const image = document.getElementById("whatsAppQrImage");
+      panel.hidden = !status.qrDataUrl;
+      if (status.qrDataUrl && image.src !== status.qrDataUrl) image.src = status.qrDataUrl;
+      if (!status.qrDataUrl) image.removeAttribute("src");
+    } catch (failure) {
+      if (request !== whatsAppStatusRequest || currentSession !== sessionEpoch || settingsScreen.hidden) return;
+      document.getElementById("whatsAppBadge").textContent = "Non disponibile";
+      document.getElementById("whatsAppState").textContent = "UNKNOWN";
+      document.getElementById("whatsAppMessage").textContent = "Impossibile leggere lo stato WhatsApp dal backend.";
+      document.getElementById("whatsAppQrPanel").hidden = true;
+    }
+  }
 
   function renderReminderPreview() {
     const appointments = document.getElementById("reminderPreviewAppointments");
@@ -64,6 +99,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderMessages() {
     const messages = document.getElementById("reminderPreviewMessages");
     messages.replaceChildren();
+    const input = document.getElementById("reminderPreviewTemplate");
+    const template = input.value.trim() || reminderDefaultTemplate;
     for (const entry of reminderEntries.filter(item => item.checkbox?.checked)) {
       const card = document.createElement("div");
       card.className = "border rounded p-3 mb-2";
@@ -71,11 +108,18 @@ document.addEventListener("DOMContentLoaded", () => {
       name.textContent = `${entry.patientName} • ${entry.timeRange}`;
       const body = document.createElement("div");
       body.className = "mt-2";
-      body.textContent = entry.message;
+      body.textContent = template.split("{nome paziente}").join(entry.patientName || "")
+        .split("{giorno}").join(reminderDayLabel)
+        .split("{ora inizio}").join(entry.startTime)
+        .split("{ora fine}").join(entry.endTime)
+        .split("{ora inizio - ora fine}").join(entry.timeRange);
       card.append(name, body);
       messages.appendChild(card);
     }
-    document.getElementById("sendRemindersBtn").disabled = reminderSending || !reminderSendEnabled
+    input.disabled = !reminderLoaded || reminderSaving || reminderSending;
+    document.getElementById("reminderPreviewDate").disabled = reminderSaving || reminderSending;
+    document.getElementById("saveReminderTemplateBtn").disabled = !reminderLoaded || reminderSaving || reminderSending;
+    document.getElementById("sendRemindersBtn").disabled = reminderSaving || reminderSending || !reminderSendEnabled
       || !reminderEntries.some(item => item.checkbox?.checked);
   }
 
@@ -87,6 +131,9 @@ document.addEventListener("DOMContentLoaded", () => {
     error.classList.add("d-none");
     document.getElementById("reminderSendResult").classList.add("d-none");
     reminderSendEnabled = false;
+    reminderLoaded = false;
+    reminderDayLabel = "";
+    reminderDefaultTemplate = "";
     reminderEntries = [];
     renderReminderPreview();
     if (!date) return;
@@ -94,6 +141,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await getJson(`/api/reminders/preview?date=${encodeURIComponent(date)}`);
       if (request !== reminderPreviewRequest || currentSession !== sessionEpoch) return;
       reminderEntries = data.recipients;
+      reminderLoaded = true;
+      reminderDayLabel = data.dayLabel;
+      reminderDefaultTemplate = data.defaultTemplate;
       reminderSendEnabled = data.sendEnabled;
       document.getElementById("reminderSendHint").textContent = data.sendEnabled ? ""
         : "WhatsApp non configurato per questo account nel backend.";
@@ -106,8 +156,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  async function saveReminderTemplate() {
+    if (!reminderLoaded || reminderSaving || reminderSending) return;
+    const currentSession = sessionEpoch;
+    const input = document.getElementById("reminderPreviewTemplate");
+    const error = document.getElementById("reminderPreviewError");
+    const result = document.getElementById("reminderSendResult");
+    error.classList.add("d-none");
+    result.classList.add("d-none");
+    reminderSaving = true;
+    renderMessages();
+    try {
+      const response = await apiRequest("/api/reminders/template", {
+        method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ template: input.value })
+      });
+      const data = await response.json();
+      if (currentSession !== sessionEpoch) return;
+      input.value = data.template;
+      result.textContent = "Modello promemoria salvato.";
+      result.classList.remove("d-none", "alert-danger");
+      result.classList.add("alert-info");
+    } catch (failure) {
+      if (currentSession !== sessionEpoch) return;
+      error.textContent = "Impossibile salvare il modello nel backend.";
+      error.classList.remove("d-none");
+    } finally {
+      reminderSaving = false;
+      renderMessages();
+    }
+  }
+
   async function sendSelectedReminders() {
-    if (reminderSending || !reminderSendEnabled) return;
+    if (reminderSaving || reminderSending || !reminderSendEnabled) return;
     const selected = reminderEntries.filter(item => item.checkbox?.checked);
     if (!selected.length) return;
     const date = document.getElementById("reminderPreviewDate").value;
@@ -119,7 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
     reminderSending = true;
     renderMessages();
     try {
-      const body = new URLSearchParams({ date });
+      const body = new URLSearchParams({ date, template: document.getElementById("reminderPreviewTemplate").value });
       for (const entry of selected) body.append("appointmentId", entry.appointmentId);
       const response = await apiRequest("/api/reminders/send", {
         method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body
@@ -293,6 +374,7 @@ document.addEventListener("DOMContentLoaded", () => {
     patientsScreen.hidden = true;
     treatmentsScreen.hidden = true;
     trashScreen.hidden = true;
+    settingsScreen.hidden = true;
     document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month");
     document.body.classList.remove("address-book-page");
     document.body.classList.add("app-page");
@@ -300,6 +382,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("calendarNav").classList.remove("active");
     document.getElementById("patientsNav").classList.remove("active");
     document.getElementById("treatmentsNav").classList.remove("active");
+    document.getElementById("settingsNav").classList.remove("active");
     document.title = "Dashboard • Fisio e Sports";
     loadTodayAgenda();
     loadWaitlist();
@@ -538,6 +621,7 @@ document.addEventListener("DOMContentLoaded", () => {
     patientsScreen.hidden = true;
     treatmentsScreen.hidden = true;
     trashScreen.hidden = true;
+    settingsScreen.hidden = true;
     document.body.classList.remove("app-page");
     document.body.classList.remove("address-book-page");
     document.body.classList.add("calendar-gcal-page");
@@ -545,6 +629,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("calendarNav").classList.add("active");
     document.getElementById("patientsNav").classList.remove("active");
     document.getElementById("treatmentsNav").classList.remove("active");
+    document.getElementById("settingsNav").classList.remove("active");
     document.title = "Calendario • Fisio e Sports";
     if (!calendar) {
       calendar = createCalendar();
@@ -563,12 +648,14 @@ document.addEventListener("DOMContentLoaded", () => {
     patientsScreen.hidden = false;
     treatmentsScreen.hidden = true;
     trashScreen.hidden = true;
+    settingsScreen.hidden = true;
     document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month");
     document.body.classList.add("app-page", "address-book-page");
     document.getElementById("homeNav").classList.remove("active");
     document.getElementById("calendarNav").classList.remove("active");
     document.getElementById("patientsNav").classList.add("active");
     document.getElementById("treatmentsNav").classList.remove("active");
+    document.getElementById("settingsNav").classList.remove("active");
     document.title = "Rubrica Pazienti • Fisio e Sports";
     loadPatients();
   }
@@ -579,9 +666,10 @@ document.addEventListener("DOMContentLoaded", () => {
     patientsScreen.hidden = true;
     treatmentsScreen.hidden = false;
     trashScreen.hidden = true;
+    settingsScreen.hidden = true;
     document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
     document.body.classList.add("app-page");
-    for (const id of ["homeNav", "calendarNav", "patientsNav", "treatmentsNav"])
+    for (const id of ["homeNav", "calendarNav", "patientsNav", "treatmentsNav", "settingsNav"])
       document.getElementById(id).classList.toggle("active", id === "treatmentsNav");
     document.getElementById("treatmentsTitle").textContent = patientId == null
       ? "Storico trattamenti" : `Cronologia trattamenti • ${patientName}`;
@@ -621,15 +709,31 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function showSettings() {
+    homeScreen.hidden = true;
+    calendarScreen.hidden = true;
+    patientsScreen.hidden = true;
+    treatmentsScreen.hidden = true;
+    trashScreen.hidden = true;
+    settingsScreen.hidden = false;
+    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
+    document.body.classList.add("app-page");
+    for (const id of ["homeNav", "calendarNav", "patientsNav", "treatmentsNav", "settingsNav"])
+      document.getElementById(id).classList.toggle("active", id === "settingsNav");
+    document.title = "Impostazioni • Fisio e Sports";
+    loadWhatsAppStatus();
+  }
+
   function showTrash() {
     homeScreen.hidden = true;
     calendarScreen.hidden = true;
     patientsScreen.hidden = true;
     treatmentsScreen.hidden = true;
     trashScreen.hidden = false;
+    settingsScreen.hidden = true;
     document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
     document.body.classList.add("app-page");
-    for (const id of ["homeNav", "calendarNav", "patientsNav", "treatmentsNav"])
+    for (const id of ["homeNav", "calendarNav", "patientsNav", "treatmentsNav", "settingsNav"])
       document.getElementById(id).classList.toggle("active", id === "calendarNav");
     document.title = "Cestino appuntamenti • Fisio e Sports";
     loadTrash();
@@ -1078,12 +1182,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("homeNav").addEventListener("click", showHome);
   document.getElementById("calendarNav").addEventListener("click", () => showCalendar());
+  document.getElementById("settingsNav").addEventListener("click", showSettings);
+  document.getElementById("refreshWhatsAppBtn").addEventListener("click", loadWhatsAppStatus);
+  window.setInterval(() => {
+    if (!appScreen.hidden && !settingsScreen.hidden) loadWhatsAppStatus();
+  }, 5000);
   document.getElementById("openHomeReminderBtn").addEventListener("click", () => openReminderPreview(appointmentDate(new Date())));
   document.getElementById("reminderPreviewDate").addEventListener("change", () => {
     preselectedReminderId = null;
     loadReminderPreview();
   });
   document.getElementById("sendRemindersBtn").addEventListener("click", sendSelectedReminders);
+  document.getElementById("saveReminderTemplateBtn").addEventListener("click", saveReminderTemplate);
+  document.getElementById("reminderPreviewTemplate").addEventListener("input", renderMessages);
   document.getElementById("sendSingleReminderBtn").addEventListener("click", () => {
     if (!selectedAppointment?.start) return;
     const date = appointmentDate(selectedAppointment.start);
@@ -1442,6 +1553,7 @@ document.addEventListener("DOMContentLoaded", () => {
     treatmentsRequest++;
     trashRequest++;
     reminderPreviewRequest++;
+    whatsAppStatusRequest++;
     patientModal.hide();
     appointmentModal.hide();
     eventModal.hide();
@@ -1491,6 +1603,7 @@ document.addEventListener("DOMContentLoaded", () => {
     patientsScreen.hidden = true;
     treatmentsScreen.hidden = true;
     trashScreen.hidden = true;
+    settingsScreen.hidden = true;
     document.title = "Login • Fisio e Sports";
     let revoked = true;
     if (previousAuthorization?.startsWith("Bearer ")) {
