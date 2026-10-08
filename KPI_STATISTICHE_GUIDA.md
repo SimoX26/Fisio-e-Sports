@@ -1,9 +1,11 @@
 # Guida alle statistiche KPI
 
-La pagina `/dashboard/insights` visualizza i dati restituiti dall'endpoint `/dashboard/kpi`.
-Il backend autonomo espone anche `GET /api/kpi?months=12` per leggere gli
-snapshot personali già salvati, con `computedAt`. Non calcola ancora nuovi
-snapshot né le metriche derivate della pagina legacy.
+La pagina legacy `/dashboard/insights` legge `/dashboard/kpi`. La schermata
+desktop **Dati e Statistiche** legge `GET /api/kpi?scope=me&months=12` dal
+backend: mostra schede, grafico e dettaglio mensile, anche per l'ambito globale.
+L'API espone gli snapshot salvati, le metriche derivate e `computedAt`. Il
+backend calcola gli snapshot all'avvio e poi ogni 24 ore dalla prima esecuzione
+alle 02:30 locali.
 
 ## Ambito e periodo
 
@@ -17,7 +19,7 @@ L'endpoint accetta il parametro `months` fino a un massimo di 36.
 
 ## Aggiornamento dei dati
 
-I valori principali sono salvati nella tabella `kpi_monthly_snapshot`. All'avvio della webapp e ogni giorno alle 02:30 lo scheduler aggiorna il mese corrente e quello precedente, sia per l'ambito globale sia per ogni terapista attivo.
+I valori principali sono salvati nella tabella `kpi_monthly_snapshot`. All'avvio del backend e poi ogni 24 ore lo scheduler aggiorna il mese corrente e quello precedente, sia per l'ambito globale sia per ogni terapista attivo. La prima esecuzione programmata è alle 02:30 locali; il cambio d'ora può spostare le esecuzioni successive. La webapp legge gli snapshot, ma non li aggiorna più.
 
 Alcuni indicatori gestionali vengono calcolati durante la lettura degli snapshot. I mesi più vecchi possono quindi essere assenti se non sono mai stati salvati nella tabella.
 

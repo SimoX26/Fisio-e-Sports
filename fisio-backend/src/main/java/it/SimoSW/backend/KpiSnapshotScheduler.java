@@ -1,4 +1,4 @@
-package it.SimoSW.util.bootstrap;
+package it.SimoSW.backend;
 
 import it.SimoSW.controller.application.KpiSnapshotController;
 

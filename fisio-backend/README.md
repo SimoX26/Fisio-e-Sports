@@ -5,9 +5,13 @@ Il processo HTTP autonomo espone `/health`, `/ready`, `/api/me`,
 autenticati; calendario, rubrica e lista d'attesa mostrano solo i loro dati. Il login può aggiornare un vecchio hash
 password, come nella webapp legacy.
 
-`GET /api/kpi?months=12` legge gli snapshot mensili del terapista autenticato
-(da 1 a 36 mesi; predefinito 12). Restituisce solo i valori salvati e
-`computedAt`: l'aggiornamento automatico è ancora eseguito dalla webapp legacy.
+`GET /api/kpi?scope=me&months=12` legge gli snapshot mensili del terapista
+autenticato; `scope=global` legge gli aggregati di tutti i terapisti, come
+nella pagina legacy. `months` accetta da 1 a 36 mesi (predefinito 12).
+La risposta include valori salvati, metriche derivate e `computedAt`.
+Il backend aggiorna mese corrente e precedente all'avvio e ogni
+24 ore dalla prima esecuzione alle 02:30 locali; la webapp legacy ora legge
+gli stessi snapshot.
 Per una prova locale, con il backend avviato:
 
 ```bash
@@ -15,7 +19,11 @@ curl -u marco 'http://127.0.0.1:8081/api/kpi?months=12'
 ```
 
 `curl` chiede la password senza includerla nel comando. Confrontare anno, mese,
-conteggi e data di calcolo con gli snapshot usati dalla pagina legacy.
+conteggi e data di calcolo con gli snapshot usati dalla pagina legacy. Dopo
+l'avvio, nei log deve comparire `KPI snapshot refresh completato` e
+`computedAt` per il mese corrente deve aggiornarsi. Prima di usare insieme
+backend e Tomcat, pubblicare il nuovo WAR: una vecchia versione avvierebbe
+ancora un secondo scheduler KPI.
 
 ## Configurazione
 

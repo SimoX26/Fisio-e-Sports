@@ -27,24 +27,33 @@
   </main>
 
   <div id="appScreen" hidden>
-  <nav class="navbar navbar-expand-lg px-3 px-lg-5 app-navbar">
+  <nav class="navbar navbar-expand-lg px-3 px-lg-4 app-navbar" aria-label="Navigazione principale">
     <div class="container-fluid">
       <span class="navbar-brand fw-bold"><span class="brand-dot"></span> FISIO E SPORTS</span>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Apri menu di navigazione"><span class="navbar-toggler-label">MENU</span><span class="navbar-toggler-icon"></span></button>
       <div class="collapse navbar-collapse app-navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto align-items-lg-center app-navbar-links">
-          <li class="nav-item"><button class="nav-link active" id="homeNav" type="button">Home</button></li>
+          <li class="nav-item"><button class="nav-link active" id="homeNav" type="button" aria-current="page">Home</button></li>
           <li class="nav-item"><button class="nav-link" id="calendarNav" type="button">Calendario</button></li>
           <li class="nav-item"><button class="nav-link" id="patientsNav" type="button">Rubrica</button></li>
           <li class="nav-item"><button class="nav-link" id="treatmentsNav" type="button">Storico Trattamenti</button></li>
-          <li class="nav-item"><span class="nav-link">Dati e Statistiche</span></li>
-          <li class="nav-item d-none d-lg-block mx-2"><span class="nav-link disabled nav-separator">|</span></li>
+          <li class="nav-item"><button class="nav-link" id="statsNav" type="button">Dati e Statistiche</button></li>
           <li class="nav-item"><button class="nav-link" id="settingsNav" type="button">Impostazioni</button></li>
           <li class="nav-item"><button class="nav-link logout-link" id="logoutButton" type="button">Logout</button></li>
         </ul>
       </div>
     </div>
   </nav>
+
+  <div class="modal" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content glass-card">
+      <div class="modal-header"><h2 class="modal-title h5" id="logoutConfirmTitle">Conferma logout</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
+      <form id="logoutConfirmForm">
+        <div class="modal-body"><p>Vuoi davvero uscire dall'applicazione?</p><div class="form-check"><input class="form-check-input" id="logoutConfirmCheck" type="checkbox" required><label class="form-check-label" for="logoutConfirmCheck">Confermo di voler terminare la sessione</label></div></div>
+        <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Annulla</button><button class="btn btn-danger" id="logoutConfirmSubmit" type="submit" disabled>Logout sicuro</button></div>
+      </form>
+    </div></div>
+  </div>
 
   <main class="container app-shell mt-4" id="homeScreen">
     <div class="home-topbar mb-3"><div><h1 class="home-title mb-1" id="homeGreeting"></h1><div class="home-subtitle" id="todayLabel"></div></div><div class="home-topbar-actions"><button class="home-action-pill" id="homeCreateAppointmentButton" type="button">Nuovo appuntamento</button><button class="home-action-pill" id="homeCreatePatientButton" type="button">Nuovo paziente</button><button class="home-action-pill" id="homeSendRemindersButton" type="button">Invia promemoria</button></div></div>
@@ -74,7 +83,7 @@
   </main>
 
   <main class="container app-shell mt-4" id="settingsScreen" hidden>
-    <div class="page-header-row mb-4"><h2 class="page-title">Impostazioni</h2></div>
+    <h2 class="visually-hidden">Impostazioni</h2>
     <section class="glass-card section-card p-4">
       <div class="d-flex justify-content-between align-items-center gap-3 mb-3"><h3 class="h5 mb-0">Servizio WhatsApp</h3><span class="badge text-bg-secondary" id="whatsAppBadge">Caricamento</span></div>
       <p class="mb-2">Stato: <strong id="whatsAppState">—</strong></p>
@@ -86,15 +95,15 @@
   </main>
 
   <main class="container app-shell mt-4" id="patientsScreen" hidden>
-    <div class="page-header-row mb-4"><h2 class="page-title">Rubrica Pazienti</h2><button class="btn btn-primary section-action-btn" id="patientsCreateButton" type="button">Nuovo paziente</button></div>
+    <h2 class="visually-hidden">Rubrica Pazienti</h2>
     <div class="glass-card section-card address-book-card p-4">
       <div class="alert alert-success d-none" id="patientsCreated" role="status">Paziente inserito correttamente.</div>
-      <div class="alert alert-info d-none" id="patientsFilterNotice" role="status"><div class="d-flex justify-content-between align-items-center gap-2"><span id="patientsFilterLabel"></span><button class="btn btn-sm btn-outline-secondary" id="patientsClearFilter" type="button">Rimuovi filtro</button></div></div>
-      <form id="patientsSearchForm" class="row g-2 mb-3">
-        <div class="col-12 col-md"><input class="form-control" id="patientsQuery" type="search" maxlength="200" placeholder="Cerca paziente" aria-label="Cerca paziente"></div>
-        <div class="col-12 col-md-auto"><select class="form-select" id="patientsSort" aria-label="Ordina pazienti"><option value="created-desc">Più recenti</option><option value="created-asc">Meno recenti</option><option value="name-asc">Nome A–Z</option><option value="name-desc">Nome Z–A</option></select></div>
-        <div class="col-12 col-md-auto"><button class="btn btn-primary" type="submit">Cerca</button></div>
+      <form id="patientsSearchForm" class="address-book-toolbar mb-3">
+        <div class="address-book-toolbar__filters"><select class="form-select" id="patientsSort" aria-label="Ordina pazienti"><option value="created-desc">Più recenti</option><option value="created-asc">Meno recenti</option><option value="name-asc">Nome A–Z</option><option value="name-desc">Nome Z–A</option></select></div>
+        <div class="address-book-toolbar__search"><input class="form-control" id="patientsQuery" type="search" maxlength="200" placeholder="Cerca paziente" aria-label="Cerca paziente"><button class="address-book-search-button" type="submit" aria-label="Cerca paziente"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg></button></div>
+        <button class="btn btn-primary section-action-btn address-book-toolbar__create" id="patientsCreateButton" type="button">Nuovo paziente</button>
       </form>
+      <div class="alert alert-info d-none" id="patientsFilterNotice" role="status"><div class="d-flex justify-content-between align-items-center flex-wrap gap-2"><span id="patientsFilterLabel"></span><button class="btn btn-sm btn-outline-secondary" id="patientsClearFilter" type="button">Rimuovi filtro</button></div></div>
       <div class="alert alert-danger d-none" id="patientsError" role="alert"></div>
       <div class="table-responsive address-book-table-wrap"><table class="table table-borderless align-middle mb-0 address-book-table"><thead><tr><th>Nome</th><th>Data creazione</th><th>Telefono</th><th class="text-end">Azioni</th></tr></thead><tbody id="patientsRows"></tbody></table></div>
       <div class="home-empty-state d-none" id="patientsEmpty">Nessun paziente presente.</div>
@@ -102,7 +111,7 @@
   </main>
 
   <main class="container app-shell mt-4" id="treatmentsScreen" hidden>
-    <div class="page-header-row mb-4"><h2 class="page-title" id="treatmentsTitle">Storico trattamenti</h2></div>
+    <h2 class="visually-hidden" id="treatmentsTitle">Storico trattamenti</h2>
     <div class="glass-card section-card p-4">
       <div class="alert alert-danger d-none" id="treatmentsError" role="alert"></div>
       <div class="home-empty-state d-none" id="treatmentsEmpty">Nessun trattamento registrato.</div>
@@ -110,15 +119,22 @@
     </div>
   </main>
 
-  <div id="calendarScreen" hidden>
-  <div class="container app-shell calendar-gcal-header-shell mt-4">
-    <div class="page-header-row calendar-gcal-head mb-3">
-      <h2 class="page-title mb-0">Calendario</h2>
-      <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-outline-secondary section-action-btn" id="openTrashBtn" type="button">Cestino</button>
-        <button class="btn btn-primary calendar-add-btn gcal-create-btn" id="openAppointmentModalBtn" type="button" aria-label="Nuovo appuntamento"><span>+</span><span>Crea</span></button>
-      </div>
+  <main class="container app-shell mt-4" id="statsScreen" hidden>
+    <div class="stats-toolbar mb-3">
+      <div><h2 class="stats-toolbar__title">Dati e Statistiche</h2><p class="text-muted small mb-0" id="kpiComputedAt"></p></div>
+      <div class="stats-toolbar__controls"><select id="kpiScopeSelect" class="form-select form-select-sm" aria-label="Ambito statistiche"><option value="me">I miei dati</option><option value="global">Dati globali</option></select><select id="kpiMonthsSelect" class="form-select form-select-sm" aria-label="Periodo statistiche"><option value="6">Ultimi 6 mesi</option><option value="12" selected>Ultimi 12 mesi</option><option value="24">Ultimi 24 mesi</option></select></div>
     </div>
+    <div class="alert alert-danger d-none" id="kpiError" role="alert"></div>
+    <div class="alert alert-info d-none" id="kpiEmpty" role="status">Nessuno snapshot KPI disponibile per questo periodo.</div>
+    <section class="kpi-section mb-4"><div class="kpi-section-head mb-3"><h5 class="mb-1">Dati operativi - <span id="kpiPeriodOperative">mese corrente</span></h5><p class="kpi-section-note mb-0">Appuntamenti e trattamenti riferiti al mese dell'evento.</p></div><div class="stats-kpi-grid" id="kpiOperativeCards"></div></section>
+    <section class="kpi-section mb-4"><div class="kpi-section-head mb-3"><h5 class="mb-1">Dati gestionali - <span id="kpiPeriodManagement">mese corrente</span></h5><p class="kpi-section-note mb-0">Crescita e attività dei pazienti nel mese.</p></div><div class="stats-kpi-grid stats-kpi-grid--gestionali" id="kpiManagementCards"></div></section>
+    <section class="glass-card section-card p-4 mb-4"><h5 class="mb-3">Grafico mensile</h5><div class="kpi-chart-wrap" id="kpiTrendChart"></div><div class="d-flex flex-wrap gap-3 small mt-2" id="kpiChartLegend"></div></section>
+    <section class="glass-card section-card p-4 mb-4"><h5 class="mb-3">Dettaglio mensile</h5><div class="table-responsive kpi-detail-wrap"><table class="table table-borderless align-middle mb-0 kpi-detail-table"><thead><tr class="kpi-table-groups"><th rowspan="2">Mese</th><th colspan="5">Dati operativi</th><th colspan="6">Dati gestionali</th></tr><tr><th>Appuntamenti mese</th><th>Trattamenti completati</th><th>Appuntamenti cancellati</th><th>Ore prenotate</th><th>Tasso cancellazione</th><th>Nuovi appuntamenti</th><th>Nuovi pazienti</th><th>Pazienti attivi</th><th>Pazienti di ritorno</th><th>Saturazione agenda</th><th>Media app./paziente</th></tr></thead><tbody id="kpiTableBody"></tbody></table></div></section>
+  </main>
+
+  <div id="calendarScreen" hidden>
+  <div class="container app-shell calendar-gcal-header-shell mt-3">
+    <h2 class="visually-hidden">Calendario</h2>
     <div class="alert alert-danger py-2 px-3 small d-none" id="dataStatus" role="alert"></div>
     <div class="alert alert-success py-2 px-3 small d-none" id="appointmentCreated" role="status">Appuntamento salvato correttamente.</div>
   </div>
@@ -127,11 +143,13 @@
   </div>
 
   <main class="container app-shell mt-4" id="trashScreen" hidden>
-    <div class="page-header-row mb-3">
-      <div><h2 class="page-title mb-0">Cestino appuntamenti</h2><p class="page-subtitle mb-0">Eliminazione automatica dopo 30 giorni.</p></div>
-      <div class="d-flex gap-2"><button class="btn btn-outline-danger section-action-btn" id="emptyTrashBtn" type="button">Svuota cestino</button><button class="btn btn-outline-secondary section-action-btn" id="backToCalendarBtn" type="button">Torna al calendario</button></div>
-    </div>
+    <h2 class="visually-hidden">Cestino appuntamenti</h2>
     <div class="glass-card section-card p-4">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <button class="btn btn-outline-secondary section-action-btn" id="backToCalendarBtn" type="button">Torna al calendario</button>
+        <button class="btn btn-outline-danger section-action-btn" id="emptyTrashBtn" type="button">Svuota cestino</button>
+      </div>
+      <p class="page-subtitle mb-3">Eliminazione automatica dopo 30 giorni.</p>
       <div class="alert alert-success d-none" id="trashSuccess" role="status"></div>
       <div class="alert alert-danger d-none" id="trashError" role="alert"></div>
       <div class="mb-3"><label class="form-label" for="trashSort">Ordinamento</label><select class="form-select w-auto" id="trashSort"><option value="">Data appuntamento (più recenti)</option><option value="asc">Paziente A–Z</option><option value="desc">Paziente Z–A</option></select></div>

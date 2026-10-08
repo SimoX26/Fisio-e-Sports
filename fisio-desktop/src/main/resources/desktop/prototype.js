@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const treatmentsScreen = document.getElementById("treatmentsScreen");
   const trashScreen = document.getElementById("trashScreen");
   const settingsScreen = document.getElementById("settingsScreen");
+  const statsScreen = document.getElementById("statsScreen");
   const loginError = document.getElementById("loginError");
   const dataStatus = document.getElementById("dataStatus");
   const patientModal = new bootstrap.Modal(document.getElementById("patientModal"));
@@ -16,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const completeTreatmentModal = new bootstrap.Modal(document.getElementById("completeTreatmentModal"));
   const trashConfirmModal = new bootstrap.Modal(document.getElementById("trashConfirmModal"));
   const reminderPreviewModal = new bootstrap.Modal(document.getElementById("reminderPreviewModal"));
+  const logoutConfirmModal = new bootstrap.Modal(document.getElementById("logoutConfirmModal"));
   const confirmDeleteAppointmentModal = new bootstrap.Modal(document.getElementById("confirmDeleteAppointmentModal"));
   const createPatientModal = new bootstrap.Modal(document.getElementById("createPatientModal"));
   const deletePatientModal = new bootstrap.Modal(document.getElementById("confirmDeletePatientModal"));
@@ -33,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let manualLoginStarted = false;
   let appointmentSuggestionsRequest = 0;
   let treatmentsRequest = 0;
+  let statsRequest = 0;
   let trashRequest = 0;
   let trashConfirmation = null;
   let reminderPreviewRequest = 0;
@@ -419,7 +422,24 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  const navIds = ["homeNav", "calendarNav", "patientsNav", "treatmentsNav", "statsNav", "settingsNav"];
+
+  function setActiveNav(activeId) {
+    for (const id of navIds) {
+      const button = document.getElementById(id);
+      button.classList.toggle("active", id === activeId);
+      if (id === activeId) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
+    }
+  }
+
+  function leaveStats() {
+    statsRequest++;
+    statsScreen.hidden = true;
+  }
+
   function showHome() {
+    leaveStats();
     homeScreen.hidden = false;
     calendarScreen.hidden = true;
     patientsScreen.hidden = true;
@@ -429,11 +449,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month");
     document.body.classList.remove("address-book-page");
     document.body.classList.add("app-page");
-    document.getElementById("homeNav").classList.add("active");
-    document.getElementById("calendarNav").classList.remove("active");
-    document.getElementById("patientsNav").classList.remove("active");
-    document.getElementById("treatmentsNav").classList.remove("active");
-    document.getElementById("settingsNav").classList.remove("active");
+    setActiveNav("homeNav");
     document.title = "Dashboard • Fisio e Sports";
     loadTodayAgenda();
     loadWaitlist();
@@ -584,7 +600,11 @@ document.addEventListener("DOMContentLoaded", () => {
       height: "auto",
       expandRows: true,
       stickyHeaderDates: true,
-      headerToolbar: { left: "prev,next today", center: "title", right: "timeGridDay,timeGridWeek,dayGridMonth" },
+      customButtons: {
+        trash: { text: "Cestino", hint: "Apri cestino appuntamenti", click: showTrash },
+        newAppointment: { text: "+ Nuovo", hint: "Nuovo appuntamento", click: () => openAppointmentModal() }
+      },
+      headerToolbar: { left: "prev,next today timeGridDay,timeGridWeek,dayGridMonth", center: "title", right: "trash newAppointment" },
       titleRangeSeparator: " - ",
       initialView: "timeGridWeek",
       views: { timeGridWeek: { titleFormat: { day: "numeric", month: "long", year: "numeric" } } },
@@ -691,6 +711,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function showCalendar(dayView = false) {
+    leaveStats();
     homeScreen.hidden = true;
     calendarScreen.hidden = false;
     patientsScreen.hidden = true;
@@ -700,11 +721,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.classList.remove("app-page");
     document.body.classList.remove("address-book-page");
     document.body.classList.add("calendar-gcal-page");
-    document.getElementById("homeNav").classList.remove("active");
-    document.getElementById("calendarNav").classList.add("active");
-    document.getElementById("patientsNav").classList.remove("active");
-    document.getElementById("treatmentsNav").classList.remove("active");
-    document.getElementById("settingsNav").classList.remove("active");
+    setActiveNav("calendarNav");
     document.title = "Calendario • Fisio e Sports";
     if (!calendar) {
       calendar = createCalendar();
@@ -725,6 +742,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function showPatients(treatedDate = null) {
+    leaveStats();
     if (treatedDate != null) document.getElementById("patientsQuery").value = "";
     setPatientsFilter(treatedDate);
     homeScreen.hidden = true;
@@ -735,16 +753,13 @@ document.addEventListener("DOMContentLoaded", () => {
     settingsScreen.hidden = true;
     document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month");
     document.body.classList.add("app-page", "address-book-page");
-    document.getElementById("homeNav").classList.remove("active");
-    document.getElementById("calendarNav").classList.remove("active");
-    document.getElementById("patientsNav").classList.add("active");
-    document.getElementById("treatmentsNav").classList.remove("active");
-    document.getElementById("settingsNav").classList.remove("active");
+    setActiveNav("patientsNav");
     document.title = "Rubrica Pazienti • Fisio e Sports";
     loadPatients();
   }
 
   async function showTreatments(patientId = null, patientName = "") {
+    leaveStats();
     homeScreen.hidden = true;
     calendarScreen.hidden = true;
     patientsScreen.hidden = true;
@@ -753,8 +768,7 @@ document.addEventListener("DOMContentLoaded", () => {
     settingsScreen.hidden = true;
     document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
     document.body.classList.add("app-page");
-    for (const id of ["homeNav", "calendarNav", "patientsNav", "treatmentsNav", "settingsNav"])
-      document.getElementById(id).classList.toggle("active", id === "treatmentsNav");
+    setActiveNav("treatmentsNav");
     document.getElementById("treatmentsTitle").textContent = patientId == null
       ? "Storico trattamenti" : `Cronologia trattamenti • ${patientName}`;
     document.title = "Storico trattamenti • Fisio e Sports";
@@ -794,6 +808,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function showSettings() {
+    leaveStats();
     homeScreen.hidden = true;
     calendarScreen.hidden = true;
     patientsScreen.hidden = true;
@@ -802,13 +817,231 @@ document.addEventListener("DOMContentLoaded", () => {
     settingsScreen.hidden = false;
     document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
     document.body.classList.add("app-page");
-    for (const id of ["homeNav", "calendarNav", "patientsNav", "treatmentsNav", "settingsNav"])
-      document.getElementById(id).classList.toggle("active", id === "settingsNav");
+    setActiveNav("settingsNav");
     document.title = "Impostazioni • Fisio e Sports";
     loadWhatsAppStatus();
   }
 
+  const operativeKpis = [
+    ["appointmentsInMonth", "Appuntamenti del mese", "Appuntamenti non cancellati con paziente e inizio nel mese."],
+    ["appointmentsCompleted", "Trattamenti completati", "Appuntamenti completati con fine nel mese."],
+    ["appointmentsCancelled", "Appuntamenti cancellati", "Appuntamenti cancellati nel mese."],
+    ["totalBookedMinutes", "Ore prenotate", "Minuti prenotati divisi per 60, arrotondati all'ora."],
+    ["cancellationRate", "Tasso di cancellazione", "Appuntamenti cancellati divisi per appuntamenti del mese, in percentuale."]
+  ];
+  const managementKpis = [
+    ["appointmentsCreated", "Nuovi appuntamenti creati", "Appuntamenti inseriti nel mese."],
+    ["activePatientsMonth", "Pazienti attivi nel mese", "Pazienti distinti con almeno un appuntamento non cancellato nel mese."],
+    ["newPatientsFirstAppointmentMonth", "Nuovi pazienti (primo appuntamento)", "Pazienti con primo appuntamento nel mese."],
+    ["returningPatientsMonth", "Pazienti di ritorno", "Pazienti attivi meno nuovi pazienti; minimo zero."],
+    ["agendaSaturationPct", "Saturazione agenda", "Minuti prenotati divisi per 160 ore mensili per terapista, in percentuale."],
+    ["appointmentsPerActivePatient", "Media appuntamenti per paziente", "Appuntamenti del mese divisi per pazienti attivi."]
+  ];
+  const chartKpis = [
+    ["appointmentsInMonth", "Appuntamenti del mese", "#7950f2"],
+    ["appointmentsCompleted", "Trattamenti completati", "#1f8f47"],
+    ["appointmentsCancelled", "Appuntamenti cancellati", "#c53929"],
+    ["appointmentsCreated", "Nuovi appuntamenti creati", "#e67700"],
+    ["newPatientsMonth", "Nuovi pazienti acquisiti", "#1a73e8"]
+  ];
+
+  function kpiMonth(row, long = false) {
+    return new Date(row.year, row.month - 1, 1).toLocaleDateString("it-IT", {
+      month: long ? "long" : "short", year: "numeric"
+    });
+  }
+
+  function kpiValue(row, key) {
+    const number = Number(row?.[key] || 0);
+    if (key === "totalBookedMinutes") return Math.round(number / 60).toLocaleString("it-IT");
+    if (key === "cancellationRate") {
+      const total = Number(row?.appointmentsInMonth || 0);
+      return total ? `${(Number(row?.appointmentsCancelled || 0) / total * 100).toFixed(1).replace(".", ",")}%` : "0%";
+    }
+    if (key === "agendaSaturationPct") return `${number.toLocaleString("it-IT", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+    if (key === "appointmentsPerActivePatient") return number.toLocaleString("it-IT", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    return number.toLocaleString("it-IT");
+  }
+
+  function renderKpiCards(containerId, definitions, latest) {
+    const container = document.getElementById(containerId);
+    container.replaceChildren();
+    for (const [key, label, help] of definitions) {
+      const item = document.createElement("div");
+      item.className = "kpi-grid__item";
+      const card = document.createElement("div");
+      card.className = "glass-card section-card p-4 h-100 stats-kpi-card";
+      const heading = document.createElement("div");
+      heading.className = "kpi-label mb-1";
+      heading.append(document.createTextNode(`${label} `));
+      const info = document.createElement("button");
+      info.type = "button";
+      info.className = "kpi-info-btn";
+      info.textContent = "i";
+      info.dataset.tooltip = help;
+      info.setAttribute("aria-label", `${label}. ${help}`);
+      info.addEventListener("click", () => info.classList.toggle("is-open"));
+      heading.appendChild(info);
+      const value = document.createElement("div");
+      value.className = "kpi-value";
+      value.textContent = kpiValue(latest, key);
+      card.append(heading, value);
+      item.appendChild(card);
+      container.appendChild(item);
+    }
+  }
+
+  function renderKpiTable(series) {
+    const body = document.getElementById("kpiTableBody");
+    body.replaceChildren();
+    if (!series.length) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 12;
+      cell.className = "text-muted";
+      cell.textContent = "Nessun dato disponibile";
+      row.appendChild(cell);
+      body.appendChild(row);
+      return;
+    }
+    const columns = [
+      ["appointmentsInMonth", "Appuntamenti mese"], ["appointmentsCompleted", "Trattamenti completati"],
+      ["appointmentsCancelled", "Appuntamenti cancellati"], ["totalBookedMinutes", "Ore prenotate"],
+      ["cancellationRate", "Tasso cancellazione"], ["appointmentsCreated", "Nuovi appuntamenti"],
+      ["newPatientsFirstAppointmentMonth", "Nuovi pazienti"], ["activePatientsMonth", "Pazienti attivi"],
+      ["returningPatientsMonth", "Pazienti di ritorno"], ["agendaSaturationPct", "Saturazione agenda"],
+      ["appointmentsPerActivePatient", "Media app./paziente"]
+    ];
+    for (const snapshot of series) {
+      const row = document.createElement("tr");
+      const monthCell = document.createElement("td");
+      monthCell.textContent = kpiMonth(snapshot);
+      row.appendChild(monthCell);
+      for (const [key, label] of columns) {
+        const cell = document.createElement("td");
+        cell.dataset.label = label;
+        cell.textContent = kpiValue(snapshot, key);
+        row.appendChild(cell);
+      }
+      body.appendChild(row);
+    }
+  }
+
+  function renderKpiChart(series) {
+    const container = document.getElementById("kpiTrendChart");
+    const legend = document.getElementById("kpiChartLegend");
+    container.replaceChildren();
+    legend.replaceChildren();
+    if (!series.length) return;
+    const ordered = series.slice().reverse();
+    const width = 840, height = 290, left = 42, top = 18, right = 16, bottom = 44;
+    const plotWidth = width - left - right, plotHeight = height - top - bottom;
+    const max = Math.max(1, ...ordered.flatMap(row => chartKpis.map(([key]) => Number(row[key] || 0))));
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", "320");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "Andamento mensile di appuntamenti, trattamenti e pazienti");
+    const add = (tag, attrs, text = "") => {
+      const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      for (const [name, value] of Object.entries(attrs)) node.setAttribute(name, value);
+      if (text) node.textContent = text;
+      svg.appendChild(node);
+      return node;
+    };
+    for (let tick = 0; tick <= 4; tick++) {
+      const y = top + plotHeight * tick / 4;
+      add("line", { x1: left, x2: width - right, y1: y, y2: y, stroke: "#e3e7ec" });
+      add("text", { x: left - 8, y: y + 4, "text-anchor": "end", fill: "#5f6368", "font-size": 11 },
+        String(Math.round(max * (4 - tick) / 4)));
+    }
+    const xAt = index => left + (ordered.length === 1 ? plotWidth / 2 : plotWidth * index / (ordered.length - 1));
+    ordered.forEach((row, index) => {
+      if (index % Math.ceil(ordered.length / 8) === 0 || index === ordered.length - 1) {
+        add("text", { x: xAt(index), y: height - 16, "text-anchor": "middle", fill: "#5f6368", "font-size": 11 }, kpiMonth(row));
+      }
+    });
+    for (const [key, label, color] of chartKpis) {
+      const points = ordered.map((row, index) => `${xAt(index)},${top + plotHeight * (1 - Number(row[key] || 0) / max)}`);
+      add("polyline", { points: points.join(" "), fill: "none", stroke: color, "stroke-width": 2.2 });
+      ordered.forEach((row, index) => {
+        const circle = add("circle", { cx: xAt(index), cy: top + plotHeight * (1 - Number(row[key] || 0) / max), r: 3, fill: color });
+        const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+        title.textContent = `${kpiMonth(row)} • ${label}: ${kpiValue(row, key)}`;
+        circle.appendChild(title);
+      });
+      const entry = document.createElement("span");
+      entry.className = "d-inline-flex align-items-center gap-1";
+      const marker = document.createElement("span");
+      marker.style.cssText = `display:inline-block;width:10px;height:10px;border-radius:50%;background:${color}`;
+      entry.append(marker, document.createTextNode(label));
+      legend.appendChild(entry);
+    }
+    container.appendChild(svg);
+  }
+
+  function renderKpis(series) {
+    const latest = series[0] || null;
+    const period = latest ? kpiMonth(latest, true) : "nessun dato";
+    document.getElementById("kpiPeriodOperative").textContent = period;
+    document.getElementById("kpiPeriodManagement").textContent = period;
+    document.getElementById("kpiEmpty").classList.toggle("d-none", series.length !== 0);
+    document.getElementById("kpiComputedAt").textContent = latest?.computedAt
+      ? `Ultimo calcolo: ${new Date(latest.computedAt).toLocaleString("it-IT", {
+        day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+      })}` : "";
+    if (latest) {
+      renderKpiCards("kpiOperativeCards", operativeKpis, latest);
+      renderKpiCards("kpiManagementCards", managementKpis, latest);
+    } else {
+      document.getElementById("kpiOperativeCards").replaceChildren();
+      document.getElementById("kpiManagementCards").replaceChildren();
+    }
+    renderKpiTable(series);
+    renderKpiChart(series);
+  }
+
+  async function loadKpis() {
+    const request = ++statsRequest;
+    const currentSession = sessionEpoch;
+    const error = document.getElementById("kpiError");
+    error.classList.add("d-none");
+    renderKpis([]);
+    document.getElementById("kpiEmpty").classList.add("d-none");
+    document.getElementById("kpiComputedAt").textContent = "Caricamento statistiche…";
+    try {
+      const query = new URLSearchParams({ scope: document.getElementById("kpiScopeSelect").value,
+        months: document.getElementById("kpiMonthsSelect").value });
+      const payload = await getJson(`/api/kpi?${query}`);
+      if (request !== statsRequest || currentSession !== sessionEpoch || statsScreen.hidden) return;
+      renderKpis(Array.isArray(payload.series) ? payload.series : []);
+    } catch (failure) {
+      if (request !== statsRequest || currentSession !== sessionEpoch || statsScreen.hidden) return;
+      renderKpis([]);
+      error.textContent = "Impossibile caricare i KPI dal backend.";
+      error.classList.remove("d-none");
+      document.getElementById("kpiEmpty").classList.add("d-none");
+    }
+  }
+
+  function showStats() {
+    homeScreen.hidden = true;
+    calendarScreen.hidden = true;
+    patientsScreen.hidden = true;
+    treatmentsScreen.hidden = true;
+    trashScreen.hidden = true;
+    settingsScreen.hidden = true;
+    statsScreen.hidden = false;
+    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
+    document.body.classList.add("app-page");
+    setActiveNav("statsNav");
+    document.title = "Dati e Statistiche • Fisio e Sports";
+    loadKpis();
+  }
+
   function showTrash() {
+    leaveStats();
     homeScreen.hidden = true;
     calendarScreen.hidden = true;
     patientsScreen.hidden = true;
@@ -817,8 +1050,7 @@ document.addEventListener("DOMContentLoaded", () => {
     settingsScreen.hidden = true;
     document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
     document.body.classList.add("app-page");
-    for (const id of ["homeNav", "calendarNav", "patientsNav", "treatmentsNav", "settingsNav"])
-      document.getElementById(id).classList.toggle("active", id === "calendarNav");
+    setActiveNav("calendarNav");
     document.title = "Cestino appuntamenti • Fisio e Sports";
     loadTrash();
   }
@@ -1268,6 +1500,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("homeNav").addEventListener("click", showHome);
   document.getElementById("calendarNav").addEventListener("click", () => showCalendar());
   document.getElementById("settingsNav").addEventListener("click", showSettings);
+  document.getElementById("statsNav").addEventListener("click", showStats);
+  document.getElementById("kpiScopeSelect").addEventListener("change", loadKpis);
+  document.getElementById("kpiMonthsSelect").addEventListener("change", loadKpis);
   document.getElementById("refreshWhatsAppBtn").addEventListener("click", loadWhatsAppStatus);
   document.getElementById("startWhatsAppBtn").addEventListener("click", () => controlWhatsApp("start"));
   document.getElementById("stopWhatsAppBtn").addEventListener("click", () => controlWhatsApp("stop"));
@@ -1292,7 +1527,6 @@ document.addEventListener("DOMContentLoaded", () => {
       () => openReminderPreview(date, id), { once: true });
     eventModal.hide();
   });
-  document.getElementById("openTrashBtn").addEventListener("click", showTrash);
   document.getElementById("backToCalendarBtn").addEventListener("click", () => showCalendar());
   document.getElementById("trashSort").addEventListener("change", () => loadTrash());
   document.getElementById("emptyTrashBtn").addEventListener("click", () => confirmTrashDeletion());
@@ -1322,7 +1556,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   document.getElementById("treatmentsNav").addEventListener("click", () => showTreatments());
-  document.getElementById("openAppointmentModalBtn").addEventListener("click", () => openAppointmentModal());
   document.getElementById("completeAppointmentBtn").addEventListener("click", () => {
     const selected = selectedAppointment;
     if (!selected || !selected.start || selected.extendedProps.state !== "SCHEDULED"
@@ -1659,11 +1892,32 @@ document.addEventListener("DOMContentLoaded", () => {
       button.disabled = false;
     }
   });
-  document.getElementById("logoutButton").addEventListener("click", async () => {
+  const logoutConfirmForm = document.getElementById("logoutConfirmForm");
+  const logoutConfirmCheck = document.getElementById("logoutConfirmCheck");
+  const logoutConfirmSubmit = document.getElementById("logoutConfirmSubmit");
+  document.getElementById("logoutButton").addEventListener("click", () => {
+    logoutConfirmForm.reset();
+    logoutConfirmSubmit.disabled = true;
+    logoutConfirmModal.show();
+  });
+  logoutConfirmCheck.addEventListener("change", () => {
+    logoutConfirmSubmit.disabled = !logoutConfirmCheck.checked;
+  });
+  logoutConfirmForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!logoutConfirmCheck.checked) return;
+    logoutConfirmSubmit.disabled = true;
+    logoutConfirmModal.hide();
     const previousAuthorization = authorization;
     const tokenCleared = window.desktopBridge ? window.desktopBridge.clearToken() : true;
     manualLoginStarted = true;
     sessionEpoch++;
+    leaveStats();
+    setActiveNav(null);
+    document.getElementById("kpiScopeSelect").value = "me";
+    document.getElementById("kpiMonthsSelect").value = "12";
+    renderKpis([]);
+    document.getElementById("kpiEmpty").classList.add("d-none");
     patientsRequest++;
     patientDetailRequest++;
     mergeCandidatesRequest++;

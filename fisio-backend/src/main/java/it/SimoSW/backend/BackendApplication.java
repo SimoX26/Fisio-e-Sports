@@ -18,7 +18,7 @@ import it.SimoSW.controller.application.AddressBookController;
 import it.SimoSW.controller.application.CalendarController;
 import it.SimoSW.controller.application.WaitlistController;
 import it.SimoSW.controller.application.TreatmentController;
-import it.SimoSW.controller.application.KpiReadController;
+import it.SimoSW.controller.application.KpiSnapshotController;
 import it.SimoSW.model.dao.database.DatabaseAppointmentDAO;
 import it.SimoSW.model.dao.database.DatabasePatientDAO;
 import it.SimoSW.model.dao.database.DatabasePatientAnamnesisDAO;
@@ -30,6 +30,7 @@ import it.SimoSW.model.dao.database.DatabaseTreatmentPlanDAO;
 import it.SimoSW.model.dao.database.DatabaseTreatmentSessionDAO;
 import it.SimoSW.model.dao.database.DatabaseReminderTemplateDAO;
 import it.SimoSW.model.dao.database.DatabaseKpiMonthlySnapshotDAO;
+import it.SimoSW.model.dao.database.DatabaseKpiMetricsDAO;
 import it.SimoSW.util.AppProperties;
 
 public final class BackendApplication {
@@ -93,8 +94,9 @@ public final class BackendApplication {
         server.createContext("/api/whatsapp/status", new WhatsAppStatusApiHandler(authenticator));
         server.createContext("/api/whatsapp/control", new WhatsAppControlApiHandler(authenticator));
         server.createContext("/api/treatments", new TreatmentsApiHandler(authenticator, calendar, treatments, patients));
-        server.createContext("/api/kpi", new KpiApiHandler(authenticator,
-                new KpiReadController(new DatabaseKpiMonthlySnapshotDAO())));
+        DatabaseKpiMonthlySnapshotDAO kpiSnapshots = new DatabaseKpiMonthlySnapshotDAO();
+        KpiSnapshotController kpi = new KpiSnapshotController(kpiSnapshots, new DatabaseKpiMetricsDAO());
+        server.createContext("/api/kpi", new KpiApiHandler(authenticator, kpi));
         server.createContext("/api/me", calendarApi);
         server.createContext("/api/auth/remember", new RememberApiHandler(authenticator));
         server.createContext("/api/waitlist", new WaitlistApiHandler(
@@ -102,9 +104,15 @@ public final class BackendApplication {
         server.createContext("/api/patients", new PatientsApiHandler(authenticator,
                 new AddressBookController(new DatabasePatientDAO(), new DatabasePatientAnamnesisDAO(),
                         new DatabasePatientConditionDAO(), new DatabaseAppointmentDAO(), users)));
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> server.stop(0)));
+        KpiSnapshotScheduler kpiScheduler = new KpiSnapshotScheduler(kpi);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            kpiScheduler.stop();
+            server.stop(0);
+        }));
         server.start();
         System.out.println("Fisio backend in ascolto su http://127.0.0.1:" + port);
+        kpiScheduler.start();
+        kpiScheduler.runNow();
     }
 
     private static void configureFile() {

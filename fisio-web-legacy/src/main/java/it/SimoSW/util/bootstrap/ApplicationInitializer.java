@@ -26,6 +26,7 @@ import it.SimoSW.model.dao.database.DatabasePatientAnamnesisDAO;
 import it.SimoSW.model.dao.database.DatabasePatientConditionDAO;
 import it.SimoSW.model.dao.database.DatabasePatientDAO;
 import it.SimoSW.model.dao.database.DatabaseKpiMonthlySnapshotDAO;
+import it.SimoSW.model.dao.database.DatabaseKpiMetricsDAO;
 import it.SimoSW.model.dao.database.DatabaseRememberMeTokenDAO;
 import it.SimoSW.model.dao.database.DatabaseReminderTemplateDAO;
 import it.SimoSW.model.dao.database.DatabaseTreatmentPlanDAO;
@@ -115,7 +116,7 @@ public class ApplicationInitializer {
         authenticationController = new AuthenticationController(userDAO, rememberMeTokenDAO);
         userController = new UserController(userDAO);
         accessRequestController = new AccessRequestController(accessRequestDAO, userDAO);
-        kpiSnapshotController = new KpiSnapshotController(kpiMonthlySnapshotDAO);
+        kpiSnapshotController = new KpiSnapshotController(kpiMonthlySnapshotDAO, new DatabaseKpiMetricsDAO());
         waitlistController = new WaitlistController(waitlistEntryDAO, userDAO);
     }
 

@@ -17,6 +17,22 @@ disponibile. Per effettuare il login e usare i dati, avviare il backend con
 `http://127.0.0.1:8081/ready` risponda `{"status":"ok"}`. Per chiudere il
 desktop usare la finestra o `Ctrl+C` nel terminale di avvio.
 
+Per verificare **Dati e Statistiche**, aprire la voce nel menu dopo il login:
+confrontare le schede del mese corrente, il grafico e il dettaglio mensile con
+la pagina legacy `/dashboard/insights`. Provare **I miei dati** e **Dati
+globali**, poi 6, 12 e 24 mesi. Controllare che il titolo sia a sinistra dei
+filtri nella barra superiore e che `Ultimo calcolo` compaia sotto il titolo
+con ore e minuti, senza secondi,
+che i dati personali cambino con un secondo terapista e che al logout i dati
+del primo non ricompaiano durante un nuovo caricamento. Se il backend non è
+raggiungibile, la schermata deve mostrare un errore senza dati precedenti.
+Nella navigazione desktop, verificare che la voce corrente resti evidenziata
+passando tra Home, Calendario, Rubrica, Storico trattamenti, Dati e Statistiche
+e Impostazioni. Il Cestino mantiene evidenziato Calendario. I titoli ripetuti
+delle altre pagine non sono visibili; pulsanti e filtri restano disponibili. Nel
+dettaglio mensile delle statistiche, le intestazioni non devono spezzare le
+parole a metà.
+
 Accedere con un terapista attivo. Dopo il login si apre la home con il saluto,
 gli appuntamenti e i pazienti di oggi e l'agenda, letti dal backend.
 Confrontare i tre contatori della home con la webapp legacy: i promemoria
@@ -35,12 +51,16 @@ verificare il messaggio di conferma nella home, l'appuntamento nel calendario e
 la rimozione del contatto dalla lista. Ripetere con un secondo
 terapista per controllare che non compaiano i contatti del primo. Dal menu
 aprire il calendario e controllare giorno, settimana, mese, dettaglio evento e
-ritorno alla home. Verificare anche credenziali errate e Logout: i dati
+ritorno alla home. Giorno, Settimana e Mese devono stare a sinistra del periodo
+centrato; **Cestino** rosso e **+ Nuovo** celeste devono stare a destra nella
+stessa barra. La barra ha un riquadro chiaro e le tre viste formano un gruppo
+con quella corrente evidenziata, anche dopo un cambio di vista.
+Verificare anche credenziali errate e Logout: i dati
 precedenti non devono restare visibili dopo l'uscita. Ripetere con un secondo
 terapista per verificare la separazione degli appuntamenti. Nel dettaglio di un
 appuntamento controllare data, orario, note e pulsanti visibili secondo lo stato;
 **Dettagli paziente** deve aprire la scheda nella rubrica. Provare anche un evento
-generico e uno tutto il giorno. **Crea** apre il modulo legacy: verificare i
+generico e uno tutto il giorno. **+ Nuovo** apre il modulo legacy: verificare i
 suggerimenti dei pazienti, la creazione di un paziente nuovo con telefono, un
 evento generico e uno tutto il giorno con paziente già presente. Provare una
 fascia occupata: il modulo deve restare aperto e mostrare l'errore. Controllare
@@ -49,7 +69,9 @@ terapista e non nel calendario di un altro. Provare **Modifica** sullo stesso
 appuntamento: cambiare orario e note, verificare il risultato anche nel legacy
 e provare una fascia occupata. Provare **Elimina** su un appuntamento di test:
 la conferma deve precedere la cancellazione e l'evento deve sparire dal
-calendario. Aprire **Cestino**, ordinare per paziente e ripristinare l'evento;
+calendario. Aprire **Cestino**: nella scheda, **Torna al calendario** deve stare
+a sinistra, **Svuota cestino** a destra e l'avviso dei 30 giorni sotto i pulsanti.
+Ordinare per paziente e ripristinare l'evento;
 deve tornare nel calendario e nel legacy. Riprovare con una fascia occupata:
 deve comparire un conflitto e l'evento deve restare nel cestino. Per una prova
 separata, eliminare definitivamente un evento di test e svuotare il cestino
@@ -93,13 +115,20 @@ server `managementMode=systemd` li nasconde; stato e QR restano disponibili.
 Configurazione e verifica sono nella [guida WhatsApp](../docs/operations/whatsapp-baileys.md).
 Chiudere e riaprire
 il desktop: con backend attivo deve entrare automaticamente nello stesso account.
-Premere **Logout** e riaprire: deve comparire il login. Ripetere con un secondo
+Premere **Logout**: la conferma deve richiedere la spunta della casella prima
+di abilitare **Logout sicuro**. **Annulla** deve lasciare aperta la sessione.
+Confermare, poi riaprire: deve comparire il login. Ripetere con un secondo
 terapista e verificare che non riappaiano i dati del primo. Se il backend è
 spento, l'app deve restare sul login senza mostrare dati precedenti.
 
 Aprire **Rubrica**, cercare un paziente e cambiare l'ordinamento. Confrontare
 l'elenco con la webapp legacy usando lo stesso terapista. Ripetere con un
 secondo terapista: le schede dell'altro account non devono comparire.
+Nelle finestre larghe l'ordinamento deve stare a sinistra, la barra di ricerca
+al centro con la lente cliccabile al suo interno e **Nuovo paziente** a destra.
+La ricerca deve funzionare sia con Invio sia con la lente. Nelle finestre
+strette i controlli devono disporsi su più righe senza sovrapporsi. Il filtro
+**Pazienti oggi**, se attivo, deve restare visibile sotto la barra.
 Selezionare una riga della rubrica per aprire il modulo della scheda e confrontarlo con la
 webapp. La scheda si apre in modalità lettura con i soli campi compilati.
 **Modifica** mostra tutti i campi, anche quelli vuoti; **Annulla modifica**
@@ -126,11 +155,10 @@ La password non viene salvata su disco. Il login crea un token revocabile di
 30 giorni: Windows lo protegge con DPAPI nel profilo utente, Linux usa
 Secret Service tramite `secret-tool`. Se l'archivio protetto non è disponibile,
 il desktop segnala che l'accesso automatico non è attivo e la sessione corrente
-resta utilizzabile. Logout elimina il token locale e ne chiede la revoca al
+resta utilizzabile. Dopo la conferma, Logout elimina il token locale e ne chiede la revoca al
 backend; se la revoca fallisce viene mostrato un avviso. Questa prova usa il backend
 locale su `127.0.0.1:8081`. La ricerca dei pazienti resta nella rubrica;
 la barra di ricerca globale non è presente nel desktop.
-La voce **Dati e Statistiche** non è ancora operativa.
 
 Le licenze degli asset incorporati sono in `src/main/resources/desktop/vendor/`.
 

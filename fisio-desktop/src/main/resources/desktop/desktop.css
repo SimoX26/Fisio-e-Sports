@@ -1,5 +1,437 @@
 /* Adattamenti necessari alla prova locale; lo stile principale viene dalla webapp. */
-.app-navbar .navbar-brand, .app-navbar .nav-link { cursor: default; }
+.app-navbar .navbar-brand { cursor: default; }
+
+#appScreen .app-navbar {
+  border-bottom: 1px solid #dce5f0;
+  box-shadow: 0 5px 18px rgba(30, 58, 95, .07);
+}
+
+#appScreen .app-navbar-links {
+  gap: .15rem;
+}
+
+#appScreen .app-navbar .nav-link {
+  position: relative;
+  border-radius: var(--radius-pill);
+  padding: .55rem .7rem !important;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#appScreen .app-navbar .nav-link:not(.logout-link):hover {
+  background: #f0f5fc;
+}
+
+#appScreen .app-navbar .nav-link.active,
+#appScreen .app-navbar .nav-link.active:hover {
+  color: #0b5ed7 !important;
+  background: #e8f2ff;
+  box-shadow: inset 0 0 0 1px #bad5ff;
+}
+
+#appScreen .app-navbar .nav-link.active::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 1.3rem;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: #0b5ed7;
+  transform: translateX(-50%);
+}
+
+#appScreen .app-navbar .nav-link:focus-visible {
+  outline: 2px solid #0b5ed7;
+  outline-offset: 2px;
+}
+
+#appScreen .app-navbar .logout-link {
+  background: #fff3f4;
+}
+
+#calendar .fc-header-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: .75rem;
+  padding: .75rem 1rem;
+  border: 1px solid #dce5f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 5px 18px rgba(30, 58, 95, .06);
+}
+
+#calendar .fc-header-toolbar .fc-toolbar-chunk:first-child,
+#calendar .fc-header-toolbar .fc-toolbar-chunk:last-child {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .4rem;
+  min-width: 0;
+}
+
+#calendar .fc-header-toolbar .fc-toolbar-chunk:first-child {
+  justify-content: flex-start;
+}
+
+#calendar .fc-header-toolbar .fc-toolbar-chunk:nth-child(2) {
+  text-align: center;
+}
+
+#calendar .fc-header-toolbar .fc-toolbar-chunk:last-child {
+  justify-content: flex-end;
+}
+
+#calendar .fc-header-toolbar .fc-toolbar-chunk > * {
+  margin-left: 0;
+}
+
+#calendar .fc-toolbar-title {
+  font-size: clamp(1rem, 1.5vw, 1.4rem);
+  font-weight: 700;
+  color: var(--text-main);
+  text-align: center;
+  white-space: nowrap;
+}
+
+#calendar .fc-header-toolbar .fc-toolbar-chunk:first-child .fc-button-group:last-child {
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #dce5f0;
+  border-radius: var(--radius-standard);
+  background: #f3f7fc;
+}
+
+#calendar .fc-header-toolbar .fc-toolbar-chunk:first-child .fc-button-group:last-child .fc-button {
+  margin-left: 0;
+  border-color: transparent !important;
+  background: transparent !important;
+}
+
+#calendar .fc-header-toolbar .fc-toolbar-chunk:first-child .fc-button-group:last-child .fc-button:hover {
+  background: #e4eefb !important;
+}
+
+#calendar .fc-header-toolbar .fc-toolbar-chunk:first-child .fc-button-group:last-child .fc-button-active {
+  color: #0b5ed7 !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 5px rgba(30, 58, 95, .13) !important;
+}
+
+#calendar .fc-trash-button,
+#calendar .fc-newAppointment-button {
+  border-radius: var(--radius-standard) !important;
+  font-weight: 600;
+}
+
+#calendar .fc-trash-button,
+#calendar .fc-trash-button:focus {
+  color: #b42332 !important;
+  background: var(--brand-danger-soft) !important;
+  border-color: #e8aab3 !important;
+}
+
+#calendar .fc-trash-button:hover {
+  color: #9f1d2b !important;
+  background: #ffe2e6 !important;
+  border-color: #dc8995 !important;
+}
+
+#calendar .fc-newAppointment-button,
+#calendar .fc-newAppointment-button:focus {
+  color: #0869a7 !important;
+  background: #e7f5ff !important;
+  border-color: #90c9ee !important;
+}
+
+#calendar .fc-newAppointment-button:hover {
+  color: #075b93 !important;
+  background: #d4edff !important;
+  border-color: #70b8e5 !important;
+}
+
+#calendar .fc-trash-button:focus-visible,
+#calendar .fc-newAppointment-button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+#patientsSearchForm.address-book-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 42%) minmax(0, 1fr);
+  align-items: center;
+  gap: .75rem;
+}
+
+#patientsSearchForm .address-book-toolbar__filters {
+  justify-self: start;
+  min-width: 0;
+}
+
+#patientsSearchForm .address-book-toolbar__filters .form-select {
+  min-width: 175px;
+  min-height: 44px;
+}
+
+#patientsSearchForm .address-book-toolbar__search {
+  position: relative;
+  min-width: 0;
+}
+
+#patientsSearchForm #patientsQuery {
+  min-height: 44px;
+  padding-right: 3rem;
+  border-color: #cbd9ea;
+  border-radius: var(--radius-pill);
+  background: #f8fbff;
+}
+
+#patientsSearchForm #patientsQuery:focus {
+  border-color: #8bb9f0;
+  box-shadow: 0 0 0 .2rem rgba(13, 110, 253, .1);
+}
+
+#patientsSearchForm #patientsQuery::-webkit-search-cancel-button {
+  display: none;
+}
+
+#patientsSearchForm .address-book-search-button {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: var(--radius-pill);
+  color: #0b5ed7;
+  background: var(--brand-primary-soft);
+  cursor: pointer;
+}
+
+#patientsSearchForm .address-book-search-button:hover {
+  background: #dcecff;
+}
+
+#patientsSearchForm .address-book-search-button:focus-visible {
+  outline: 2px solid #0b5ed7;
+  outline-offset: 2px;
+}
+
+#patientsSearchForm .address-book-toolbar__create {
+  justify-self: end;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+@media (max-width: 767.98px) {
+  #patientsSearchForm.address-book-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  #patientsSearchForm .address-book-toolbar__search {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 479.98px) {
+  #patientsSearchForm.address-book-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  #patientsSearchForm .address-book-toolbar__search,
+  #patientsSearchForm .address-book-toolbar__create {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  #patientsSearchForm .address-book-toolbar__filters,
+  #patientsSearchForm .address-book-toolbar__filters .form-select,
+  #patientsSearchForm .address-book-toolbar__create {
+    width: 100%;
+  }
+}
+
+@media (min-width: 992px) and (max-width: 1199.98px) {
+  #appScreen .app-navbar .nav-link {
+    padding: .45rem .45rem !important;
+    font-size: .82rem;
+  }
+}
+
+@media (max-width: 991.98px) {
+  #appScreen .app-navbar-links .nav-link {
+    display: block;
+    width: 100%;
+    text-align: left;
+  }
+
+  #appScreen .app-navbar .nav-link.active::after {
+    left: .4rem;
+    bottom: .45rem;
+    width: 3px;
+    height: calc(100% - .9rem);
+    transform: none;
+  }
+}
+
+#statsScreen .stats-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .75rem 1rem;
+  padding: .75rem 1rem;
+  border: 1px solid #dce5f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 5px 18px rgba(30, 58, 95, .06);
+}
+
+#statsScreen .stats-toolbar__title {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+#statsScreen .stats-toolbar__controls {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-left: auto;
+}
+
+#statsScreen .stats-toolbar__controls .form-select {
+  width: auto;
+  min-height: 40px;
+  border-color: #cbd9ea;
+  background-color: #f8fbff;
+}
+
+/* Riduce della metà i margini esterni della schermata statistiche oltre i 1280 px. */
+body.app-page #statsScreen {
+  max-width: calc(50vw + 640px);
+}
+
+#statsScreen .kpi-detail-wrap {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+#statsScreen .kpi-detail-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+#statsScreen .kpi-detail-table th,
+#statsScreen .kpi-detail-table td {
+  min-width: 0;
+  max-width: none;
+  overflow-wrap: anywhere;
+  padding-left: .35rem !important;
+  padding-right: .35rem !important;
+}
+
+#statsScreen .kpi-detail-table thead th {
+  font-size: .74rem !important;
+  letter-spacing: 0 !important;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+  padding-left: .2rem !important;
+  padding-right: .2rem !important;
+}
+
+#statsScreen .kpi-detail-table tbody td {
+  font-size: .82rem;
+}
+
+@media (max-width: 1399.98px) {
+  #statsScreen .kpi-detail-table,
+  #statsScreen .kpi-detail-table tbody {
+    display: block;
+  }
+
+  #statsScreen .kpi-detail-table thead {
+    display: none;
+  }
+
+  #statsScreen .kpi-detail-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .5rem 1rem;
+    margin-bottom: 1rem;
+    padding: .75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-standard);
+  }
+
+  #statsScreen .kpi-detail-table tbody td {
+    display: block;
+    min-width: 0;
+    border-bottom: 0;
+  }
+
+  #statsScreen .kpi-detail-table tbody td:first-child,
+  #statsScreen .kpi-detail-table tbody td[colspan] {
+    grid-column: 1 / -1;
+    font-weight: 700;
+  }
+
+  #statsScreen .kpi-detail-table tbody td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--text-muted);
+    font-size: .72rem;
+    font-weight: 600;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
+  }
+}
+
+@media (max-width: 767.98px) {
+  #statsScreen .kpi-detail-table tbody tr {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 479.98px) {
+  #statsScreen .kpi-detail-table tbody tr {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* I tooltip invisibili non devono allargare la pagina. */
+#statsScreen .kpi-info-btn::after {
+  display: none;
+}
+
+#statsScreen .kpi-info-btn:hover::after,
+#statsScreen .kpi-info-btn:focus-visible::after,
+#statsScreen .kpi-info-btn.is-open::after {
+  display: block;
+}
+
+#statsScreen .stats-kpi-grid > .kpi-grid__item:last-child .kpi-info-btn::after {
+  left: auto;
+  right: 0;
+  transform: translateY(4px);
+}
+
+#statsScreen .stats-kpi-grid > .kpi-grid__item:last-child .kpi-info-btn:hover::after,
+#statsScreen .stats-kpi-grid > .kpi-grid__item:last-child .kpi-info-btn:focus-visible::after,
+#statsScreen .stats-kpi-grid > .kpi-grid__item:last-child .kpi-info-btn.is-open::after {
+  transform: translateY(0);
+}
 
 /* La WebView desktop non usa animazioni o transizioni CSS. */
 *, *::before, *::after {
