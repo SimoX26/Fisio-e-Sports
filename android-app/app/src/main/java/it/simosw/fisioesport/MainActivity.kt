@@ -1,11 +1,19 @@
 package it.simosw.fisioesport
 
 import android.graphics.drawable.GradientDrawable
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import android.content.res.ColorStateList
 import android.os.Bundle
+import android.text.Editable
+import android.text.InputFilter
+import android.text.InputType
+import android.text.TextWatcher
 import android.util.Base64
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -14,7 +22,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
-import androidx.appcompat.widget.SearchView
 import androidx.activity.OnBackPressedCallback
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -36,7 +43,8 @@ import java.util.concurrent.Executors
 class MainActivity : AppCompatActivity() {
     private data class AgendaRow(val time: String, val title: String, val kind: String, val state: String)
     private data class CalendarEntry(val start: String, val end: String, val allDay: Boolean,
-        val title: String, val kind: String, val state: String)
+        val title: String, val kind: String, val state: String, val patientId: Long?,
+        val phone: String, val notes: String)
     private data class PatientRow(val id: Long, val name: String, val phone: String, val created: String)
     private enum class Section(val title: Int) {
         HOME(R.string.home), CALENDAR(R.string.calendar), PATIENTS(R.string.address_book),
@@ -85,7 +93,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var placeholderPanel: View
     private lateinit var placeholderTitle: TextView
     private lateinit var currentSectionButton: MaterialButton
-    private lateinit var patientsSearch: SearchView
+    private lateinit var patientsSearch: EditText
     private lateinit var patientResults: TextView
     private lateinit var patientList: LinearLayout
 
@@ -155,16 +163,22 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.calendarPrevious).setOnClickListener { changeCalendarMonth(-1) }
         findViewById<View>(R.id.calendarNext).setOnClickListener { changeCalendarMonth(1) }
+        findViewById<View>(R.id.calendarCreate).setOnClickListener { openCreateAppointment() }
         findViewById<Button>(R.id.patientDetailBack).setOnClickListener { showSection(Section.PATIENTS) }
-        patientsSearch.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                patientsSearch.clearFocus()
-                loadPatients()
-                return true
-            }
-            override fun onQueryTextChange(newText: String?): Boolean {
-                if (newText.isNullOrEmpty() && section == Section.PATIENTS) loadPatients()
-                return false
+        patientsSearch.setOnEditorActionListener { _, _, _ ->
+            patientsSearch.clearFocus()
+            loadPatients()
+            true
+        }
+        findViewById<View>(R.id.patientsSearchButton).setOnClickListener {
+            patientsSearch.clearFocus()
+            loadPatients()
+        }
+        patientsSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable?) {
+                if (s.isNullOrEmpty() && section == Section.PATIENTS) loadPatients()
             }
         })
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -313,7 +327,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadPatients() {
         val activeToken = token ?: return
         val requestId = ++patientsRequest
-        val query = patientsSearch.query.toString().trim()
+        val query = patientsSearch.text.toString().trim()
         if (query.length > 200) {
             swipeRefresh.isRefreshing = false
             patientList.removeAllViews()
@@ -498,6 +512,175 @@ class MainActivity : AppCompatActivity() {
         return calendarEntries.filter { it.start < end && it.end > start }
     }
 
+    private fun openCreateAppointment() {
+        val activeToken = token ?: return
+        val date = selectedCalendarDay.clone() as Calendar
+        var startMinutes = 9 * 60
+        var endMinutes = 10 * 60
+        val form = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(24), dp(8), dp(24), dp(8))
+        }
+        fun addField(label: Int, control: View): LinearLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(TextView(this@MainActivity).apply {
+                setText(label)
+                textSize = 14f
+                setTextColor(getColor(R.color.text_main))
+            })
+            addView(control, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply { topMargin = dp(4) })
+            form.addView(this, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dp(12) })
+        }
+        fun input(hint: Int, limit: Int) = EditText(this).apply {
+            setSingleLine(true)
+            setHint(hint)
+            filters = arrayOf(InputFilter.LengthFilter(limit))
+            setBackgroundResource(R.drawable.surface_card)
+            setPadding(dp(12), 0, dp(12), 0)
+            setTextColor(getColor(R.color.text_main))
+            setHintTextColor(getColor(R.color.text_muted))
+        }
+        val name = input(R.string.calendar_create_patient, 180)
+        val nameLabel = addField(R.string.calendar_create_patient, name).getChildAt(0) as TextView
+        val phone = input(R.string.calendar_create_phone, 20).apply { inputType = InputType.TYPE_CLASS_PHONE }
+        val phoneField = addField(R.string.calendar_create_phone, phone)
+        val generic = CheckBox(this).apply { setText(R.string.calendar_create_generic) }
+        val allDay = CheckBox(this).apply { setText(R.string.calendar_create_all_day) }
+        form.addView(generic)
+        form.addView(allDay)
+        generic.setOnCheckedChangeListener { _, checked ->
+            nameLabel.setText(if (checked) R.string.calendar_create_event_title else R.string.calendar_create_patient)
+            name.setHint(if (checked) R.string.calendar_create_event_title else R.string.calendar_create_patient)
+            phoneField.visibility = if (checked) View.GONE else View.VISIBLE
+        }
+        fun choiceButton() = MaterialButton(this).apply {
+            isAllCaps = false
+            setTextColor(getColor(R.color.brand_primary))
+            backgroundTintList = ColorStateList.valueOf(getColor(R.color.brand_primary_soft))
+            cornerRadius = dp(12)
+        }
+        val dateButton = choiceButton()
+        val startButton = choiceButton()
+        val endButton = choiceButton()
+        fun timeLabel(minutes: Int) = String.format(Locale.ROOT, "%02d:%02d", minutes / 60, minutes % 60)
+        fun refreshChoices() {
+            dateButton.text = SimpleDateFormat("dd/MM/yyyy", Locale.ITALIAN).format(date.time)
+            startButton.text = timeLabel(startMinutes)
+            endButton.text = timeLabel(endMinutes)
+        }
+        refreshChoices()
+        addField(R.string.calendar_create_date, dateButton)
+        val startField = addField(R.string.calendar_create_start, startButton)
+        val endField = addField(R.string.calendar_create_end, endButton)
+        allDay.setOnCheckedChangeListener { _, checked ->
+            startField.visibility = if (checked) View.GONE else View.VISIBLE
+            endField.visibility = if (checked) View.GONE else View.VISIBLE
+        }
+        dateButton.setOnClickListener {
+            DatePickerDialog(this, { _, year, month, day ->
+                date.set(year, month, day)
+                refreshChoices()
+            }, date.get(Calendar.YEAR), date.get(Calendar.MONTH), date.get(Calendar.DAY_OF_MONTH)).show()
+        }
+        startButton.setOnClickListener {
+            TimePickerDialog(this, { _, hour, minute ->
+                startMinutes = hour * 60 + minute
+                refreshChoices()
+            }, startMinutes / 60, startMinutes % 60, true).show()
+        }
+        endButton.setOnClickListener {
+            TimePickerDialog(this, { _, hour, minute ->
+                endMinutes = hour * 60 + minute
+                refreshChoices()
+            }, endMinutes / 60, endMinutes % 60, true).show()
+        }
+        val notes = EditText(this).apply {
+            hint = getString(R.string.calendar_create_notes)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            minLines = 2
+            filters = arrayOf(InputFilter.LengthFilter(3000))
+            setBackgroundResource(R.drawable.surface_card)
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+        }
+        addField(R.string.calendar_create_notes, notes).getChildAt(1).layoutParams.height = dp(80)
+        val error = TextView(this).apply {
+            setTextColor(getColor(R.color.brand_danger))
+            visibility = View.GONE
+        }
+        form.addView(error)
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.calendar_create_title)
+            .setView(ScrollView(this).apply { addView(form) })
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.calendar_create_save, null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val patientName = name.text.toString().trim()
+                val selectedPhone = phone.text.toString().trim()
+                val selectedNotes = notes.text.toString().trim()
+                val selectedAllDay = allDay.isChecked
+                val selectedGeneric = generic.isChecked
+                val validTime = selectedAllDay || (startMinutes < endMinutes &&
+                    startMinutes % 15 == 0 && endMinutes % 15 == 0)
+                if (patientName.isEmpty() || !validTime) {
+                    error.setText(R.string.calendar_create_invalid)
+                    error.visibility = View.VISIBLE
+                    return@setOnClickListener
+                }
+                val submittedDate = date.clone() as Calendar
+                val dateKey = calendarKey(submittedDate)
+                val start = if (selectedAllDay) "${dateKey}T00:00:00" else "${dateKey}T${timeLabel(startMinutes)}:00"
+                val nextDay = (submittedDate.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, 1) }
+                val end = if (selectedAllDay) "${calendarKey(nextDay)}T00:00:00"
+                    else "${dateKey}T${timeLabel(endMinutes)}:00"
+                val fields = mapOf("patientName" to patientName, "patientPhone" to selectedPhone,
+                    "start" to start, "end" to end, "allDay" to selectedAllDay.toString(),
+                    "nonTreatmentEvent" to selectedGeneric.toString(), "notes" to selectedNotes)
+                val body = fields.entries.joinToString("&") {
+                    URLEncoder.encode(it.key, StandardCharsets.UTF_8.name()) + "=" +
+                        URLEncoder.encode(it.value, StandardCharsets.UTF_8.name())
+                }
+                error.visibility = View.GONE
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
+                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = false
+                dialog.setCancelable(false)
+                worker.execute {
+                    val status = try { request("POST", "/api/calendar", "Bearer $activeToken", body).first }
+                        catch (_: Exception) { 0 }
+                    runOnUiThread {
+                        if (isDestroyed || !dialog.isShowing) return@runOnUiThread
+                        if (status == 201) {
+                            dialog.dismiss()
+                            if (token == activeToken && section == Section.CALENDAR) {
+                                selectedCalendarDay.timeInMillis = submittedDate.timeInMillis
+                                displayedMonth.timeInMillis = submittedDate.timeInMillis
+                                displayedMonth.set(Calendar.DAY_OF_MONTH, 1)
+                                loadCalendarMonth()
+                                Toast.makeText(this, R.string.calendar_create_saved, Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            error.setText(when (status) {
+                                409 -> R.string.calendar_create_conflict
+                                400 -> if (selectedAllDay && !selectedGeneric)
+                                    R.string.calendar_create_all_day_patient else R.string.calendar_create_invalid
+                                else -> R.string.calendar_create_error
+                            })
+                            error.visibility = View.VISIBLE
+                            dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
+                            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = true
+                            dialog.setCancelable(true)
+                        }
+                    }
+                }
+            }
+        }
+        dialog.show()
+    }
+
     private fun loadCalendarMonth() {
         val activeToken = token ?: return
         val requestId = ++calendarRequest
@@ -520,7 +703,9 @@ class MainActivity : AppCompatActivity() {
                     CalendarEntry(event.getString("start"), event.getString("end"), event.optBoolean("allDay"),
                         event.optString("title"),
                         if (props.optBoolean("nonTreatmentEvent")) getString(R.string.event) else getString(R.string.patient),
-                        props.optString("state"))
+                        props.optString("state"),
+                        if (props.isNull("patientId")) null else props.getLong("patientId"),
+                        props.optString("patientPhone"), props.optString("notes"))
                 }.sortedBy { it.start }
                 runOnUiThread {
                     if (token != activeToken || section != Section.CALENDAR || requestId != calendarRequest) return@runOnUiThread
@@ -627,8 +812,68 @@ class MainActivity : AppCompatActivity() {
                 entry.end.startsWith(dayKey) -> entry.start.substring(11, 16) + " – " + entry.end.substring(11, 16)
                 else -> entry.start.substring(11, 16) + " →"
             }
-            addAgendaRow(AgendaRow(time, entry.title, entry.kind, entry.state), calendarDayEvents)
+            addAgendaRow(AgendaRow(time, entry.title, entry.kind, entry.state), calendarDayEvents) {
+                openCalendarEventDetail(entry)
+            }
         }
+    }
+
+    private fun openCalendarEventDetail(entry: CalendarEntry) {
+        val details = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(24), dp(8), dp(24), dp(8))
+        }
+        fun addField(label: Int, value: String) {
+            if (value.isBlank() || value == "null") return
+            details.addView(TextView(this).apply {
+                setText(label)
+                textSize = 13f
+                setTextColor(getColor(R.color.text_muted))
+            })
+            details.addView(TextView(this).apply {
+                text = value
+                textSize = 16f
+                setTextColor(getColor(R.color.text_main))
+                setPadding(0, dp(3), 0, dp(16))
+            })
+        }
+        val dateParser = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
+        val dateLabel = SimpleDateFormat("d MMMM yyyy", Locale.ITALIAN)
+        val startDate = dateParser.parse(entry.start.take(10)) ?: return
+        val endDate = dateParser.parse(entry.end.take(10)) ?: return
+        val startLabel = dateLabel.format(startDate)
+        val endLabel = dateLabel.format(endDate)
+        val whenLabel = if (entry.allDay) {
+            val lastDay = Calendar.getInstance().apply { time = endDate; add(Calendar.DAY_OF_MONTH, -1) }
+            val lastLabel = dateLabel.format(lastDay.time)
+            if (lastLabel == startLabel) "$startLabel · ${getString(R.string.all_day)}"
+            else "$startLabel – $lastLabel · ${getString(R.string.all_day)}"
+        } else if (startLabel == endLabel) {
+            "$startLabel · ${entry.start.substring(11, 16)} – ${entry.end.substring(11, 16)}"
+        } else {
+            "$startLabel ${entry.start.substring(11, 16)} – $endLabel ${entry.end.substring(11, 16)}"
+        }
+        addField(R.string.calendar_detail_when, whenLabel)
+        addField(R.string.calendar_detail_type, entry.kind)
+        val stateLabel = when (entry.state) {
+            "COMPLETED" -> getString(R.string.completed)
+            "CANCELLED" -> getString(R.string.cancelled)
+            else -> getString(R.string.calendar_detail_scheduled)
+        }
+        addField(R.string.calendar_detail_state, stateLabel)
+        addField(R.string.calendar_detail_phone, entry.phone)
+        addField(R.string.calendar_detail_notes, entry.notes.ifBlank { getString(R.string.calendar_detail_no_notes) })
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(entry.title.ifBlank { entry.kind })
+            .setView(ScrollView(this).apply { addView(details) })
+            .setPositiveButton(R.string.calendar_detail_close, null)
+        entry.patientId?.let { patientId ->
+            dialog.setNeutralButton(R.string.calendar_detail_patient) { _, _ ->
+                showSection(Section.PATIENTS)
+                openPatientDetail(PatientRow(patientId, entry.title, entry.phone, ""))
+            }
+        }
+        dialog.show()
     }
 
     private fun loadTodayAgenda() {
@@ -705,11 +950,16 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private fun addAgendaRow(row: AgendaRow, target: LinearLayout = agendaList) {
+    private fun addAgendaRow(row: AgendaRow, target: LinearLayout = agendaList, onClick: (() -> Unit)? = null) {
         val item = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundResource(R.drawable.surface_card)
             setPadding(dp(12), dp(10), dp(12), dp(10))
+            if (onClick != null) {
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { onClick() }
+            }
         }
         item.addView(TextView(this).apply {
             text = row.time
@@ -782,7 +1032,7 @@ class MainActivity : AppCompatActivity() {
         calendarGrid.removeAllViews()
         calendarDayEvents.removeAllViews()
         patientList.removeAllViews()
-        patientsSearch.setQuery("", false)
+        patientsSearch.text.clear()
         message.text = ""
         loginButton.isEnabled = true
         worker.execute {
@@ -794,7 +1044,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun request(method: String, path: String, authorization: String): Pair<Int, String> {
+    private fun request(method: String, path: String, authorization: String, body: String? = null): Pair<Int, String> {
         val base = BuildConfig.FISIO_API_BASE_URL.trimEnd('/')
         val url = URL("$base$path")
         require(url.protocol == "https" || (BuildConfig.DEBUG && url.protocol == "http"))
@@ -804,8 +1054,15 @@ class MainActivity : AppCompatActivity() {
             readTimeout = 5000
             setRequestProperty("Authorization", authorization)
             setRequestProperty("Accept", "application/json")
+            if (body != null) {
+                doOutput = true
+                setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+            }
         }
         return try {
+            if (body != null) connection.outputStream.use {
+                it.write(body.toByteArray(StandardCharsets.UTF_8))
+            }
             val status = connection.responseCode
             val stream = if (status in 200..299) connection.inputStream else connection.errorStream
             status to (stream?.bufferedReader()?.use { it.readText() } ?: "")

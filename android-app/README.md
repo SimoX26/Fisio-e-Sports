@@ -7,7 +7,7 @@ la webapp legacy non viene caricata in una WebView. In alto a destra, il pulsant
 corrente apre un menu sovrapposto con Home, Calendario, Rubrica, Storico, Dati,
 Impostazioni ed Esci; la voce corrente resta selezionata. Le sezioni non ancora
 migrate mostrano una schermata informativa.
-Anamnesi, modifica paziente, dettagli e modifica degli appuntamenti arriveranno
+Anamnesi, modifica paziente e modifica degli appuntamenti arriveranno
 nei passi successivi.
 
 ## Requisiti e configurazione
@@ -62,7 +62,15 @@ appuntamenti. Tocca un giorno per vedere gli eventi e gli orari sotto la
 griglia; usa le frecce per cambiare mese e **Oggi** per tornare alla data
 attuale. Trascina verso il basso per aggiornare il mese. Confronta un giorno
 con più appuntamenti, uno vuoto e un evento a cavallo di due giorni con il
-desktop. La vista è per ora in sola lettura.
+desktop. Tocca la scheda di un appuntamento: si aprono orario, tipo, stato,
+telefono e note; se è collegato a un paziente, **Dettagli paziente** apre la
+sua scheda. Verifica anche un evento generico senza paziente. La vista e i
+dettagli sono per ora in sola lettura. **+ Nuovo** apre il modulo per creare
+appuntamenti con paziente o eventi generici, anche tutto il giorno. Prova un
+appuntamento di test con orari a scatti di 15 minuti e verifica che appaia
+nel giorno scelto e sul desktop; verifica anche un orario occupato e gli
+orari non validi. Gli eventi tutto il giorno con paziente richiedono un
+paziente già presente, come nel desktop.
 
 Dopo un accesso riuscito, chiudi completamente l'app e riaprila: con backend
 raggiungibile deve entrare senza chiedere la password. Ripeti la prova dopo
@@ -72,7 +80,9 @@ mentre il desktop deve restare connesso.
 
 Apri **Rubrica** dal menu di navigazione: devono comparire solo i pazienti
 del terapista con nome, data di creazione e telefono. Cerca un nome e premi
-Invio sulla tastiera; svuota il campo per tornare all'elenco completo. Dalla
+Invio sulla tastiera oppure la lente nel campo; svuota il campo per tornare
+all'elenco completo. La barra riprende il campo arrotondato del desktop, con
+testo di ricerca leggibile e lente a destra. Dalla
 cima della schermata trascina verso il basso per ricaricare la ricerca
 corrente. Tocca tutta la riga di un paziente: la scheda mostra stato, telefono,
 email, data di creazione e numero di appuntamenti collegati. Il tasto Indietro
