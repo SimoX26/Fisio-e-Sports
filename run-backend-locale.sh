@@ -16,4 +16,5 @@ mvn -pl fisio-backend -am -DskipTests package
 unset FISIO_DB_URL FISIO_DB_USER FISIO_DB_PASSWORD FISIO_DB_DRIVER
 export FISIO_DB_CONFIG_FILE="$config_file"
 export FISIO_BACKEND_PORT="${FISIO_BACKEND_PORT:-8081}"
+export FISIO_BACKEND_BIND_ADDRESS="${FISIO_BACKEND_BIND_ADDRESS:-0.0.0.0}"
 exec java -jar fisio-backend/target/fisio-backend-0.1.0.jar

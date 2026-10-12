@@ -72,7 +72,8 @@ contatto scelto, dopo conferma. `GET /api/patients/{id}/merge-candidates`
 restituisce i candidati dello stesso terapista. `DELETE /api/patients/{id}`
 segue la conferma legacy; se sono presenti appuntamenti, richiede `force=1`.
 
-Il backend attuale ascolta solo su loopback. Basic verifica il login e rilascia
+Il backend ascolta su loopback per impostazione predefinita; lo script locale
+lo espone anche sulla LAN per il collaudo Android. Basic verifica il login e rilascia
 un token casuale tramite `POST /api/auth/remember`; il backend conserva solo
 l'hash, controlla ruolo e scadenza su ogni richiesta Bearer, e lo revoca con
 `DELETE /api/auth/remember`. Il desktop salva il token nell'archivio protetto

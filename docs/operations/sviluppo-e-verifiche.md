@@ -37,6 +37,12 @@ Per provarlo localmente, configurare `fisio-backend/config.properties`, usare
 `./run-backend-locale.sh` e verificare che `/ready` risponda `ok` prima del login desktop.
 `./run-desktop-locale.sh` apre il desktop JavaFX anche senza backend. Per
 accedere ai dati, avviare il backend e verificare `/ready` prima del login.
+Lo script locale del backend ascolta su `0.0.0.0:8081` per servire desktop
+locale e telefono nella stessa LAN; il JAR avviato direttamente resta su
+`127.0.0.1` per impostazione predefinita. L'APK debug usa
+`192.168.1.52:8081`; se l'IP cambia, passare
+`./deploy-apk.sh --android-url http://<IP_LAN>:8081`. Verificare
+`/ready` direttamente dal telefono dopo il riavvio del backend.
 `FISIO_BACKEND_URL=https://backend.example.com ./run-desktop-locale.sh`
 seleziona un backend remoto già esposto tramite proxy HTTPS.
 Per i promemoria WhatsApp, avviare separatamente il gateway con

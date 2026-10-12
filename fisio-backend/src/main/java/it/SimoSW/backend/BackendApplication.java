@@ -43,8 +43,9 @@ public final class BackendApplication {
     public static void main(String[] args) throws IOException {
         configureFile();
         int port = readPort();
+        String bindAddress = readBindAddress();
         DriverManager.setLoginTimeout(3);
-        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", port), 0);
+        HttpServer server = HttpServer.create(new InetSocketAddress(bindAddress, port), 0);
         server.createContext("/health", exchange -> {
             try {
                 if (!"GET".equals(exchange.getRequestMethod())) {
@@ -117,7 +118,7 @@ public final class BackendApplication {
             server.stop(0);
         }));
         server.start();
-        System.out.println("Fisio backend in ascolto su http://127.0.0.1:" + port);
+        System.out.println("Fisio backend in ascolto su http://" + bindAddress + ":" + port);
         kpiScheduler.start();
         kpiScheduler.runNow();
     }
@@ -179,5 +180,11 @@ public final class BackendApplication {
             // Il messaggio seguente include il valore non valido.
         }
         throw new IllegalArgumentException("FISIO_BACKEND_PORT non valido: " + configuredPort);
+    }
+
+    private static String readBindAddress() {
+        String configuredAddress = System.getenv("FISIO_BACKEND_BIND_ADDRESS");
+        return configuredAddress == null || configuredAddress.isBlank()
+                ? "127.0.0.1" : configuredAddress.trim();
     }
 }

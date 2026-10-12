@@ -8,6 +8,7 @@ Uso:
 
 Descrizione:
   Genera APK Android debug (senza installazione).
+  URL predefinito: http://192.168.1.52:8081
 
 Opzioni:
   --android-url <url>     URL API backend per build APK (FISIO_API_BASE_URL)

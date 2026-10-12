@@ -6,7 +6,7 @@ plugins {
 }
 
 val fisioApiBaseUrl = (project.findProperty("FISIO_API_BASE_URL") as String?)
-    ?: "http://10.0.2.2:8081"
+    ?: "http://192.168.1.52:8081"
 
 android {
     namespace = "it.simosw.fisioesport"

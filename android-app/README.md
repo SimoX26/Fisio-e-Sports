@@ -1,9 +1,9 @@
 # Fisio e Sports Android
 
-Client Android nativo in migrazione. Il primo flusso disponibile è l'accesso del
-terapista tramite le API del backend, la visualizzazione dello username e
-l'uscita. Non carica più la webapp legacy in una WebView. Home, pazienti,
-calendario e le altre funzioni arriveranno nei passi successivi.
+Client Android nativo in migrazione. Sono disponibili l'accesso del terapista,
+la home con l'agenda di oggi in sola lettura e l'uscita. I dati arrivano dal
+backend; la webapp legacy non viene caricata in una WebView. Rubrica,
+calendario completo e le altre funzioni arriveranno nei passi successivi.
 
 ## Requisiti e configurazione
 
@@ -16,9 +16,8 @@ Apri `android-app` in Android Studio. Se necessario, crea
 Il file locale non è versionato.
 
 La build legge `FISIO_API_BASE_URL`. Il valore predefinito
-`http://10.0.2.2:8081` punta al backend avviato sul computer host
-dell'emulatore Android. Su un telefono fisico, usa l'indirizzo LAN del
-computer, per esempio:
+`http://192.168.1.52:8081` punta al backend nella LAN di test. Se
+l'indirizzo cambia, passane uno raggiungibile dal telefono:
 
 ```bash
 ./gradlew assembleDebug -PFISIO_API_BASE_URL=http://192.168.1.50:8081
@@ -28,6 +27,8 @@ La URL deve essere l'origine delle API, senza il contesto
 `/Fisio-e-Sports`. La build release accetta solo HTTPS. La build debug
 consente HTTP per le prove sulla rete locale; evita reti non fidate durante
 l'accesso perché le credenziali viaggiano in Basic.
+Per un emulatore Android con backend sul computer host, usa
+`-PFISIO_API_BASE_URL=http://10.0.2.2:8081`.
 
 ## Build e prova manuale
 
@@ -44,12 +45,18 @@ Oppure dalla radice del repository:
 ./deploy-apk.sh --android-url http://192.168.1.50:8081 --apk-output-dir /percorso/output
 ```
 
-Prima della prova verifica `http://<host>:8081/ready` dal dispositivo:
+Prima della prova verifica `http://192.168.1.52:8081/ready` dal dispositivo:
 deve rispondere `{"status":"ok"}`. Avvia l'app, inserisci le credenziali
-di un terapista esistente e verifica che compaia il suo username. Prova anche
-una password errata e il pulsante Esci.
+di un terapista esistente e verifica che compaiano il suo username e gli
+appuntamenti di oggi. Confronta orari, pazienti, stati e conteggi con il
+desktop. Aggiorna l'agenda, poi prova una password errata e il pulsante Esci.
+
+I conteggi della home seguono il desktop: appuntamenti restituiti dall'API,
+pazienti distinti associati a quegli appuntamenti e promemoria ancora
+potenzialmente inviabili per appuntamenti futuri di oggi, non cancellati e
+con paziente. La home non apre ancora i dettagli né modifica gli appuntamenti.
 
 Il token di accesso resta soltanto in memoria. Chiudere o ricreare l'Activity
 richiede un nuovo accesso; la persistenza sicura è un passo successivo.
 L'uscita chiede al backend di revocare il token corrente quando la rete è
-disponibile. L'app non contiene ancora le altre schermate.
+disponibile.

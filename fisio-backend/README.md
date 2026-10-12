@@ -51,8 +51,9 @@ Richiede JDK 15 o successivo e Maven. Dalla radice del repository:
 ```
 
 Lo script compila il backend, carica `fisio-backend/config.properties` e
-ascolta su `127.0.0.1:8081`. Fermare un'eventuale istanza precedente prima di
-avviarlo. Controlli:
+ascolta su `0.0.0.0:8081`, quindi su loopback e sulle interfacce LAN.
+Fermare l'istanza precedente prima di avviarlo: finché il log indica
+`127.0.0.1:8081`, il telefono non può collegarsi. Controlli:
 
 ```bash
 curl -i http://127.0.0.1:8081/health
@@ -61,6 +62,14 @@ curl -i http://127.0.0.1:8081/ready
 
 `/ready` deve rispondere HTTP 200 con `{"status":"ok"}`. HTTP 503 con
 `{"status":"unavailable"}` indica che il backend non raggiunge il database.
+
+Per una prova con un telefono sulla stessa rete, verificare
+`http://192.168.1.52:8081/ready` dal browser del telefono. L'APK usa già
+questo indirizzo per impostazione predefinita. Se l'IP cambia, usare
+`./deploy-apk.sh --android-url http://<IP_LAN>:8081`.
+`FISIO_BACKEND_BIND_ADDRESS=127.0.0.1 ./run-backend-locale.sh` limita di
+nuovo l'ascolto alla sola macchina locale. L'uso in rete senza HTTPS è adatto
+solo a prove su una LAN fidata.
 
 ## Pacchetto server
 
@@ -71,8 +80,9 @@ mvn -pl fisio-backend -am -DskipTests package
 Distribuire `fisio-backend/target/fisio-backend-0.1.0.jar` e il proprio
 `config.properties` nella stessa directory. Il backend rileva automaticamente
 il file accanto al JAR; si avvia con `java -jar fisio-backend-0.1.0.jar`.
-Il file con le credenziali non va caricato su GitHub. In questa fase il processo
-ascolta solo su loopback; accesso remoto, HTTPS e sessioni sono passi separati.
+Il file con le credenziali non va caricato su GitHub. Per impostazione
+predefinita il processo ascolta solo su loopback; l'ascolto su LAN richiede
+`FISIO_BACKEND_BIND_ADDRESS`. Per accesso fuori dalla LAN serve HTTPS.
 
 ## Deploy sul server attuale
 
@@ -102,8 +112,9 @@ dell'URL nel desktop.
 valido 30 giorni; `DELETE` con Bearer lo revoca. Il backend conserva solo l'hash
 del token. Le API protette accettano Basic o Bearer e verificano sempre ruolo e
 scadenza. Il client desktop conserva il token nell'archivio protetto dell'utente
-del sistema operativo. L'endpoint è utilizzabile solo sul backend locale; prima
-di esporlo in rete servono HTTPS e una revisione dell'autenticazione remota.
+del sistema operativo. Lo script locale può esporlo nella LAN per i test;
+prima dell'uso fuori da una rete fidata servono HTTPS e una revisione
+dell'autenticazione remota.
 
 L'API calendario accetta `GET` con autenticazione Basic o Bearer e un intervallo massimo
 di 62 giorni. `POST /api/calendar` crea un appuntamento con campi form

@@ -68,15 +68,51 @@
                 android:textAppearance="?attr/textAppearanceHeadlineSmall" />
 
             <TextView
+                android:id="@+id/agendaDate"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingVertical="16dp"
-                android:text="@string/first_step" />
+                android:paddingTop="16dp"
+                android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+            <TextView
+                android:id="@+id/appointmentsCount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="16dp"
+                android:text="@string/appointments_count_initial" />
+
+            <TextView
+                android:id="@+id/patientsCount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="8dp"
+                android:text="@string/patients_count_initial" />
+
+            <TextView
+                android:id="@+id/remindersCount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="8dp"
+                android:text="@string/reminders_count_initial" />
+
+            <Button
+                android:id="@+id/refreshButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/refresh" />
+
+            <LinearLayout
+                android:id="@+id/agendaList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
 
             <Button
                 android:id="@+id/logoutButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
                 android:text="@string/logout" />
         </LinearLayout>
     </LinearLayout>
