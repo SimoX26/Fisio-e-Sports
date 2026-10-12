@@ -6,6 +6,7 @@
     <string name="calendar_today">Oggi</string>
     <string name="calendar_create">+ Nuovo</string>
     <string name="calendar_create_title">Nuovo appuntamento</string>
+    <string name="calendar_create_subtitle">Inserisci i dettagli nel calendario</string>
     <string name="calendar_create_patient">Nome e cognome paziente</string>
     <string name="calendar_create_event_title">Titolo evento</string>
     <string name="calendar_create_phone">Telefono</string>
@@ -42,6 +43,8 @@
     <string name="statistics">Dati</string>
     <string name="settings">Impostazioni</string>
     <string name="navigation_current">%1$s ▾</string>
+    <string name="navigation_menu_title">NAVIGAZIONE</string>
+    <string name="navigation_selected">%1$s, sezione selezionata</string>
     <string name="navigation_open_description">Apri navigazione. Sezione corrente: %1$s</string>
     <string name="section_in_migration">Questa sezione sarà disponibile nei prossimi passi della migrazione mobile.</string>
     <string name="search_patients">Cerca paziente</string>

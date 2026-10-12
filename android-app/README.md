@@ -71,6 +71,9 @@ appuntamento di test con orari a scatti di 15 minuti e verifica che appaia
 nel giorno scelto e sul desktop; verifica anche un orario occupato e gli
 orari non validi. Gli eventi tutto il giorno con paziente richiedono un
 paziente già presente, come nel desktop.
+Il modulo usa una scheda chiara con campi arrotondati e azioni blu: prova a
+scorrerlo fino a **Salva** con la tastiera aperta, e verifica che gli errori
+restino leggibili senza chiudere il modulo.
 
 Dopo un accesso riuscito, chiudi completamente l'app e riaprila: con backend
 raggiungibile deve entrare senza chiedere la password. Ripeti la prova dopo
@@ -89,7 +92,9 @@ email, data di creazione e numero di appuntamenti collegati. Il tasto Indietro
 torna alla Rubrica; aprendo il menu dalla scheda e chiudendolo, la scheda deve
 restare visibile. Tocca il pulsante della sezione corrente in alto a destra:
 il menu deve sovrapporsi alla pagina, selezionare la voce attiva e aggiornare
-il pulsante quando cambi sezione. Storico, Dati e Impostazioni mostrano per ora
+il pulsante quando cambi sezione. La tendina usa la stessa palette delle
+schede, evidenzia la voce selezionata e mostra **Esci** in rosso. Storico,
+Dati e Impostazioni mostrano per ora
 una schermata di migrazione. Verifica che intestazione e
 contenuto inizino sotto la barra delle notifiche e restino sopra la barra di
 navigazione Android. Esci deve comparire soltanto nel menu; dopo l'uscita il

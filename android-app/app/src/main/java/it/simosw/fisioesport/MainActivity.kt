@@ -12,16 +12,17 @@ import android.text.TextWatcher
 import android.util.Base64
 import android.view.Gravity
 import android.view.View
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.PopupWindow
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.PopupMenu
 import androidx.activity.OnBackPressedCallback
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -305,23 +306,56 @@ class MainActivity : AppCompatActivity() {
 
     private fun showNavigationMenu() {
         if (token == null) return
-        val menu = PopupMenu(this, currentSectionButton)
-        menu.gravity = Gravity.END
-        Section.entries.forEachIndexed { index, destination ->
-            menu.menu.add(0, index + 1, index, destination.title).apply {
-                isCheckable = true
-                isChecked = destination == section
+        val items = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(8), dp(10), dp(8), dp(8))
+        }
+        items.addView(TextView(this).apply {
+            setText(R.string.navigation_menu_title)
+            textSize = 12f
+            setTextColor(getColor(R.color.text_muted))
+            setPadding(dp(14), dp(4), 0, dp(10))
+        })
+        val popup = PopupWindow(items, dp(236), LinearLayout.LayoutParams.WRAP_CONTENT, true).apply {
+            setBackgroundDrawable(getDrawable(R.drawable.menu_surface))
+            isOutsideTouchable = true
+            elevation = dp(12).toFloat()
+        }
+        fun addItem(label: String, selected: Boolean = false, logoutItem: Boolean = false, action: () -> Unit) {
+            val row = LinearLayout(this).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(dp(14), 0, dp(12), 0)
+                setBackgroundResource(if (selected) R.drawable.menu_selected else R.drawable.menu_row)
+                isClickable = true
+                isFocusable = true
+                contentDescription = if (selected) getString(R.string.navigation_selected, label) else label
+                setOnClickListener { popup.dismiss(); action() }
             }
+            row.addView(TextView(this).apply {
+                text = label
+                textSize = 16f
+                setTypeface(null, if (selected) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+                setTextColor(getColor(if (logoutItem) R.color.brand_danger else if (selected)
+                    R.color.brand_primary else R.color.text_main))
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            if (selected) row.addView(TextView(this).apply {
+                text = "✓"
+                textSize = 17f
+                setTextColor(getColor(R.color.brand_primary))
+            })
+            items.addView(row, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(48)))
         }
-        menu.menu.setGroupCheckable(0, true, true)
-        val logoutId = Section.entries.size + 1
-        menu.menu.add(1, logoutId, logoutId, R.string.logout)
-        menu.setOnMenuItemClickListener { item ->
-            if (item.itemId == logoutId) logout()
-            else Section.entries.getOrNull(item.itemId - 1)?.let(::showSection)
-            true
+        Section.entries.forEach { destination ->
+            addItem(getString(destination.title), selected = destination == section) { showSection(destination) }
         }
-        menu.show()
+        items.addView(View(this).apply { setBackgroundColor(getColor(R.color.border)) },
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(1)).apply {
+                topMargin = dp(6); bottomMargin = dp(6)
+            })
+        addItem(getString(R.string.logout), logoutItem = true) { logout() }
+        popup.showAsDropDown(currentSectionButton, 0, dp(6), Gravity.END)
     }
 
     private fun loadPatients() {
@@ -519,8 +553,20 @@ class MainActivity : AppCompatActivity() {
         var endMinutes = 10 * 60
         val form = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(24), dp(8), dp(24), dp(8))
+            setPadding(dp(20), dp(20), dp(20), dp(20))
         }
+        form.addView(TextView(this).apply {
+            setText(R.string.calendar_create_title)
+            textSize = 22f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setTextColor(getColor(R.color.text_main))
+        })
+        form.addView(TextView(this).apply {
+            setText(R.string.calendar_create_subtitle)
+            textSize = 14f
+            setTextColor(getColor(R.color.text_muted))
+            setPadding(0, dp(4), 0, dp(16))
+        })
         fun addField(label: Int, control: View): LinearLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             addView(TextView(this@MainActivity).apply {
@@ -538,7 +584,7 @@ class MainActivity : AppCompatActivity() {
             setSingleLine(true)
             setHint(hint)
             filters = arrayOf(InputFilter.LengthFilter(limit))
-            setBackgroundResource(R.drawable.surface_card)
+            setBackgroundResource(R.drawable.form_field)
             setPadding(dp(12), 0, dp(12), 0)
             setTextColor(getColor(R.color.text_main))
             setHintTextColor(getColor(R.color.text_muted))
@@ -547,8 +593,16 @@ class MainActivity : AppCompatActivity() {
         val nameLabel = addField(R.string.calendar_create_patient, name).getChildAt(0) as TextView
         val phone = input(R.string.calendar_create_phone, 20).apply { inputType = InputType.TYPE_CLASS_PHONE }
         val phoneField = addField(R.string.calendar_create_phone, phone)
-        val generic = CheckBox(this).apply { setText(R.string.calendar_create_generic) }
-        val allDay = CheckBox(this).apply { setText(R.string.calendar_create_all_day) }
+        val generic = CheckBox(this).apply {
+            setText(R.string.calendar_create_generic)
+            setTextColor(getColor(R.color.text_main))
+            buttonTintList = ColorStateList.valueOf(getColor(R.color.brand_primary))
+        }
+        val allDay = CheckBox(this).apply {
+            setText(R.string.calendar_create_all_day)
+            setTextColor(getColor(R.color.text_main))
+            buttonTintList = ColorStateList.valueOf(getColor(R.color.brand_primary))
+        }
         form.addView(generic)
         form.addView(allDay)
         generic.setOnCheckedChangeListener { _, checked ->
@@ -602,23 +656,52 @@ class MainActivity : AppCompatActivity() {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
             minLines = 2
             filters = arrayOf(InputFilter.LengthFilter(3000))
-            setBackgroundResource(R.drawable.surface_card)
+            setBackgroundResource(R.drawable.form_field)
             setPadding(dp(12), dp(8), dp(12), dp(8))
+            setTextColor(getColor(R.color.text_main))
+            setHintTextColor(getColor(R.color.text_muted))
         }
         addField(R.string.calendar_create_notes, notes).getChildAt(1).layoutParams.height = dp(80)
         val error = TextView(this).apply {
             setTextColor(getColor(R.color.brand_danger))
+            setBackgroundResource(R.drawable.danger_soft)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
             visibility = View.GONE
         }
-        form.addView(error)
+        form.addView(error, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = dp(12)
+            })
+        val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val cancelButton = MaterialButton(this).apply {
+            setText(R.string.cancel)
+            isAllCaps = false
+            cornerRadius = dp(12)
+            setTextColor(getColor(R.color.brand_primary))
+            backgroundTintList = ColorStateList.valueOf(getColor(R.color.surface))
+            strokeColor = ColorStateList.valueOf(getColor(R.color.border))
+            strokeWidth = dp(1)
+        }
+        val saveButton = MaterialButton(this).apply {
+            setText(R.string.calendar_create_save)
+            isAllCaps = false
+            cornerRadius = dp(12)
+            setTextColor(getColor(R.color.surface))
+            backgroundTintList = ColorStateList.valueOf(getColor(R.color.brand_primary))
+        }
+        actions.addView(cancelButton, LinearLayout.LayoutParams(0, dp(48), 1f).apply {
+            rightMargin = dp(8)
+        })
+        actions.addView(saveButton, LinearLayout.LayoutParams(0, dp(48), 1f))
+        form.addView(actions)
         val dialog = AlertDialog.Builder(this)
-            .setTitle(R.string.calendar_create_title)
-            .setView(ScrollView(this).apply { addView(form) })
-            .setNegativeButton(R.string.cancel, null)
-            .setPositiveButton(R.string.calendar_create_save, null)
+            .setView(ScrollView(this).apply {
+                setBackgroundResource(R.drawable.dialog_surface)
+                addView(form)
+            })
             .create()
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+        cancelButton.setOnClickListener { dialog.dismiss() }
+        saveButton.setOnClickListener {
                 val patientName = name.text.toString().trim()
                 val selectedPhone = phone.text.toString().trim()
                 val selectedNotes = notes.text.toString().trim()
@@ -645,8 +728,8 @@ class MainActivity : AppCompatActivity() {
                         URLEncoder.encode(it.value, StandardCharsets.UTF_8.name())
                 }
                 error.visibility = View.GONE
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
-                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = false
+                saveButton.isEnabled = false
+                cancelButton.isEnabled = false
                 dialog.setCancelable(false)
                 worker.execute {
                     val status = try { request("POST", "/api/calendar", "Bearer $activeToken", body).first }
@@ -670,15 +753,19 @@ class MainActivity : AppCompatActivity() {
                                 else -> R.string.calendar_create_error
                             })
                             error.visibility = View.VISIBLE
-                            dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
-                            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = true
+                            saveButton.isEnabled = true
+                            cancelButton.isEnabled = true
                             dialog.setCancelable(true)
                         }
                     }
                 }
-            }
         }
         dialog.show()
+        dialog.window?.apply {
+            setBackgroundDrawableResource(android.R.color.transparent)
+            setLayout(resources.displayMetrics.widthPixels - dp(32), WindowManager.LayoutParams.WRAP_CONTENT)
+            setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        }
     }
 
     private fun loadCalendarMonth() {
