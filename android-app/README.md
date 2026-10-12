@@ -1,9 +1,10 @@
 # Fisio e Sports Android
 
 Client Android nativo in migrazione. Sono disponibili l'accesso del terapista,
-la home con l'agenda di oggi in sola lettura e l'uscita. I dati arrivano dal
-backend; la webapp legacy non viene caricata in una WebView. Rubrica,
-calendario completo e le altre funzioni arriveranno nei passi successivi.
+la home con l'agenda di oggi, la rubrica in sola lettura e l'uscita. I dati
+arrivano dal backend; la webapp legacy non viene caricata in una WebView.
+Scheda paziente, calendario completo e le altre funzioni arriveranno nei
+passi successivi.
 
 ## Requisiti e configurazione
 
@@ -52,7 +53,14 @@ appuntamenti di oggi. Confronta orari, pazienti, stati e conteggi con il
 desktop. Dall'inizio della home trascina la schermata verso il basso per
 aggiornare l'agenda; prova anche una password errata e il pulsante Esci.
 
-Login e home usano la stessa palette del desktop: sfondo grigio chiaro, schede
+Apri **Rubrica** dalla barra Home/Rubrica: devono comparire solo i pazienti
+del terapista con nome, data di creazione e telefono. Cerca un nome e premi
+Invio sulla tastiera; svuota il campo per tornare all'elenco completo. Dalla
+cima della schermata trascina verso il basso per ricaricare la ricerca
+corrente. Torna a Home con la barra o con il tasto Indietro di Android.
+Le schede paziente non sono ancora apribili in questo passo.
+
+Login, home e rubrica usano la stessa palette del desktop: sfondo grigio chiaro, schede
 bianche con bordo, azioni blu e stati completato/cancellato in verde/rosso.
 I controlli restano nativi Android.
 

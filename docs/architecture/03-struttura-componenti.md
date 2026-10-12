@@ -10,7 +10,7 @@
 | `fisio-web-legacy` | Servlet, JSP, bootstrap e integrazione WhatsApp | `fisio-persistence-mysql` e dipendenze web |
 | `fisio-backend` | Processo HTTP autonomo, salute DB, API e scheduler KPI | `fisio-persistence-mysql`, Jackson per la risposta del gateway |
 | `fisio-desktop` | Prototipo di interfaccia HTML/JavaScript locale in JavaFX WebView | JavaFX Web |
-| `android-app` | Client Android nativo; accesso e home agenda tramite API | Android SDK, backend HTTP |
+| `android-app` | Client Android nativo; accesso, home agenda e rubrica tramite API | Android SDK, backend HTTP |
 
 Il `pom.xml` alla radice è l'aggregatore Maven. La webapp produce ancora
 `Fisio-e-Sports.war`; il nome del contesto Tomcat non cambia. Le classi
@@ -46,7 +46,7 @@ vista delle richieste di accesso, gestita dal caso d'uso condiviso con la
 webapp. L'URL del backend è passato da JavaFX alla pagina locale: il valore
 predefinito è il backend locale e `FISIO_BACKEND_URL` può indicare un'origine
 HTTPS remota. L'archivio protetto distingue i token per origine. Android usa
-ora controlli nativi per l'accesso del terapista e la home con agenda odierna;
+ora controlli nativi per l'accesso del terapista, la home e la rubrica;
 le altre schermate non sono ancora migrate. I client non accedono direttamente
 a MySQL.
 Sul server Baileys gira come `fisio-baileys.service` con sessione privata in

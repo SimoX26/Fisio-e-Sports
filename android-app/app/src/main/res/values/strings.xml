@@ -1,6 +1,15 @@
 <resources>
     <string name="app_name">Fisio e Sports</string>
     <string name="brand_caps">FISIO E SPORTS</string>
+    <string name="home">Home</string>
+    <string name="address_book">Rubrica</string>
+    <string name="search_patients">Cerca paziente</string>
+    <string name="patient_results">%1$d pazienti</string>
+    <string name="patient_results_one">1 paziente</string>
+    <string name="patients_loading">Caricamento rubrica…</string>
+    <string name="patients_empty">Nessun paziente trovato.</string>
+    <string name="patients_error">Impossibile caricare la rubrica dal backend.</string>
+    <string name="search_too_long">La ricerca è troppo lunga.</string>
     <string name="login_subtitle">Accedi alla tua dashboard</string>
     <string name="username">Username</string>
     <string name="password">Password</string>

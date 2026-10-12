@@ -1,6 +1,7 @@
 package it.simosw.fisioesport
 
 import android.os.Bundle
+import android.content.res.ColorStateList
 import android.util.Base64
 import android.view.View
 import android.widget.Button
@@ -10,11 +11,15 @@ import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
+import androidx.activity.OnBackPressedCallback
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.google.android.material.button.MaterialButton
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -24,9 +29,13 @@ import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
     private data class AgendaRow(val time: String, val title: String, val kind: String, val state: String)
+    private data class PatientRow(val name: String, val phone: String, val created: String)
+    private enum class Section { HOME, PATIENTS }
 
     private val worker = Executors.newSingleThreadExecutor()
     private var token: String? = null
+    private var section = Section.HOME
+    private var patientsRequest = 0
     private lateinit var username: EditText
     private lateinit var password: EditText
     private lateinit var message: TextView
@@ -40,6 +49,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var remindersCount: TextView
     private lateinit var agendaList: LinearLayout
     private lateinit var swipeRefresh: SwipeRefreshLayout
+    private lateinit var contentScroll: ScrollView
+    private lateinit var homePanel: View
+    private lateinit var patientsPanel: View
+    private lateinit var homeTab: MaterialButton
+    private lateinit var patientsTab: MaterialButton
+    private lateinit var patientsSearch: SearchView
+    private lateinit var patientResults: TextView
+    private lateinit var patientList: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,13 +74,41 @@ class MainActivity : AppCompatActivity() {
         remindersCount = findViewById(R.id.remindersCount)
         agendaList = findViewById(R.id.agendaList)
         swipeRefresh = findViewById(R.id.swipeRefresh)
-        val contentScroll = findViewById<ScrollView>(R.id.contentScroll)
+        contentScroll = findViewById(R.id.contentScroll)
+        homePanel = findViewById(R.id.homePanel)
+        patientsPanel = findViewById(R.id.patientsPanel)
+        homeTab = findViewById(R.id.homeTab)
+        patientsTab = findViewById(R.id.patientsTab)
+        patientsSearch = findViewById(R.id.patientsSearch)
+        patientResults = findViewById(R.id.patientResults)
+        patientList = findViewById(R.id.patientList)
         swipeRefresh.isEnabled = false
         swipeRefresh.setColorSchemeResources(R.color.brand_primary)
         swipeRefresh.setOnChildScrollUpCallback { _, _ -> contentScroll.canScrollVertically(-1) }
-        swipeRefresh.setOnRefreshListener { loadTodayAgenda() }
+        swipeRefresh.setOnRefreshListener {
+            if (section == Section.HOME) loadTodayAgenda() else loadPatients()
+        }
         loginButton.setOnClickListener { login() }
+        homeTab.setOnClickListener { showSection(Section.HOME) }
+        patientsTab.setOnClickListener { showSection(Section.PATIENTS) }
+        patientsSearch.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                patientsSearch.clearFocus()
+                loadPatients()
+                return true
+            }
+            override fun onQueryTextChange(newText: String?): Boolean {
+                if (newText.isNullOrEmpty() && section == Section.PATIENTS) loadPatients()
+                return false
+            }
+        })
         findViewById<Button>(R.id.logoutButton).setOnClickListener { logout() }
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (token != null && section == Section.PATIENTS) showSection(Section.HOME)
+                else finish()
+            }
+        })
     }
 
     private fun login() {
@@ -98,7 +143,7 @@ class MainActivity : AppCompatActivity() {
                     loginPanel.visibility = View.GONE
                     loggedInPanel.visibility = View.VISIBLE
                     swipeRefresh.isEnabled = true
-                    loadTodayAgenda()
+                    showSection(Section.HOME)
                 }
             } catch (_: Exception) {
                 issuedToken?.let {
@@ -119,6 +164,116 @@ class MainActivity : AppCompatActivity() {
             message.setTextColor(getColor(R.color.brand_danger))
             message.setText(resource)
         }
+    }
+
+    private fun showSection(next: Section) {
+        if (token == null) return
+        section = next
+        swipeRefresh.isRefreshing = false
+        homePanel.visibility = if (next == Section.HOME) View.VISIBLE else View.GONE
+        patientsPanel.visibility = if (next == Section.PATIENTS) View.VISIBLE else View.GONE
+        selectTab(homeTab, next == Section.HOME)
+        selectTab(patientsTab, next == Section.PATIENTS)
+        contentScroll.scrollTo(0, 0)
+        if (next == Section.HOME) loadTodayAgenda() else loadPatients()
+    }
+
+    private fun selectTab(tab: MaterialButton, selected: Boolean) {
+        tab.backgroundTintList = ColorStateList.valueOf(getColor(
+            if (selected) R.color.brand_primary_soft else R.color.surface
+        ))
+        tab.setTextColor(getColor(if (selected) R.color.brand_primary else R.color.text_muted))
+        tab.isSelected = selected
+    }
+
+    private fun loadPatients() {
+        val activeToken = token ?: return
+        val requestId = ++patientsRequest
+        val query = patientsSearch.query.toString().trim()
+        if (query.length > 200) {
+            swipeRefresh.isRefreshing = false
+            patientList.removeAllViews()
+            patientResults.setTextColor(getColor(R.color.brand_danger))
+            patientResults.setText(R.string.search_too_long)
+            return
+        }
+        swipeRefresh.isRefreshing = true
+        patientResults.setTextColor(getColor(R.color.text_muted))
+        patientResults.setText(R.string.patients_loading)
+        patientList.removeAllViews()
+        worker.execute {
+            try {
+                val encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.name())
+                val (status, body) = request(
+                    "GET", "/api/patients?q=$encodedQuery&sort=created-desc", "Bearer $activeToken"
+                )
+                if (status != 200) throw IllegalStateException("HTTP $status")
+                val result = JSONArray(body)
+                val patients = (0 until result.length()).map { index ->
+                    val item = result.getJSONObject(index)
+                    PatientRow(
+                        item.getString("fullName"),
+                        if (item.isNull("phone")) "" else item.optString("phone"),
+                        if (item.isNull("createdDateLabel")) "" else item.optString("createdDateLabel")
+                    )
+                }
+                runOnUiThread {
+                    if (token != activeToken || section != Section.PATIENTS || requestId != patientsRequest) {
+                        return@runOnUiThread
+                    }
+                    swipeRefresh.isRefreshing = false
+                    patientResults.text = if (patients.size == 1) getString(R.string.patient_results_one)
+                        else getString(R.string.patient_results, patients.size)
+                    patientList.removeAllViews()
+                    if (patients.isEmpty()) addPatientMessage(R.string.patients_empty)
+                    patients.forEach(::addPatientRow)
+                }
+            } catch (_: Exception) {
+                runOnUiThread {
+                    if (token != activeToken || section != Section.PATIENTS || requestId != patientsRequest) {
+                        return@runOnUiThread
+                    }
+                    swipeRefresh.isRefreshing = false
+                    patientResults.setTextColor(getColor(R.color.brand_danger))
+                    patientResults.setText(R.string.patients_error)
+                    patientList.removeAllViews()
+                }
+            }
+        }
+    }
+
+    private fun addPatientMessage(resource: Int) {
+        patientList.addView(TextView(this).apply {
+            setText(resource)
+            setTextColor(getColor(R.color.text_muted))
+            setPadding(dp(12), dp(16), dp(12), dp(16))
+        })
+    }
+
+    private fun addPatientRow(patient: PatientRow) {
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundResource(R.drawable.surface_card)
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+        }
+        card.addView(TextView(this).apply {
+            text = patient.name
+            textSize = 16f
+            setTextColor(getColor(R.color.text_main))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        })
+        val details = listOf(patient.created, patient.phone).filter { it.isNotBlank() }.joinToString(" · ")
+        if (details.isNotEmpty()) {
+            card.addView(TextView(this).apply {
+                text = details
+                textSize = 13f
+                setTextColor(getColor(R.color.text_muted))
+                setPadding(0, dp(4), 0, 0)
+            })
+        }
+        patientList.addView(card, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { bottomMargin = dp(8) })
     }
 
     private fun loadTodayAgenda() {
@@ -166,7 +321,7 @@ class MainActivity : AppCompatActivity() {
                     rows.add(AgendaRow(time, event.optString("title"), kind, props.optString("state")))
                 }
                 runOnUiThread {
-                    if (token != activeToken) return@runOnUiThread
+                    if (token != activeToken || section != Section.HOME) return@runOnUiThread
                     swipeRefresh.isRefreshing = false
                     appointmentsCount.text = events.length().toString()
                     patientsCount.text = patientIds.size.toString()
@@ -177,7 +332,7 @@ class MainActivity : AppCompatActivity() {
                 }
             } catch (_: Exception) {
                 runOnUiThread {
-                    if (token != activeToken) return@runOnUiThread
+                    if (token != activeToken || section != Section.HOME) return@runOnUiThread
                     swipeRefresh.isRefreshing = false
                     agendaList.removeAllViews()
                     addAgendaLine(getString(R.string.agenda_error), R.color.brand_danger)
@@ -252,11 +407,15 @@ class MainActivity : AppCompatActivity() {
     private fun confirmLogout() {
         val currentToken = token ?: return
         token = null
+        section = Section.HOME
+        patientsRequest++
         loggedInPanel.visibility = View.GONE
         loginPanel.visibility = View.VISIBLE
         swipeRefresh.isRefreshing = false
         swipeRefresh.isEnabled = false
         agendaList.removeAllViews()
+        patientList.removeAllViews()
+        patientsSearch.setQuery("", false)
         message.text = ""
         loginButton.isEnabled = true
         worker.execute {
