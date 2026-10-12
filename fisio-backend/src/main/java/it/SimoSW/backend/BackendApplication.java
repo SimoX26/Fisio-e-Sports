@@ -14,12 +14,14 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 import it.SimoSW.controller.application.AuthenticationController;
+import it.SimoSW.controller.application.AccessRequestController;
 import it.SimoSW.controller.application.AddressBookController;
 import it.SimoSW.controller.application.CalendarController;
 import it.SimoSW.controller.application.WaitlistController;
 import it.SimoSW.controller.application.TreatmentController;
 import it.SimoSW.controller.application.KpiSnapshotController;
 import it.SimoSW.model.dao.database.DatabaseAppointmentDAO;
+import it.SimoSW.model.dao.database.DatabaseAccessRequestDAO;
 import it.SimoSW.model.dao.database.DatabasePatientDAO;
 import it.SimoSW.model.dao.database.DatabasePatientAnamnesisDAO;
 import it.SimoSW.model.dao.database.DatabasePatientConditionDAO;
@@ -74,6 +76,8 @@ public final class BackendApplication {
             }
         });
         DatabaseUserDAO users = new DatabaseUserDAO();
+        server.createContext("/api/access-requests", new AccessRequestApiHandler(
+                new AccessRequestController(new DatabaseAccessRequestDAO(), users)));
         TherapistAuthenticator authenticator = new TherapistAuthenticator(
                 new AuthenticationController(users, new DatabaseRememberMeTokenDAO()), users);
         DatabaseAppointmentDAO appointments = new DatabaseAppointmentDAO();

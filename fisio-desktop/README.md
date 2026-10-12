@@ -17,6 +17,14 @@ disponibile. Per effettuare il login e usare i dati, avviare il backend con
 `http://127.0.0.1:8081/ready` risponda `{"status":"ok"}`. Per chiudere il
 desktop usare la finestra o `Ctrl+C` nel terminale di avvio.
 
+Per provare **Richiedi accesso**, aprire il link sotto il login, compilare i
+cinque campi e inviare. Il desktop deve tornare al login con conferma; la nuova
+richiesta deve comparire fra le pendenti nella webapp legacy, senza permettere
+ancora l'accesso. Dopo l'approvazione da parte di un amministratore, provare
+il login desktop. Verificare anche username già esistente, richiesta pendente
+duplicata e backend spento: il modulo deve mostrare un errore e conservare i
+dati compilati, tranne la password.
+
 Per verificare **Dati e Statistiche**, aprire la voce nel menu dopo il login:
 confrontare le schede del mese corrente, il grafico e il dettaglio mensile con
 la pagina legacy `/dashboard/insights`. Provare **I miei dati** e **Dati

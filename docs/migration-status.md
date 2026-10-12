@@ -1,6 +1,6 @@
 # Stato della migrazione
 
-Aggiornato: 8 ottobre 2026. Questo registro descrive il codice del repository;
+Aggiornato: 12 ottobre 2026. Questo registro descrive il codice del repository;
 non attesta un deploy in produzione.
 
 | Passo | Stato | Verifica o lavoro rimasto |
@@ -9,8 +9,8 @@ non attesta un deploy in produzione.
 | Backend avviabile | Completato; script di deploy remoto del solo JAR preparato | Collaudare `fisio-backend.service` e `/ready` sul server con configurazione DB remota |
 | Separazione Maven | Implementata, da collaudare in Tomcat | Build aggregata e contenuto WAR verificati |
 | Associazione paziente-terapista | Migrazione applicata al DB di test configurato; codice pronto | Deploy WAR e prova manuale con due utenti |
-| API autenticate | Identità, calendario con completamento, cestino, modello e invio promemoria, stato e QR WhatsApp; controllo manuale opzionale, gateway systemd remoto preparato; trattamenti, lista d'attesa, scheda paziente e snapshot KPI personali e globali con metriche derivate. Calcolo KPI condiviso e aggiornamento automatico nel backend | Collaudare gateway systemd e invio; verificare ricalcolo KPI su dati reali; HTTPS prima del collegamento da altri PC |
-| Client desktop | Si apre sul login anche senza backend; accesso automatico con archivio protetto; home con lista d'attesa trasformabile in appuntamento, tre contatori, azioni rapide, filtro Pazienti oggi e stati agenda; ricerca nella rubrica, calendario, promemoria, Impostazioni WhatsApp, storico trattamenti, scheda paziente e Dati e Statistiche con filtri, grafico e tabella. Barra di ricerca globale rimossa su richiesta | Verificare statistiche con dati reali, home, rubrica e isolamento fra terapisti; URL remoto e HTTPS restano da fare |
+| API backend | Identità e funzioni autenticate del terapista; richiesta pubblica di accesso collegata al caso d'uso legacy; calendario, cestino, promemoria, WhatsApp, trattamenti, lista d'attesa, pazienti e KPI | Collaudare richiesta di accesso e gateway systemd sul DB di test; HTTPS prima del collegamento da altri PC |
+| Client desktop | Si apre sul login anche senza backend; richiesta di accesso collegata al backend; accesso automatico con archivio protetto; home con lista d'attesa trasformabile in appuntamento, tre contatori, azioni rapide, filtro Pazienti oggi e stati agenda; ricerca nella rubrica, calendario, promemoria, Impostazioni WhatsApp, storico trattamenti, scheda paziente e Dati e Statistiche con filtri, grafico e tabella. Barra di ricerca globale rimossa su richiesta | Verificare registrazione e statistiche con dati reali, home, rubrica e isolamento fra terapisti; URL remoto e HTTPS restano da fare |
 | Client Android autonomo | Da fare | Sostituzione della WebView |
 | Dismissione webapp | Da fare | Solo dopo parità funzionale e collaudo |
 

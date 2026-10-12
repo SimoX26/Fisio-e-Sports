@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const apiBase = "http://127.0.0.1:8081";
   const loginScreen = document.getElementById("loginScreen");
+  const registerScreen = document.getElementById("registerScreen");
   const appScreen = document.getElementById("appScreen");
   const homeScreen = document.getElementById("homeScreen");
   const calendarScreen = document.getElementById("calendarScreen");
@@ -1459,9 +1460,64 @@ document.addEventListener("DOMContentLoaded", () => {
     deletePatientModal.show();
   }
 
+  document.getElementById("showRegisterButton").addEventListener("click", () => {
+    manualLoginStarted = true;
+    document.getElementById("loginSuccess").classList.add("d-none");
+    loginScreen.hidden = true;
+    registerScreen.hidden = false;
+    document.getElementById("registerError").classList.add("d-none");
+    document.title = "Richiedi accesso • Fisio e Sports";
+    document.getElementById("registerFirstName").focus();
+  });
+  document.getElementById("backToLoginButton").addEventListener("click", () => {
+    document.getElementById("registerPassword").value = "";
+    registerScreen.hidden = true;
+    loginScreen.hidden = false;
+    document.title = "Login • Fisio e Sports";
+    document.getElementById("username").focus();
+  });
+  document.getElementById("registerForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector('button[type="submit"]');
+    const error = document.getElementById("registerError");
+    button.disabled = true;
+    error.classList.add("d-none");
+    try {
+      const response = await fetch(`${apiBase}/api/access-requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(new FormData(form)),
+        cache: "no-store",
+        credentials: "omit"
+      });
+      if (!response.ok) {
+        const details = await response.json();
+        error.textContent = details.message || (details.error === "username_exists"
+          ? "Username già utilizzato." : "Impossibile inviare la richiesta. Controlla i dati e riprova.");
+        error.classList.remove("d-none");
+        return;
+      }
+      form.reset();
+      registerScreen.hidden = true;
+      loginScreen.hidden = false;
+      document.title = "Login • Fisio e Sports";
+      const success = document.getElementById("loginSuccess");
+      success.textContent = "Richiesta inviata. Attendi l'attivazione da parte di un amministratore prima di accedere.";
+      success.classList.remove("d-none");
+    } catch (failure) {
+      error.textContent = "Backend non raggiungibile. Avvialo e riprova.";
+      error.classList.remove("d-none");
+    } finally {
+      document.getElementById("registerPassword").value = "";
+      button.disabled = false;
+    }
+  });
+
   document.getElementById("loginForm").addEventListener("submit", async event => {
     event.preventDefault();
     manualLoginStarted = true;
+    document.getElementById("loginSuccess").classList.add("d-none");
     const loginButton = event.target.querySelector('button[type="submit"]');
     loginButton.disabled = true;
     loginError.classList.add("d-none");

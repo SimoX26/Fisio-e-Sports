@@ -7,7 +7,7 @@ comportamento descritti nell'[inventario](02-inventario-funzionale.md).
 
 | Area | Stato | Prossimo criterio di parità |
 |---|---|---|
-| Accesso terapista | `/api/me` con Basic o Bearer; token di 30 giorni emesso e revocato da `/api/auth/remember` per il desktop locale; Logout desktop con conferma esplicita e pulizia della sessione | HTTPS, indirizzo server configurabile e autenticazione remota |
+| Accesso terapista | `/api/me` con Basic o Bearer; token di 30 giorni emesso e revocato da `/api/auth/remember` per il desktop locale; Logout desktop con conferma esplicita e pulizia della sessione; richiesta pubblica di accesso tramite `POST /api/access-requests` | Collaudo della registrazione sul DB di test; HTTPS, indirizzo server configurabile e autenticazione remota |
 | Calendario | Lettura, dettaglio, creazione, modifica, completamento, cestino, anteprima e invio promemoria con modello modificabile | Collaudo completo con gateway reale |
 | Home e lista d'attesa | Lista d'attesa GET/POST/DELETE, apertura del nuovo appuntamento precompilato, tre contatori giornalieri e azioni rapide; Pazienti oggi apre la rubrica filtrata; agenda con stato degli appuntamenti | Collaudo home con dati reali e due terapisti |
 | Pazienti e anamnesi | Rubrica e scheda legacy con creazione, modifica, ultima anamnesi, condizioni, unione ed eliminazione | Versioni storiche dell'anamnesi |
@@ -21,6 +21,13 @@ comportamento descritti nell'[inventario](02-inventario-funzionale.md).
 dal più recente. Cerca nome del paziente, note e stato, limita il risultato al
 terapista autenticato e verifica che anche il paziente gli appartenga. Include
 gli appuntamenti annullati, che il desktop apre nel cestino.
+
+`POST /api/access-requests` riceve `firstName`, `lastName`, `email`, `username`
+e `password` come form. Usa lo stesso caso d'uso della pagina legacy `/register`:
+controlla i dati, verifica username e richieste pendenti, salva la password
+come hash e lascia la richiesta in attesa di revisione amministrativa. Non
+richiede una sessione; il desktop mostra conferma dopo HTTP 201. L'approvazione
+e il rifiuto restano nella webapp legacy finché non saranno migrati.
 
 `GET /api/kpi?scope=me&months=12` accetta da 1 a 36 mesi (12 se omesso).
 `scope=me` (predefinito) restituisce gli snapshot `THERAPIST` del terapista
