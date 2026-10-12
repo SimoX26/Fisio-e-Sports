@@ -1,75 +1,55 @@
 # Fisio e Sports Android
 
-Wrapper Android WebView della webapp Fisio e Sports.
+Client Android nativo in migrazione. Il primo flusso disponibile è l'accesso del
+terapista tramite le API del backend, la visualizzazione dello username e
+l'uscita. Non carica più la webapp legacy in una WebView. Home, pazienti,
+calendario e le altre funzioni arriveranno nei passi successivi.
 
-## Requisiti
+## Requisiti e configurazione
 
-- JDK 17;
-- Android SDK con API 35;
-- dispositivo Android 7.0 (API 24) o successivo, oppure un emulatore;
-- backend Fisio e Sports raggiungibile dal dispositivo.
+- JDK 17 e Android SDK con API 35;
+- dispositivo Android 7.0 (API 24) o successivo, oppure emulatore;
+- backend autonomo avviato e raggiungibile dal dispositivo.
 
-Per usare il progetto con Android Studio è sufficiente aprire la cartella `android-app`.
+Apri `android-app` in Android Studio. Se necessario, crea
+`local.properties` da `local.properties.example` e imposta `sdk.dir`.
+Il file locale non è versionato.
 
-## Configurazione SDK
-
-Se non viene generato automaticamente da Android Studio, crea `local.properties` a partire dall'esempio:
-
-```bash
-cp local.properties.example local.properties
-```
-
-Imposta in `sdk.dir` il percorso locale dell'Android SDK. `local.properties` è escluso da Git.
-
-## URL del backend
-
-La build legge la proprietà Gradle `FISIO_SPORT_BASE_URL`. In assenza della proprietà usa il backend remoto configurato in `app/build.gradle.kts`.
-
-Da un dispositivo fisico non usare `localhost`: indica un host raggiungibile dal telefono, mantenendo il contesto web `Fisio-e-Sports`.
-
-Esempio per un backend nella rete locale:
+La build legge `FISIO_API_BASE_URL`. Il valore predefinito
+`http://10.0.2.2:8081` punta al backend avviato sul computer host
+dell'emulatore Android. Su un telefono fisico, usa l'indirizzo LAN del
+computer, per esempio:
 
 ```bash
-./gradlew assembleDebug -PFISIO_SPORT_BASE_URL=http://192.168.1.50:8080/Fisio-e-Sports
+./gradlew assembleDebug -PFISIO_API_BASE_URL=http://192.168.1.50:8081
 ```
 
-## Build
+La URL deve essere l'origine delle API, senza il contesto
+`/Fisio-e-Sports`. La build release accetta solo HTTPS. La build debug
+consente HTTP per le prove sulla rete locale; evita reti non fidate durante
+l'accesso perché le credenziali viaggiano in Basic.
 
-Dalla cartella `android-app`:
+## Build e prova manuale
+
+Dalla directory `android-app`:
 
 ```bash
 ./gradlew assembleDebug
-```
-
-L'APK debug viene generato in:
-
-```text
-app/build/outputs/apk/debug/FisioESport.apk
-```
-
-Per installarlo con ADB:
-
-```bash
 adb install -r app/build/outputs/apk/debug/FisioESport.apk
 ```
 
-La build release è disponibile con `./gradlew assembleRelease`, ma il progetto non definisce credenziali di firma: la firma per la distribuzione deve essere configurata separatamente.
-
-## Script dalla radice del repository
-
-`deploy-apk.sh` crea un APK debug e lo copia nella directory di output indicata:
+Oppure dalla radice del repository:
 
 ```bash
-./deploy-apk.sh --apk-output-dir /percorso/output
+./deploy-apk.sh --android-url http://192.168.1.50:8081 --apk-output-dir /percorso/output
 ```
 
-Consulta tutte le opzioni con `./deploy-apk.sh --help`.
+Prima della prova verifica `http://<host>:8081/ready` dal dispositivo:
+deve rispondere `{"status":"ok"}`. Avvia l'app, inserisci le credenziali
+di un terapista esistente e verifica che compaia il suo username. Prova anche
+una password errata e il pulsante Esci.
 
-## Funzioni del wrapper
-
-- JavaScript, DOM storage e cookie di sessione;
-- pull-to-refresh e navigazione indietro;
-- selezione multipla di immagini e video;
-- acquisizione di più foto tramite fotocamera;
-- apertura esterna dei link `tel:` e `mailto:`;
-- supporto HTTP per backend LAN tramite `network_security_config`.
+Il token di accesso resta soltanto in memoria. Chiudere o ricreare l'Activity
+richiede un nuovo accesso; la persistenza sicura è un passo successivo.
+L'uscita chiede al backend di revocare il token corrente quando la rete è
+disponibile. L'app non contiene ancora le altre schermate.

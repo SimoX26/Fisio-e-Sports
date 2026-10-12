@@ -10,13 +10,13 @@ Descrizione:
   Genera APK Android debug (senza installazione).
 
 Opzioni:
-  --android-url <url>     URL backend per build APK (FISIO_SPORT_BASE_URL)
+  --android-url <url>     URL API backend per build APK (FISIO_API_BASE_URL)
   --apk-output-dir <dir>  Cartella output APK locale (default: /home/simone/Scaricati)
   --help                  Mostra questo aiuto
 
 Esempi:
   ./deploy-apk.sh
-  ./deploy-apk.sh --android-url http://192.168.1.50:8080/Fisio-e-Sports
+  ./deploy-apk.sh --android-url http://192.168.1.50:8081
 HELP
 }
 
@@ -60,7 +60,7 @@ if [[ "$ANDROID_URL_EXPLICIT" == "true" ]]; then
   echo ">> Build APK con backend URL: $ANDROID_URL"
   (
     cd "$ANDROID_DIR"
-    ./gradlew assembleDebug "-PFISIO_SPORT_BASE_URL=${ANDROID_URL}"
+    ./gradlew assembleDebug "-PFISIO_API_BASE_URL=${ANDROID_URL}"
   )
 else
   echo ">> Build APK con configurazione di default"

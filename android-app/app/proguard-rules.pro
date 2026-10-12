@@ -1,1 +1,1 @@
-# Keep defaults for WebView-based wrapper app
+# Regole aggiuntive per il client Android nativo (attualmente nessuna).

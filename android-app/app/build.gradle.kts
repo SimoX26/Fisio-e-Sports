@@ -5,8 +5,8 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-val fisioSportBaseUrl = (project.findProperty("FISIO_SPORT_BASE_URL") as String?)
-    ?: "http://31.70.74.92:8080/Fisio-e-Sports"
+val fisioApiBaseUrl = (project.findProperty("FISIO_API_BASE_URL") as String?)
+    ?: "http://10.0.2.2:8081"
 
 android {
     namespace = "it.simosw.fisioesport"
@@ -21,7 +21,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        buildConfigField("String", "FISIO_SPORT_BASE_URL", "\"$fisioSportBaseUrl\"")
+        buildConfigField("String", "FISIO_API_BASE_URL", "\"$fisioApiBaseUrl\"")
     }
 
     buildTypes {
@@ -57,8 +57,6 @@ android.applicationVariants.configureEach {
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
-    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 }

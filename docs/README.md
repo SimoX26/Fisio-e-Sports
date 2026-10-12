@@ -22,4 +22,4 @@ la guida pertinente quando cambiano struttura, comportamento o procedure.
 - [Associazione pazienti ai terapisti](operations/associazione-pazienti.md):
   regola di accesso, migrazione dati e controlli prima del deploy.
 - [Guida KPI](../KPI_STATISTICHE_GUIDA.md): definizioni delle statistiche.
-- [Wrapper Android attuale](../android-app/README.md): build e configurazione.
+- [Client Android](../android-app/README.md): stato, build e configurazione.

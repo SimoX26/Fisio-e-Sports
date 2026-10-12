@@ -1,9 +1,15 @@
 <resources>
     <string name="app_name">Fisio e Sports</string>
-    <string name="file_picker_title">Seleziona file</string>
-    <string name="file_error">Impossibile preparare il file</string>
-    <string name="camera_continue_title">Aggiungere un\'altra foto?</string>
-    <string name="camera_continue_message">La foto è stata salvata. Vuoi scattarne un\'altra?</string>
-    <string name="camera_continue_positive">Scatta altra foto</string>
-    <string name="camera_continue_negative">Fine</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="login">Accedi</string>
+    <string name="logout">Esci</string>
+    <string name="cancel">Annulla</string>
+    <string name="logout_confirmation">Vuoi uscire dall’app?</string>
+    <string name="welcome">Accesso effettuato: %1$s</string>
+    <string name="first_step">Accesso Android nativo attivo. Le altre schermate saranno aggiunte nei prossimi passi.</string>
+    <string name="credentials_required">Inserisci username e password.</string>
+    <string name="invalid_credentials">Credenziali non valide.</string>
+    <string name="backend_unavailable">Impossibile completare l’accesso. Controlla l’indirizzo e la disponibilità del backend.</string>
+    <string name="connecting">Accesso in corso…</string>
 </resources>
