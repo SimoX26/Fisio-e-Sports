@@ -46,5 +46,8 @@ punto d'interruzione prima di qualsiasi nuovo tentativo.
    account prima di riaprire le scritture.
 
 La migrazione non viene applicata automaticamente dal codice né dalla build.
-Nel database di test configurato è già stata completata il 1 ottobre 2026;
-non va eseguita una seconda volta lì. Il WAR aggiornato va ancora pubblicato.
+Nel database locale di test configurato è stata riapplicata il 12 ottobre 2026
+dopo il ripristino di uno schema precedente: 141 schede hanno un proprietario,
+le 12 senza riferimenti sono assegnate a `marco` e non restano riferimenti
+clinici con terapista diverso dal proprietario. Non rieseguire lo script su
+questo schema. Il WAR aggiornato va ancora pubblicato.

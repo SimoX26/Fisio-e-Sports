@@ -17,20 +17,13 @@ non attesta un deploy in produzione.
 
 La regola scelta per i pazienti è: ciascuna scheda appartiene a un terapista;
 solo quel terapista può leggerla e modificarla. Eventuali schede condivise
-vanno duplicate per terapista conservando i relativi riferimenti clinici. La
-verifica in sola lettura sul database configurato ha trovato 137 schede: 125
-associate a un solo terapista, nessuna a più terapisti e 12 senza collegamenti.
-Le 12 schede senza collegamenti saranno assegnate a `marco`, identificato come
-terapista attivo al momento della verifica. Questi numeri vanno ricontrollati
-immediatamente prima della migrazione.
+vanno duplicate per terapista conservando i relativi riferimenti clinici.
 
-La migrazione SQL è stata provata su un MariaDB temporaneo con dati sintetici:
-una scheda condivisa è stata duplicata, i riferimenti sono rimasti coerenti e
-la scheda senza legami è stata assegnata a `marco`. Nel database di test
-configurato, la prima esecuzione si è interrotta dopo l'aggiunta della colonna
-perché il server MariaDB non riusciva a creare una procedura SQL (`mysql.proc`
-non aggiornato). L'assegnazione è stata completata senza procedure: 137 schede
-con proprietario, nessuna senza e nessuna discrepanza tra il proprietario delle
-schede e quello di appuntamenti, anamnesi, piani o sedute. Lo script versionato
-è stato sostituito con una versione senza procedure, riprovata sul MariaDB
-temporaneo. Il WAR aggiornato non è ancora stato pubblicato in Tomcat.
+Il 12 ottobre 2026 il database locale di test configurato conteneva di nuovo
+uno schema precedente, senza `patients.therapist_id`: la query del calendario
+falliva. Dopo i controlli preliminari è stata riapplicata la migrazione
+versionata senza procedure. Verifica finale: 141 schede con proprietario,
+nessuna senza; 12 schede prive di riferimenti assegnate a `marco`; nessuna
+discrepanza tra proprietario e terapista di appuntamenti, anamnesi, piani o
+sedute. La query SQL del calendario restituisce i dati. Resta da verificare
+l'API dall'applicazione e da pubblicare il WAR aggiornato in Tomcat.

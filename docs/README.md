@@ -17,6 +17,7 @@ la guida pertinente quando cambiano struttura, comportamento o procedure.
 ## Operazioni
 
 - [Sviluppo e verifiche](operations/sviluppo-e-verifiche.md): build, avvio e test.
+- [Backup del database](operations/backup-database.md): dump remoto via SSH e verifica locale.
 - [WhatsApp con Baileys](operations/whatsapp-baileys.md): configurazione locale, server e collaudo.
 - [Prototipo desktop](../fisio-desktop/README.md): avvio e controlli manuali.
 - [Associazione pazienti ai terapisti](operations/associazione-pazienti.md):
