@@ -3,6 +3,14 @@
     <string name="brand_caps">FISIO E SPORTS</string>
     <string name="home">Home</string>
     <string name="calendar">Calendario</string>
+    <string name="calendar_today">Oggi</string>
+    <string name="calendar_previous">Mese precedente</string>
+    <string name="calendar_next">Mese successivo</string>
+    <string name="calendar_loading">Caricamento appuntamenti…</string>
+    <string name="calendar_empty">Nessun appuntamento per questo giorno.</string>
+    <string name="calendar_error">Impossibile caricare il calendario dal backend.</string>
+    <string name="calendar_continues">In corso</string>
+    <string name="calendar_day_description">%1$s, %2$d appuntamenti</string>
     <string name="address_book">Rubrica</string>
     <string name="treatments">Storico</string>
     <string name="statistics">Dati</string>
@@ -36,6 +44,8 @@
     <string name="logout">Esci</string>
     <string name="cancel">Annulla</string>
     <string name="logout_confirmation">Vuoi uscire dall’app?</string>
+    <string name="session_save_error">Accesso effettuato, ma il dispositivo non ha salvato la sessione protetta.</string>
+    <string name="session_clear_error">Impossibile eliminare la sessione salvata. Riprova a uscire.</string>
     <string name="welcome">Accesso effettuato: %1$s</string>
     <string name="appointments_label">Appuntamenti oggi</string>
     <string name="patients_label">Pazienti oggi</string>

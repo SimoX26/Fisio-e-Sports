@@ -273,6 +273,99 @@
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/calendarPanel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/calendarMonthTitle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:maxLines="1"
+                            android:textColor="@color/text_main"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/calendarToday"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:text="@string/calendar_today"
+                            android:textAllCaps="false"
+                            android:textColor="@color/brand_primary"
+                            app:backgroundTint="@color/brand_primary_soft"
+                            app:cornerRadius="12dp" />
+
+                        <ImageButton
+                            android:id="@+id/calendarPrevious"
+                            android:layout_width="44dp"
+                            android:layout_height="48dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/calendar_previous"
+                            android:padding="10dp"
+                            android:src="@drawable/ic_chevron_left"
+                            android:tint="@color/brand_primary" />
+
+                        <ImageButton
+                            android:id="@+id/calendarNext"
+                            android:layout_width="44dp"
+                            android:layout_height="48dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/calendar_next"
+                            android:padding="10dp"
+                            android:src="@drawable/ic_chevron_right"
+                            android:tint="@color/brand_primary" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/surface_card"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+
+                        <LinearLayout
+                            android:id="@+id/calendarWeekdays"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal" />
+
+                        <LinearLayout
+                            android:id="@+id/calendarGrid"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/calendarSelectedDate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:textColor="@color/text_main"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:id="@+id/calendarDayEvents"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="vertical" />
+                </LinearLayout>
+
+                <LinearLayout
                     android:id="@+id/patientsPanel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

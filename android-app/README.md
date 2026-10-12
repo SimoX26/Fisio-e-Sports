@@ -1,14 +1,14 @@
 # Fisio e Sports Android
 
 Client Android nativo in migrazione. Sono disponibili l'accesso del terapista,
-la home con l'agenda di oggi, la rubrica e la scheda anagrafica del paziente
-in sola lettura, e l'uscita. I dati arrivano dal backend; la webapp legacy
-non viene caricata in una WebView. In alto a destra, il pulsante della sezione
+la home con l'agenda di oggi, il calendario mensile, la rubrica, la scheda
+anagrafica del paziente in sola lettura e l'uscita. I dati arrivano dal backend;
+la webapp legacy non viene caricata in una WebView. In alto a destra, il pulsante della sezione
 corrente apre un menu sovrapposto con Home, Calendario, Rubrica, Storico, Dati,
 Impostazioni ed Esci; la voce corrente resta selezionata. Le sezioni non ancora
 migrate mostrano una schermata informativa.
-Anamnesi, modifica paziente, calendario completo e le altre funzioni
-arriveranno nei passi successivi.
+Anamnesi, modifica paziente, dettagli e modifica degli appuntamenti arriveranno
+nei passi successivi.
 
 ## Requisiti e configurazione
 
@@ -57,6 +57,19 @@ appuntamenti di oggi. Confronta orari, pazienti, stati e conteggi con il
 desktop. Dall'inizio della home trascina la schermata verso il basso per
 aggiornare l'agenda; prova anche una password errata ed Esci nel menu.
 
+Apri **Calendario**: il mese corrente mostra un punto sui giorni con
+appuntamenti. Tocca un giorno per vedere gli eventi e gli orari sotto la
+griglia; usa le frecce per cambiare mese e **Oggi** per tornare alla data
+attuale. Trascina verso il basso per aggiornare il mese. Confronta un giorno
+con più appuntamenti, uno vuoto e un evento a cavallo di due giorni con il
+desktop. La vista è per ora in sola lettura.
+
+Dopo un accesso riuscito, chiudi completamente l'app e riaprila: con backend
+raggiungibile deve entrare senza chiedere la password. Ripeti la prova dopo
+aver effettuato l'accesso anche dal desktop: entrambe le sessioni devono
+restare utilizzabili. Esci da Android e riaprilo: deve mostrare il login,
+mentre il desktop deve restare connesso.
+
 Apri **Rubrica** dal menu di navigazione: devono comparire solo i pazienti
 del terapista con nome, data di creazione e telefono. Cerca un nome e premi
 Invio sulla tastiera; svuota il campo per tornare all'elenco completo. Dalla
@@ -66,8 +79,8 @@ email, data di creazione e numero di appuntamenti collegati. Il tasto Indietro
 torna alla Rubrica; aprendo il menu dalla scheda e chiudendolo, la scheda deve
 restare visibile. Tocca il pulsante della sezione corrente in alto a destra:
 il menu deve sovrapporsi alla pagina, selezionare la voce attiva e aggiornare
-il pulsante quando cambi sezione. Calendario, Storico, Dati e Impostazioni
-mostrano per ora una schermata di migrazione. Verifica che intestazione e
+il pulsante quando cambi sezione. Storico, Dati e Impostazioni mostrano per ora
+una schermata di migrazione. Verifica che intestazione e
 contenuto inizino sotto la barra delle notifiche e restino sopra la barra di
 navigazione Android. Esci deve comparire soltanto nel menu; dopo l'uscita il
 pulsante della sezione non deve più comparire.
@@ -81,7 +94,11 @@ pazienti distinti associati a quegli appuntamenti e promemoria ancora
 potenzialmente inviabili per appuntamenti futuri di oggi, non cancellati e
 con paziente. La home non apre ancora i dettagli né modifica gli appuntamenti.
 
-Il token di accesso resta soltanto in memoria. Chiudere o ricreare l'Activity
-richiede un nuovo accesso; la persistenza sicura è un passo successivo.
-L'uscita chiede al backend di revocare il token corrente quando la rete è
-disponibile.
+La password non viene salvata. Android cifra il token nel proprio archivio
+privato usando Android Keystore e lo separa per URL del backend; il backup
+dell'app è disabilitato perché la chiave non è trasferibile. Alla riapertura
+verifica la sessione con `/api/me`: se il token è scaduto o revocato torna
+al login. Se il backend non è raggiungibile, resta sul login e conserva il
+token per un tentativo successivo. Esci elimina il token locale e chiede al
+backend di revocarlo quando la rete è disponibile. Il token scade dopo 30
+giorni; ogni dispositivo ha una sessione distinta.

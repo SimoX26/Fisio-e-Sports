@@ -1,5 +1,6 @@
 package it.simosw.fisioesport
 
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.Base64
 import android.view.Gravity
@@ -9,6 +10,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
@@ -33,6 +35,8 @@ import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
     private data class AgendaRow(val time: String, val title: String, val kind: String, val state: String)
+    private data class CalendarEntry(val start: String, val end: String, val allDay: Boolean,
+        val title: String, val kind: String, val state: String)
     private data class PatientRow(val id: Long, val name: String, val phone: String, val created: String)
     private enum class Section(val title: Int) {
         HOME(R.string.home), CALENDAR(R.string.calendar), PATIENTS(R.string.address_book),
@@ -40,10 +44,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val worker = Executors.newSingleThreadExecutor()
+    private lateinit var tokenStore: SecureTokenStore
     private var token: String? = null
+    private var loginAttempt = 0
     private var section = Section.HOME
     private var selectedPatientId: Long? = null
     private var patientsRequest = 0
+    private var calendarRequest = 0
+    private val selectedCalendarDay = Calendar.getInstance()
+    private val displayedMonth = Calendar.getInstance().apply { set(Calendar.DAY_OF_MONTH, 1) }
+    private var calendarEntries = emptyList<CalendarEntry>()
+    private var calendarLoading = false
+    private var calendarLoadError = false
     private lateinit var username: EditText
     private lateinit var password: EditText
     private lateinit var message: TextView
@@ -59,6 +71,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var swipeRefresh: SwipeRefreshLayout
     private lateinit var contentScroll: ScrollView
     private lateinit var homePanel: View
+    private lateinit var calendarPanel: View
+    private lateinit var calendarMonthTitle: TextView
+    private lateinit var calendarSelectedDate: TextView
+    private lateinit var calendarWeekdays: LinearLayout
+    private lateinit var calendarGrid: LinearLayout
+    private lateinit var calendarDayEvents: LinearLayout
     private lateinit var patientsPanel: View
     private lateinit var patientDetailPanel: View
     private lateinit var patientDetailTitle: TextView
@@ -75,6 +93,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(R.layout.activity_main)
+        tokenStore = SecureTokenStore(this, BuildConfig.FISIO_API_BASE_URL.trimEnd('/'))
         username = findViewById(R.id.username)
         password = findViewById(R.id.password)
         message = findViewById(R.id.message)
@@ -97,6 +116,12 @@ class MainActivity : AppCompatActivity() {
         ViewCompat.requestApplyInsets(swipeRefresh)
         contentScroll = findViewById(R.id.contentScroll)
         homePanel = findViewById(R.id.homePanel)
+        calendarPanel = findViewById(R.id.calendarPanel)
+        calendarMonthTitle = findViewById(R.id.calendarMonthTitle)
+        calendarSelectedDate = findViewById(R.id.calendarSelectedDate)
+        calendarWeekdays = findViewById(R.id.calendarWeekdays)
+        calendarGrid = findViewById(R.id.calendarGrid)
+        calendarDayEvents = findViewById(R.id.calendarDayEvents)
         patientsPanel = findViewById(R.id.patientsPanel)
         patientDetailPanel = findViewById(R.id.patientDetailPanel)
         patientDetailTitle = findViewById(R.id.patientDetailTitle)
@@ -114,6 +139,7 @@ class MainActivity : AppCompatActivity() {
         swipeRefresh.setOnRefreshListener {
             when {
                 section == Section.HOME -> loadTodayAgenda()
+                section == Section.CALENDAR -> loadCalendarMonth()
                 selectedPatientId != null -> loadPatientDetail(selectedPatientId!!)
                 section == Section.PATIENTS -> loadPatients()
                 else -> swipeRefresh.isRefreshing = false
@@ -121,6 +147,14 @@ class MainActivity : AppCompatActivity() {
         }
         loginButton.setOnClickListener { login() }
         currentSectionButton.setOnClickListener { showNavigationMenu() }
+        findViewById<Button>(R.id.calendarToday).setOnClickListener {
+            selectedCalendarDay.timeInMillis = System.currentTimeMillis()
+            displayedMonth.timeInMillis = selectedCalendarDay.timeInMillis
+            displayedMonth.set(Calendar.DAY_OF_MONTH, 1)
+            loadCalendarMonth()
+        }
+        findViewById<View>(R.id.calendarPrevious).setOnClickListener { changeCalendarMonth(-1) }
+        findViewById<View>(R.id.calendarNext).setOnClickListener { changeCalendarMonth(1) }
         findViewById<Button>(R.id.patientDetailBack).setOnClickListener { showSection(Section.PATIENTS) }
         patientsSearch.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
@@ -140,6 +174,43 @@ class MainActivity : AppCompatActivity() {
                 else finish()
             }
         })
+        restoreSession()
+    }
+
+    private fun restoreSession() {
+        val expectedAttempt = loginAttempt
+        worker.execute {
+            val savedToken = tokenStore.load() ?: return@execute
+            try {
+                val (status, body) = request("GET", "/api/me", "Bearer $savedToken")
+                if (status == 401) {
+                    tokenStore.clear()
+                    return@execute
+                }
+                if (status != 200) throw IllegalStateException("HTTP $status")
+                val displayName = JSONObject(body).getString("username")
+                runOnUiThread {
+                    if (loginAttempt == expectedAttempt && token == null) {
+                        enterSession(savedToken, displayName)
+                    }
+                }
+            } catch (_: Exception) {
+                runOnUiThread {
+                    if (loginAttempt == expectedAttempt && token == null) {
+                        message.setText(R.string.backend_unavailable)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun enterSession(activeToken: String, displayName: String) {
+        token = activeToken
+        password.text.clear()
+        welcome.text = getString(R.string.welcome, displayName)
+        loginPanel.visibility = View.GONE
+        loggedInPanel.visibility = View.VISIBLE
+        showSection(Section.HOME)
     }
 
     private fun login() {
@@ -149,6 +220,7 @@ class MainActivity : AppCompatActivity() {
             message.setText(R.string.credentials_required)
             return
         }
+        loginAttempt++
         loginButton.isEnabled = false
         message.setTextColor(getColor(R.color.text_muted))
         message.setText(R.string.connecting)
@@ -163,17 +235,15 @@ class MainActivity : AppCompatActivity() {
                     return@execute
                 }
                 if (status != 201) throw IllegalStateException("HTTP $status")
-                issuedToken = JSONObject(body).getString("token")
-                val (identityStatus, identityBody) = request("GET", "/api/me", "Bearer $issuedToken")
+                val newToken = JSONObject(body).getString("token")
+                issuedToken = newToken
+                val (identityStatus, identityBody) = request("GET", "/api/me", "Bearer $newToken")
                 if (identityStatus != 200) throw IllegalStateException("HTTP $identityStatus")
                 val displayName = JSONObject(identityBody).getString("username")
+                val saved = tokenStore.save(newToken)
                 runOnUiThread {
-                    token = issuedToken
-                    password.text.clear()
-                    welcome.text = getString(R.string.welcome, displayName)
-                    loginPanel.visibility = View.GONE
-                    loggedInPanel.visibility = View.VISIBLE
-                    showSection(Section.HOME)
+                    enterSession(newToken, displayName)
+                    if (!saved) Toast.makeText(this, R.string.session_save_error, Toast.LENGTH_LONG).show()
                 }
             } catch (_: Exception) {
                 issuedToken?.let {
@@ -201,17 +271,19 @@ class MainActivity : AppCompatActivity() {
         section = next
         selectedPatientId = null
         swipeRefresh.isRefreshing = false
-        swipeRefresh.isEnabled = next == Section.HOME || next == Section.PATIENTS
+        swipeRefresh.isEnabled = next == Section.HOME || next == Section.CALENDAR || next == Section.PATIENTS
         homePanel.visibility = if (next == Section.HOME) View.VISIBLE else View.GONE
+        calendarPanel.visibility = if (next == Section.CALENDAR) View.VISIBLE else View.GONE
         patientsPanel.visibility = if (next == Section.PATIENTS) View.VISIBLE else View.GONE
         patientDetailPanel.visibility = View.GONE
-        placeholderPanel.visibility = if (next == Section.HOME || next == Section.PATIENTS) View.GONE else View.VISIBLE
+        placeholderPanel.visibility = if (next == Section.HOME || next == Section.CALENDAR || next == Section.PATIENTS) View.GONE else View.VISIBLE
         if (placeholderPanel.visibility == View.VISIBLE) placeholderTitle.setText(next.title)
         currentSectionButton.text = getString(R.string.navigation_current, getString(next.title))
         currentSectionButton.contentDescription = getString(R.string.navigation_open_description, getString(next.title))
         contentScroll.scrollTo(0, 0)
         when (next) {
             Section.HOME -> loadTodayAgenda()
+            Section.CALENDAR -> loadCalendarMonth()
             Section.PATIENTS -> loadPatients()
             else -> Unit
         }
@@ -410,6 +482,155 @@ class MainActivity : AppCompatActivity() {
         ).apply { bottomMargin = dp(16) })
     }
 
+    private fun changeCalendarMonth(amount: Int) {
+        displayedMonth.add(Calendar.MONTH, amount)
+        selectedCalendarDay.timeInMillis = displayedMonth.timeInMillis
+        loadCalendarMonth()
+    }
+
+    private fun calendarKey(day: Calendar): String =
+        SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(day.time)
+
+    private fun entriesForDay(day: Calendar): List<CalendarEntry> {
+        val start = calendarKey(day) + "T00:00"
+        val nextDay = (day.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, 1) }
+        val end = calendarKey(nextDay) + "T00:00"
+        return calendarEntries.filter { it.start < end && it.end > start }
+    }
+
+    private fun loadCalendarMonth() {
+        val activeToken = token ?: return
+        val requestId = ++calendarRequest
+        val start = calendarKey(displayedMonth) + "T00:00:00"
+        val nextMonth = (displayedMonth.clone() as Calendar).apply { add(Calendar.MONTH, 1) }
+        val end = calendarKey(nextMonth) + "T00:00:00"
+        calendarEntries = emptyList()
+        calendarLoading = true
+        calendarLoadError = false
+        renderCalendar()
+        swipeRefresh.isRefreshing = true
+        worker.execute {
+            try {
+                val (status, body) = request("GET", "/api/calendar?start=$start&end=$end", "Bearer $activeToken")
+                if (status != 200) throw IllegalStateException("HTTP $status")
+                val events = JSONArray(body)
+                val entries = (0 until events.length()).map { index ->
+                    val event = events.getJSONObject(index)
+                    val props = event.getJSONObject("extendedProps")
+                    CalendarEntry(event.getString("start"), event.getString("end"), event.optBoolean("allDay"),
+                        event.optString("title"),
+                        if (props.optBoolean("nonTreatmentEvent")) getString(R.string.event) else getString(R.string.patient),
+                        props.optString("state"))
+                }.sortedBy { it.start }
+                runOnUiThread {
+                    if (token != activeToken || section != Section.CALENDAR || requestId != calendarRequest) return@runOnUiThread
+                    swipeRefresh.isRefreshing = false
+                    calendarEntries = entries
+                    calendarLoading = false
+                    renderCalendar()
+                }
+            } catch (_: Exception) {
+                runOnUiThread {
+                    if (token != activeToken || section != Section.CALENDAR || requestId != calendarRequest) return@runOnUiThread
+                    swipeRefresh.isRefreshing = false
+                    calendarLoading = false
+                    calendarLoadError = true
+                    renderCalendar()
+                }
+            }
+        }
+    }
+
+    private fun renderCalendar() {
+        calendarMonthTitle.text = SimpleDateFormat("MMMM yyyy", Locale.ITALIAN).format(displayedMonth.time)
+        calendarSelectedDate.text = SimpleDateFormat("EEEE d MMMM yyyy", Locale.ITALIAN).format(selectedCalendarDay.time)
+        calendarWeekdays.removeAllViews()
+        listOf("lun", "mar", "mer", "gio", "ven", "sab", "dom").forEach { name ->
+            calendarWeekdays.addView(TextView(this).apply {
+                text = name
+                gravity = Gravity.CENTER
+                textSize = 12f
+                setTextColor(getColor(R.color.text_muted))
+            }, LinearLayout.LayoutParams(0, dp(28), 1f))
+        }
+        calendarGrid.removeAllViews()
+        val first = displayedMonth.clone() as Calendar
+        val offset = (first.get(Calendar.DAY_OF_WEEK) + 5) % 7
+        val days = first.getActualMaximum(Calendar.DAY_OF_MONTH)
+        val today = calendarKey(Calendar.getInstance())
+        val selected = calendarKey(selectedCalendarDay)
+        val weeks = (offset + days + 6) / 7
+        repeat(weeks) { week ->
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            repeat(7) { weekday ->
+                val number = week * 7 + weekday - offset + 1
+                val cell = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+                    setPadding(0, dp(4), 0, 0)
+                }
+                if (number in 1..days) {
+                    val day = (first.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, number) }
+                    val key = calendarKey(day)
+                    val count = entriesForDay(day).size
+                    val selectedDay = key == selected
+                    val label = TextView(this).apply {
+                        text = number.toString()
+                        gravity = Gravity.CENTER
+                        textSize = 15f
+                        setTextColor(getColor(when {
+                            selectedDay -> R.color.surface
+                            key == today -> R.color.brand_primary
+                            else -> R.color.text_main
+                        }))
+                        if (selectedDay) background = GradientDrawable().apply {
+                            shape = GradientDrawable.OVAL
+                            setColor(getColor(R.color.brand_primary))
+                        }
+                    }
+                    cell.addView(label, LinearLayout.LayoutParams(dp(36), dp(36)))
+                    if (count > 0) {
+                        cell.addView(View(this).apply {
+                            background = GradientDrawable().apply {
+                                shape = GradientDrawable.OVAL
+                                setColor(getColor(R.color.brand_primary))
+                            }
+                        }, LinearLayout.LayoutParams(dp(6), dp(6)).apply { topMargin = dp(3) })
+                    }
+                    cell.contentDescription = getString(R.string.calendar_day_description,
+                        SimpleDateFormat("EEEE d MMMM yyyy", Locale.ITALIAN).format(day.time), count)
+                    cell.setOnClickListener {
+                        selectedCalendarDay.timeInMillis = day.timeInMillis
+                        renderCalendar()
+                    }
+                }
+                row.addView(cell, LinearLayout.LayoutParams(0, dp(62), 1f))
+            }
+            calendarGrid.addView(row)
+        }
+        calendarDayEvents.removeAllViews()
+        val dayKey = calendarKey(selectedCalendarDay)
+        val rows = entriesForDay(selectedCalendarDay)
+        if (calendarLoading) {
+            addAgendaLine(getString(R.string.calendar_loading), target = calendarDayEvents)
+            return
+        }
+        if (calendarLoadError) {
+            addAgendaLine(getString(R.string.calendar_error), R.color.brand_danger, calendarDayEvents)
+            return
+        }
+        if (rows.isEmpty()) addAgendaLine(getString(R.string.calendar_empty), target = calendarDayEvents)
+        rows.forEach { entry ->
+            val time = when {
+                entry.allDay -> getString(R.string.all_day)
+                !entry.start.startsWith(dayKey) -> getString(R.string.calendar_continues)
+                entry.end.startsWith(dayKey) -> entry.start.substring(11, 16) + " – " + entry.end.substring(11, 16)
+                else -> entry.start.substring(11, 16) + " →"
+            }
+            addAgendaRow(AgendaRow(time, entry.title, entry.kind, entry.state), calendarDayEvents)
+        }
+    }
+
     private fun loadTodayAgenda() {
         val activeToken = token ?: return
         val today = Calendar.getInstance().apply {
@@ -475,8 +696,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun addAgendaLine(value: String, color: Int = R.color.text_muted) {
-        agendaList.addView(TextView(this).apply {
+    private fun addAgendaLine(value: String, color: Int = R.color.text_muted, target: LinearLayout = agendaList) {
+        target.addView(TextView(this).apply {
             text = value
             textSize = 14f
             setTextColor(getColor(color))
@@ -484,7 +705,7 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private fun addAgendaRow(row: AgendaRow) {
+    private fun addAgendaRow(row: AgendaRow, target: LinearLayout = agendaList) {
         val item = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundResource(R.drawable.surface_card)
@@ -523,7 +744,7 @@ class MainActivity : AppCompatActivity() {
             })
         }
         item.addView(footer)
-        agendaList.addView(item, LinearLayout.LayoutParams(
+        target.addView(item, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { bottomMargin = dp(8) })
     }
@@ -540,15 +761,26 @@ class MainActivity : AppCompatActivity() {
 
     private fun confirmLogout() {
         val currentToken = token ?: return
+        if (!tokenStore.clear()) {
+            Toast.makeText(this, R.string.session_clear_error, Toast.LENGTH_LONG).show()
+            return
+        }
+        loginAttempt++
         token = null
         section = Section.HOME
         selectedPatientId = null
         patientsRequest++
+        calendarRequest++
+        calendarEntries = emptyList()
+        calendarLoading = false
+        calendarLoadError = false
         loggedInPanel.visibility = View.GONE
         loginPanel.visibility = View.VISIBLE
         swipeRefresh.isRefreshing = false
         swipeRefresh.isEnabled = false
         agendaList.removeAllViews()
+        calendarGrid.removeAllViews()
+        calendarDayEvents.removeAllViews()
         patientList.removeAllViews()
         patientsSearch.setQuery("", false)
         message.text = ""
@@ -557,7 +789,7 @@ class MainActivity : AppCompatActivity() {
             try {
                 request("DELETE", "/api/auth/remember", "Bearer $currentToken")
             } catch (_: Exception) {
-                // Il token non è conservato sul dispositivo; la revoca remota richiede connettività.
+                // La revoca remota richiede connettività; il token locale è già eliminato.
             }
         }
     }

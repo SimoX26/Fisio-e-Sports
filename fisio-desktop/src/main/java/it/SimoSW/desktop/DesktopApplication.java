@@ -66,7 +66,13 @@ public final class DesktopApplication extends Application {
 
     @Override
     public void stop() {
-        tokenExecutor.shutdownNow();
+        tokenExecutor.shutdown();
+        try {
+            if (!tokenExecutor.awaitTermination(35, TimeUnit.SECONDS)) tokenExecutor.shutdownNow();
+        } catch (InterruptedException exception) {
+            tokenExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     public static final class DesktopBridge {
