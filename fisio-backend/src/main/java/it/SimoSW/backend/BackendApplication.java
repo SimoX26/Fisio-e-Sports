@@ -76,10 +76,13 @@ public final class BackendApplication {
             }
         });
         DatabaseUserDAO users = new DatabaseUserDAO();
-        server.createContext("/api/access-requests", new AccessRequestApiHandler(
-                new AccessRequestController(new DatabaseAccessRequestDAO(), users)));
+        AccessRequestController accessRequests = new AccessRequestController(new DatabaseAccessRequestDAO(), users);
+        server.createContext("/api/access-requests", new AccessRequestApiHandler(accessRequests));
+        AuthenticationController authentication = new AuthenticationController(users, new DatabaseRememberMeTokenDAO());
+        AdminApiHandler adminApi = new AdminApiHandler(authentication, accessRequests);
+        server.createContext("/api/admin", adminApi);
         TherapistAuthenticator authenticator = new TherapistAuthenticator(
-                new AuthenticationController(users, new DatabaseRememberMeTokenDAO()), users);
+                authentication, users);
         DatabaseAppointmentDAO appointments = new DatabaseAppointmentDAO();
         DatabasePatientDAO patients = new DatabasePatientDAO();
         CalendarController calendar = new CalendarController(appointments, patients, users);

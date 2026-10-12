@@ -1,9 +1,9 @@
 # Desktop: login e prime schermate
 
 La finestra JavaFX carica HTML/JavaScript locale con Bootstrap 5.3.2,
-FullCalendar 6.1.11 e una copia del CSS della webapp. Si apre sul login del
-terapista. Il backend verifica l'account nel database e restituisce i dati
-mostrati nella home e nel calendario. Il desktop non accede a MySQL.
+FullCalendar 6.1.11 e una copia del CSS della webapp. Si apre sul login.
+Il backend verifica l'account nel database; i terapisti vedono home e calendario,
+gli amministratori le richieste di accesso. Il desktop non accede a MySQL.
 
 Avviare il desktop dalla radice del repository:
 
@@ -23,7 +23,13 @@ richiesta deve comparire fra le pendenti nella webapp legacy, senza permettere
 ancora l'accesso. Dopo l'approvazione da parte di un amministratore, provare
 il login desktop. Verificare anche username già esistente, richiesta pendente
 duplicata e backend spento: il modulo deve mostrare un errore e conservare i
-dati compilati, tranne la password.
+dati compilati, tranne la password. Accedere poi con un account `ADMIN`: la
+vista deve mostrare la richiesta tra quelle in attesa. Provare **Approva** su
+una richiesta di test e verificare, dopo conferma, che passi nello storico e
+che il nuovo terapista possa accedere. Provare **Rifiuta** su una seconda
+richiesta di test: deve passare nello storico senza creare un account. Un
+terapista non deve poter aprire le API `/api/admin`; dopo Logout da admin, il
+token automatico deve essere revocato.
 
 Per verificare **Dati e Statistiche**, aprire la voce nel menu dopo il login:
 confrontare le schede del mese corrente, il grafico e il dettaglio mensile con

@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const trashScreen = document.getElementById("trashScreen");
   const settingsScreen = document.getElementById("settingsScreen");
   const statsScreen = document.getElementById("statsScreen");
+  const adminRequestsScreen = document.getElementById("adminRequestsScreen");
   const loginError = document.getElementById("loginError");
   const dataStatus = document.getElementById("dataStatus");
   const patientModal = new bootstrap.Modal(document.getElementById("patientModal"));
@@ -23,7 +24,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const createPatientModal = new bootstrap.Modal(document.getElementById("createPatientModal"));
   const deletePatientModal = new bootstrap.Modal(document.getElementById("confirmDeletePatientModal"));
   const mergeConfirmModal = new bootstrap.Modal(document.getElementById("confirmMergePatientModal"));
+  const adminReviewModal = new bootstrap.Modal(document.getElementById("adminReviewModal"));
   let authorization = null;
+  let currentRole = null;
+  let adminRequestsRequest = 0;
+  let adminReviewSelection = null;
   let calendar = null;
   let selectedAppointment = null;
   let editingAppointmentId = null;
@@ -374,8 +379,18 @@ document.addEventListener("DOMContentLoaded", () => {
     return (await apiRequest(path)).json();
   }
 
+  async function loadIdentity() {
+    try {
+      return await getJson("/api/me");
+    } catch (failure) {
+      if (failure.status !== 401) throw failure;
+      return getJson("/api/admin/me");
+    }
+  }
+
   function enterApp(identity) {
     sessionEpoch++;
+    currentRole = identity.role;
     document.getElementById("password").value = "";
     const prefix = new Date().getHours() > 15 ? "Buonasera" : "Buongiorno";
     const displayName = identity.username.charAt(0).toLocaleUpperCase("it-IT") + identity.username.slice(1).toLocaleLowerCase("it-IT");
@@ -385,11 +400,16 @@ document.addEventListener("DOMContentLoaded", () => {
     appScreen.hidden = false;
     document.body.classList.remove("auth-page", "d-flex", "align-items-center", "justify-content-center");
     document.getElementById("authNotice").classList.add("d-none");
-    showHome();
+    const admin = currentRole === "ADMIN";
+    for (const id of ["homeNav", "calendarNav", "patientsNav", "treatmentsNav", "statsNav", "settingsNav"])
+      document.getElementById(id).parentElement.hidden = admin;
+    document.getElementById("adminRequestsNavItem").hidden = !admin;
+    if (admin) showAdminRequests();
+    else showHome();
   }
 
   function showAuthNotice(message) {
-    const notice = document.getElementById("authNotice");
+    const notice = document.getElementById(currentRole === "ADMIN" ? "adminAuthNotice" : "authNotice");
     notice.textContent = message;
     notice.classList.remove("d-none");
   }
@@ -400,7 +420,7 @@ document.addEventListener("DOMContentLoaded", () => {
     authorization = `Bearer ${token}`;
     const attemptAuthorization = authorization;
     try {
-      const identity = await getJson("/api/me");
+      const identity = await loadIdentity();
       if (manualLoginStarted || loginScreen.hidden) return;
       enterApp(identity);
     } catch (failure) {
@@ -423,7 +443,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  const navIds = ["homeNav", "calendarNav", "patientsNav", "treatmentsNav", "statsNav", "settingsNav"];
+  const navIds = ["homeNav", "calendarNav", "patientsNav", "treatmentsNav", "statsNav", "settingsNav", "adminRequestsNav"];
 
   function setActiveNav(activeId) {
     for (const id of navIds) {
@@ -437,6 +457,89 @@ document.addEventListener("DOMContentLoaded", () => {
   function leaveStats() {
     statsRequest++;
     statsScreen.hidden = true;
+  }
+
+  function adminTime(value) {
+    return value ? value.replace("T", " ").slice(0, 16) : "—";
+  }
+
+  function showAdminRequests() {
+    if (currentRole !== "ADMIN") return;
+    leaveStats();
+    for (const screen of [homeScreen, calendarScreen, patientsScreen, treatmentsScreen, trashScreen, settingsScreen])
+      screen.hidden = true;
+    adminRequestsScreen.hidden = false;
+    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
+    document.body.classList.add("app-page");
+    setActiveNav("adminRequestsNav");
+    document.title = "Richieste di accesso • Fisio e Sports";
+    loadAdminRequests();
+  }
+
+  async function loadAdminRequests(successMessage = "") {
+    const request = ++adminRequestsRequest;
+    const session = sessionEpoch;
+    const error = document.getElementById("adminRequestsError");
+    const success = document.getElementById("adminRequestsSuccess");
+    error.classList.add("d-none");
+    success.classList.add("d-none");
+    try {
+      const data = await getJson("/api/admin/access-requests");
+      if (request !== adminRequestsRequest || session !== sessionEpoch || adminRequestsScreen.hidden) return;
+      const pendingRows = document.getElementById("adminPendingRows");
+      const recentRows = document.getElementById("adminRecentRows");
+      pendingRows.replaceChildren();
+      recentRows.replaceChildren();
+      document.getElementById("adminRequestsEmpty").classList.toggle("d-none", data.pending.length !== 0);
+      document.getElementById("adminRecentEmpty").classList.toggle("d-none", data.recent.length !== 0);
+      for (const entry of data.pending) {
+        const row = document.createElement("tr");
+        for (const value of [`${entry.firstName} ${entry.lastName} (@${entry.username})`, entry.email,
+          entry.requestedRole, adminTime(entry.createdAt)]) {
+          const cell = document.createElement("td");
+          cell.textContent = value;
+          row.appendChild(cell);
+        }
+        const actions = document.createElement("td");
+        actions.className = "text-end";
+        for (const [action, label, css] of [["approve", "Approva", "btn-success"],
+          ["reject", "Rifiuta", "btn-outline-danger"]]) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `btn btn-sm ${css} ms-1`;
+          button.textContent = label;
+          button.addEventListener("click", () => {
+            adminReviewSelection = { id: entry.id, username: entry.username, action };
+            document.getElementById("adminReviewTitle").textContent = `${label} richiesta`;
+            document.getElementById("adminReviewText").textContent = `${label} la richiesta di @${entry.username}?`;
+            document.getElementById("adminReviewError").classList.add("d-none");
+            adminReviewModal.show();
+          });
+          actions.appendChild(button);
+        }
+        row.appendChild(actions);
+        pendingRows.appendChild(row);
+      }
+      for (const entry of data.recent) {
+        const row = document.createElement("tr");
+        const state = { PENDING: "In attesa", APPROVED: "Approvata", REJECTED: "Rifiutata" }[entry.status] || entry.status;
+        for (const value of [entry.username, entry.email, state, adminTime(entry.createdAt), adminTime(entry.reviewedAt)]) {
+          const cell = document.createElement("td");
+          cell.textContent = value;
+          row.appendChild(cell);
+        }
+        recentRows.appendChild(row);
+      }
+      if (successMessage) {
+        success.textContent = successMessage;
+        success.classList.remove("d-none");
+      }
+    } catch (failure) {
+      if (request !== adminRequestsRequest || session !== sessionEpoch || adminRequestsScreen.hidden) return;
+      error.textContent = failure.status === 401 ? "Sessione amministratore non valida. Esci e accedi di nuovo."
+        : "Impossibile caricare le richieste dal backend.";
+      error.classList.remove("d-none");
+    }
   }
 
   function showHome() {
@@ -1526,10 +1629,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const bytes = new TextEncoder().encode(`${username}:${password}`);
     authorization = `Basic ${btoa(String.fromCharCode(...bytes))}`;
     try {
-      const identity = await getJson("/api/me");
+      const identity = await loadIdentity();
       let rememberUnavailable = false;
       try {
-        const issued = await (await apiRequest("/api/auth/remember", { method: "POST" })).json();
+        const rememberPath = identity.role === "ADMIN" ? "/api/admin/auth/remember" : "/api/auth/remember";
+        const issued = await (await apiRequest(rememberPath, { method: "POST" })).json();
         if (!/^[A-Za-z0-9_-]{43}$/.test(issued.token)) throw new Error("invalid_token");
         authorization = `Bearer ${issued.token}`;
         if (window.desktopBridge) window.desktopBridge.saveToken(issued.token);
@@ -1554,6 +1658,33 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("homeNav").addEventListener("click", showHome);
+  document.getElementById("adminRequestsNav").addEventListener("click", showAdminRequests);
+  document.getElementById("adminRequestsRefresh").addEventListener("click", () => loadAdminRequests());
+  document.getElementById("adminReviewConfirm").addEventListener("click", async () => {
+    if (!adminReviewSelection) return;
+    const selected = adminReviewSelection;
+    const button = document.getElementById("adminReviewConfirm");
+    const error = document.getElementById("adminReviewError");
+    button.disabled = true;
+    error.classList.add("d-none");
+    try {
+      await apiRequest(`/api/admin/access-requests/${encodeURIComponent(selected.id)}/review`, {
+        method: "POST",
+        body: new URLSearchParams({ action: selected.action })
+      });
+      adminReviewSelection = null;
+      adminReviewModal.hide();
+      loadAdminRequests(selected.action === "approve"
+        ? "Richiesta approvata e account creato." : "Richiesta rifiutata.");
+    } catch (failure) {
+      error.textContent = failure.status === 409 ? "La richiesta non è più in attesa o lo username è già utilizzato."
+        : failure.status === 401 ? "Sessione amministratore non valida. Esci e accedi di nuovo."
+          : "Impossibile revisionare la richiesta.";
+      error.classList.remove("d-none");
+    } finally {
+      button.disabled = false;
+    }
+  });
   document.getElementById("calendarNav").addEventListener("click", () => showCalendar());
   document.getElementById("settingsNav").addEventListener("click", showSettings);
   document.getElementById("statsNav").addEventListener("click", showStats);
@@ -1968,6 +2099,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const tokenCleared = window.desktopBridge ? window.desktopBridge.clearToken() : true;
     manualLoginStarted = true;
     sessionEpoch++;
+    adminRequestsRequest++;
+    adminReviewSelection = null;
+    adminReviewModal.hide();
     leaveStats();
     setActiveNav(null);
     document.getElementById("kpiScopeSelect").value = "me";
@@ -1999,6 +2133,7 @@ document.addEventListener("DOMContentLoaded", () => {
     deletePatientModal.hide();
     mergeConfirmModal.hide();
     authorization = null;
+    currentRole = null;
     if (calendar) {
       calendar.destroy();
       calendar = null;
@@ -2031,6 +2166,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("authNotice").classList.add("d-none");
     loginError.classList.add("d-none");
     appScreen.hidden = true;
+    adminRequestsScreen.hidden = true;
+    document.getElementById("adminPendingRows").replaceChildren();
+    document.getElementById("adminRecentRows").replaceChildren();
+    document.getElementById("adminAuthNotice").classList.add("d-none");
     loginScreen.hidden = false;
     document.body.className = "auth-page app-page d-flex align-items-center justify-content-center";
     patientsScreen.hidden = true;

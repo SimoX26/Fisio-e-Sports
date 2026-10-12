@@ -56,6 +56,7 @@
           <li class="nav-item"><button class="nav-link" id="treatmentsNav" type="button">Storico Trattamenti</button></li>
           <li class="nav-item"><button class="nav-link" id="statsNav" type="button">Dati e Statistiche</button></li>
           <li class="nav-item"><button class="nav-link" id="settingsNav" type="button">Impostazioni</button></li>
+          <li class="nav-item" id="adminRequestsNavItem" hidden><button class="nav-link" id="adminRequestsNav" type="button">Richieste di accesso</button></li>
           <li class="nav-item"><button class="nav-link logout-link" id="logoutButton" type="button">Logout</button></li>
         </ul>
       </div>
@@ -69,6 +70,26 @@
         <div class="modal-body"><p>Vuoi davvero uscire dall'applicazione?</p><div class="form-check"><input class="form-check-input" id="logoutConfirmCheck" type="checkbox" required><label class="form-check-label" for="logoutConfirmCheck">Confermo di voler terminare la sessione</label></div></div>
         <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Annulla</button><button class="btn btn-danger" id="logoutConfirmSubmit" type="submit" disabled>Logout sicuro</button></div>
       </form>
+    </div></div>
+  </div>
+
+  <main class="container app-shell mt-4" id="adminRequestsScreen" hidden>
+    <div class="alert alert-warning d-none" id="adminAuthNotice" role="status"></div>
+    <div class="glass-card section-card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center gap-2 mb-3"><h2 class="h5 mb-0">Richieste in attesa</h2><button class="btn btn-outline-secondary btn-sm" id="adminRequestsRefresh" type="button">Aggiorna</button></div>
+      <div class="alert alert-danger d-none" id="adminRequestsError" role="alert"></div>
+      <div class="alert alert-success d-none" id="adminRequestsSuccess" role="status"></div>
+      <p class="text-muted d-none" id="adminRequestsEmpty">Nessuna richiesta in attesa.</p>
+      <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Utente</th><th>Email</th><th>Ruolo</th><th>Data richiesta</th><th class="text-end">Azioni</th></tr></thead><tbody id="adminPendingRows"></tbody></table></div>
+    </div>
+    <div class="glass-card section-card p-4"><h2 class="h5 mb-3">Storico recente richieste</h2><p class="text-muted d-none" id="adminRecentEmpty">Nessuna richiesta registrata.</p><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Username</th><th>Email</th><th>Stato</th><th>Creata il</th><th>Revisionata il</th></tr></thead><tbody id="adminRecentRows"></tbody></table></div></div>
+  </main>
+
+  <div class="modal" id="adminReviewModal" tabindex="-1" aria-labelledby="adminReviewTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content glass-card">
+      <div class="modal-header"><h2 class="modal-title h5" id="adminReviewTitle">Conferma revisione</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
+      <div class="modal-body"><p id="adminReviewText" class="mb-0"></p><div class="alert alert-danger d-none mt-3" id="adminReviewError" role="alert"></div></div>
+      <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Annulla</button><button class="btn btn-primary" id="adminReviewConfirm" type="button">Conferma</button></div>
     </div></div>
   </div>
 

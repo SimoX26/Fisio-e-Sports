@@ -40,8 +40,10 @@ flowchart LR
 ```
 
 Il desktop parte dal login e usa le API del backend per calendario, pazienti,
-trattamenti, anteprima e invio promemoria. Android usa ancora la webapp tramite
-WebView. I client non accedono direttamente a MySQL.
+trattamenti, anteprima e invio promemoria. Un account `ADMIN` apre invece la
+vista delle richieste di accesso, gestita dal caso d'uso condiviso con la
+webapp. Android usa ancora la webapp tramite WebView. I client non accedono
+direttamente a MySQL.
 Sul server Baileys gira come `fisio-baileys.service` con sessione privata in
 `/var/lib/fisio-baileys`; il backend ne legge stato e QR senza gestire il
 processo. In locale è disponibile la modalità manuale per Avvia/Arresta.
