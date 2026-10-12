@@ -49,7 +49,12 @@ Prima della prova verifica `http://192.168.1.52:8081/ready` dal dispositivo:
 deve rispondere `{"status":"ok"}`. Avvia l'app, inserisci le credenziali
 di un terapista esistente e verifica che compaiano il suo username e gli
 appuntamenti di oggi. Confronta orari, pazienti, stati e conteggi con il
-desktop. Aggiorna l'agenda, poi prova una password errata e il pulsante Esci.
+desktop. Dall'inizio della home trascina la schermata verso il basso per
+aggiornare l'agenda; prova anche una password errata e il pulsante Esci.
+
+Login e home usano la stessa palette del desktop: sfondo grigio chiaro, schede
+bianche con bordo, azioni blu e stati completato/cancellato in verde/rosso.
+I controlli restano nativi Android.
 
 I conteggi della home seguono il desktop: appuntamenti restituiti dall'API,
 pazienti distinti associati a quegli appuntamenti e promemoria ancora

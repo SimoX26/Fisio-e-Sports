@@ -1,119 +1,268 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipeRefresh"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:layout_height="match_parent">
 
-    <LinearLayout
+    <ScrollView
+        android:id="@+id/contentScroll"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:padding="24dp">
+        android:layout_height="match_parent"
+        android:background="@color/bg_main"
+        android:fillViewport="true">
 
         <LinearLayout
-            android:id="@+id/loginPanel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="@string/app_name"
-                android:textAppearance="?attr/textAppearanceHeadlineMedium" />
-
-            <EditText
-                android:id="@+id/username"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/username"
-                android:inputType="textPersonName"
-                android:singleLine="true" />
-
-            <EditText
-                android:id="@+id/password"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/password"
-                android:inputType="textPassword"
-                android:singleLine="true" />
-
-            <TextView
-                android:id="@+id/message"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:accessibilityLiveRegion="polite"
-                android:paddingVertical="12dp" />
-
-            <Button
-                android:id="@+id/loginButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/login" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/loggedInPanel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/welcome"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textAppearance="?attr/textAppearanceHeadlineSmall" />
-
-            <TextView
-                android:id="@+id/agendaDate"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingTop="16dp"
-                android:textAppearance="?attr/textAppearanceTitleMedium" />
-
-            <TextView
-                android:id="@+id/appointmentsCount"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingTop="16dp"
-                android:text="@string/appointments_count_initial" />
-
-            <TextView
-                android:id="@+id/patientsCount"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingTop="8dp"
-                android:text="@string/patients_count_initial" />
-
-            <TextView
-                android:id="@+id/remindersCount"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingTop="8dp"
-                android:text="@string/reminders_count_initial" />
-
-            <Button
-                android:id="@+id/refreshButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/refresh" />
+            android:padding="16dp">
 
             <LinearLayout
-                android:id="@+id/agendaList"
+                android:id="@+id/loginPanel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" />
+                android:layout_marginTop="48dp"
+                android:background="@drawable/surface_card"
+                android:orientation="vertical"
+                android:padding="24dp">
 
-            <Button
-                android:id="@+id/logoutButton"
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/app_name"
+                    android:textColor="@color/text_main"
+                    android:textSize="30sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/login_subtitle"
+                    android:textColor="@color/text_muted"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="28dp"
+                    android:text="@string/username"
+                    android:textColor="@color/text_main"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/username"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/surface_card"
+                    android:hint="@string/username"
+                    android:inputType="textPersonName"
+                    android:paddingHorizontal="14dp"
+                    android:singleLine="true"
+                    android:textColor="@color/text_main"
+                    android:textColorHint="@color/text_muted" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/password"
+                    android:textColor="@color/text_main"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/password"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/surface_card"
+                    android:hint="@string/password"
+                    android:inputType="textPassword"
+                    android:paddingHorizontal="14dp"
+                    android:singleLine="true"
+                    android:textColor="@color/text_main"
+                    android:textColorHint="@color/text_muted" />
+
+                <TextView
+                    android:id="@+id/message"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:accessibilityLiveRegion="polite"
+                    android:paddingVertical="12dp"
+                    android:textColor="@color/brand_danger" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/loginButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:text="@string/login"
+                    android:textAllCaps="false"
+                    android:textColor="@color/brand_primary"
+                    app:backgroundTint="@color/brand_primary_soft"
+                    app:cornerRadius="12dp"
+                    app:strokeColor="@color/brand_primary"
+                    app:strokeWidth="1dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/loggedInPanel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/logout" />
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/brand_caps"
+                        android:textColor="@color/text_main"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/logoutButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:text="@string/logout"
+                        android:textAllCaps="false"
+                        android:textColor="@color/brand_danger"
+                        app:backgroundTint="@color/brand_danger_soft"
+                        app:cornerRadius="12dp"
+                        app:strokeColor="@color/brand_danger"
+                        app:strokeWidth="1dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/welcome"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:textColor="@color/text_main"
+                    android:textSize="26sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/agendaDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textColor="@color/text_muted"
+                    android:textSize="14sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:background="@drawable/surface_card"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/appointments_label"
+                        android:textColor="@color/text_muted" />
+
+                    <TextView
+                        android:id="@+id/appointmentsCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/count_initial"
+                        android:textColor="@color/text_main"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/surface_card"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/patients_label"
+                        android:textColor="@color/text_muted" />
+
+                    <TextView
+                        android:id="@+id/patientsCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/count_initial"
+                        android:textColor="@color/text_main"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/surface_card"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/reminders_label"
+                        android:textColor="@color/text_muted" />
+
+                    <TextView
+                        android:id="@+id/remindersCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/count_initial"
+                        android:textColor="@color/text_main"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:background="@drawable/surface_card"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/today_agenda"
+                        android:textColor="@color/text_main"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:id="@+id/agendaList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="vertical" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
-    </LinearLayout>
-</ScrollView>
+    </ScrollView>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

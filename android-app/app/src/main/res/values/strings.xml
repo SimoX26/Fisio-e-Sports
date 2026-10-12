@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Fisio e Sports</string>
+    <string name="brand_caps">FISIO E SPORTS</string>
+    <string name="login_subtitle">Accedi alla tua dashboard</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
     <string name="login">Accedi</string>
@@ -7,13 +9,11 @@
     <string name="cancel">Annulla</string>
     <string name="logout_confirmation">Vuoi uscire dall’app?</string>
     <string name="welcome">Accesso effettuato: %1$s</string>
-    <string name="appointments_count_initial">Appuntamenti oggi: —</string>
-    <string name="patients_count_initial">Pazienti oggi: —</string>
-    <string name="reminders_count_initial">Promemoria da inviare: —</string>
-    <string name="appointments_count">Appuntamenti oggi: %1$d</string>
-    <string name="patients_count">Pazienti oggi: %1$d</string>
-    <string name="reminders_count">Promemoria da inviare: %1$d</string>
-    <string name="refresh">Aggiorna agenda</string>
+    <string name="appointments_label">Appuntamenti oggi</string>
+    <string name="patients_label">Pazienti oggi</string>
+    <string name="reminders_label">Promemoria da inviare oggi</string>
+    <string name="count_initial">—</string>
+    <string name="today_agenda">Agenda di oggi</string>
     <string name="agenda_loading">Caricamento agenda…</string>
     <string name="agenda_empty">Nessun appuntamento pianificato per oggi.</string>
     <string name="agenda_error">Impossibile caricare l’agenda dal backend.</string>

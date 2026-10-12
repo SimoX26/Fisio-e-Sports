@@ -1,4 +1,13 @@
 <resources>
-    <color name="eg_green">#0A5E2F</color>
-    <color name="eg_green_dark">#083D20</color>
+    <color name="bg_main">#F5F7FA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="border">#DFE3E8</color>
+    <color name="text_main">#1F2D3D</color>
+    <color name="text_muted">#5F6F82</color>
+    <color name="brand_primary">#0D6EFD</color>
+    <color name="brand_primary_soft">#EDF5FF</color>
+    <color name="brand_success">#198754</color>
+    <color name="brand_success_soft">#EEF9F2</color>
+    <color name="brand_danger">#DC3545</color>
+    <color name="brand_danger_soft">#FFF1F2</color>
 </resources>

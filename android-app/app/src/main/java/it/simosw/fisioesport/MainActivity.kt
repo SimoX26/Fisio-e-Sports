@@ -6,9 +6,11 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -21,6 +23,8 @@ import java.util.Locale
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
+    private data class AgendaRow(val time: String, val title: String, val kind: String, val state: String)
+
     private val worker = Executors.newSingleThreadExecutor()
     private var token: String? = null
     private lateinit var username: EditText
@@ -35,7 +39,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var patientsCount: TextView
     private lateinit var remindersCount: TextView
     private lateinit var agendaList: LinearLayout
-    private lateinit var refreshButton: Button
+    private lateinit var swipeRefresh: SwipeRefreshLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,9 +56,13 @@ class MainActivity : AppCompatActivity() {
         patientsCount = findViewById(R.id.patientsCount)
         remindersCount = findViewById(R.id.remindersCount)
         agendaList = findViewById(R.id.agendaList)
-        refreshButton = findViewById(R.id.refreshButton)
+        swipeRefresh = findViewById(R.id.swipeRefresh)
+        val contentScroll = findViewById<ScrollView>(R.id.contentScroll)
+        swipeRefresh.isEnabled = false
+        swipeRefresh.setColorSchemeResources(R.color.brand_primary)
+        swipeRefresh.setOnChildScrollUpCallback { _, _ -> contentScroll.canScrollVertically(-1) }
+        swipeRefresh.setOnRefreshListener { loadTodayAgenda() }
         loginButton.setOnClickListener { login() }
-        refreshButton.setOnClickListener { loadTodayAgenda() }
         findViewById<Button>(R.id.logoutButton).setOnClickListener { logout() }
     }
 
@@ -66,6 +74,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
         loginButton.isEnabled = false
+        message.setTextColor(getColor(R.color.text_muted))
         message.setText(R.string.connecting)
         worker.execute {
             var issuedToken: String? = null
@@ -88,6 +97,7 @@ class MainActivity : AppCompatActivity() {
                     welcome.text = getString(R.string.welcome, displayName)
                     loginPanel.visibility = View.GONE
                     loggedInPanel.visibility = View.VISIBLE
+                    swipeRefresh.isEnabled = true
                     loadTodayAgenda()
                 }
             } catch (_: Exception) {
@@ -106,6 +116,7 @@ class MainActivity : AppCompatActivity() {
     private fun showLoginError(resource: Int) {
         runOnUiThread {
             loginButton.isEnabled = true
+            message.setTextColor(getColor(R.color.brand_danger))
             message.setText(resource)
         }
     }
@@ -122,10 +133,10 @@ class MainActivity : AppCompatActivity() {
         val start = dateTimeFormat.format(today.time)
         val end = dateTimeFormat.format((today.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, 1) }.time)
         agendaDate.text = SimpleDateFormat("EEEE d MMMM yyyy", Locale.ITALIAN).format(today.time)
-        refreshButton.isEnabled = false
-        appointmentsCount.setText(R.string.appointments_count_initial)
-        patientsCount.setText(R.string.patients_count_initial)
-        remindersCount.setText(R.string.reminders_count_initial)
+        swipeRefresh.isRefreshing = true
+        appointmentsCount.setText(R.string.count_initial)
+        patientsCount.setText(R.string.count_initial)
+        remindersCount.setText(R.string.count_initial)
         agendaList.removeAllViews()
         addAgendaLine(getString(R.string.agenda_loading))
         worker.execute {
@@ -136,7 +147,7 @@ class MainActivity : AppCompatActivity() {
                 if (status != 200) throw IllegalStateException("HTTP $status")
                 val events = JSONArray(body)
                 val patientIds = mutableSetOf<Long>()
-                val rows = mutableListOf<String>()
+                val rows = mutableListOf<AgendaRow>()
                 var reminders = 0
                 val now = dateTimeFormat.format(Date())
                 for (index in 0 until events.length()) {
@@ -152,41 +163,83 @@ class MainActivity : AppCompatActivity() {
                             " – " + event.getString("end").substring(11, 16)
                     val kind = if (props.optBoolean("nonTreatmentEvent")) getString(R.string.event)
                         else getString(R.string.patient)
-                    val state = when (props.optString("state")) {
-                        "COMPLETED" -> " · " + getString(R.string.completed)
-                        "CANCELLED" -> " · " + getString(R.string.cancelled)
-                        else -> ""
-                    }
-                    rows.add(time + "  " + event.optString("title") + "\n" + kind + state)
+                    rows.add(AgendaRow(time, event.optString("title"), kind, props.optString("state")))
                 }
                 runOnUiThread {
                     if (token != activeToken) return@runOnUiThread
-                    refreshButton.isEnabled = true
-                    appointmentsCount.text = getString(R.string.appointments_count, events.length())
-                    patientsCount.text = getString(R.string.patients_count, patientIds.size)
-                    remindersCount.text = getString(R.string.reminders_count, reminders)
+                    swipeRefresh.isRefreshing = false
+                    appointmentsCount.text = events.length().toString()
+                    patientsCount.text = patientIds.size.toString()
+                    remindersCount.text = reminders.toString()
                     agendaList.removeAllViews()
                     if (rows.isEmpty()) addAgendaLine(getString(R.string.agenda_empty))
-                    rows.forEach(::addAgendaLine)
+                    rows.forEach(::addAgendaRow)
                 }
             } catch (_: Exception) {
                 runOnUiThread {
                     if (token != activeToken) return@runOnUiThread
-                    refreshButton.isEnabled = true
+                    swipeRefresh.isRefreshing = false
                     agendaList.removeAllViews()
-                    addAgendaLine(getString(R.string.agenda_error))
+                    addAgendaLine(getString(R.string.agenda_error), R.color.brand_danger)
                 }
             }
         }
     }
 
-    private fun addAgendaLine(value: String) {
+    private fun addAgendaLine(value: String, color: Int = R.color.text_muted) {
         agendaList.addView(TextView(this).apply {
             text = value
-            textSize = 16f
-            setPadding(0, 12, 0, 12)
+            textSize = 14f
+            setTextColor(getColor(color))
+            setPadding(0, dp(12), 0, dp(12))
         })
     }
+
+    private fun addAgendaRow(row: AgendaRow) {
+        val item = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundResource(R.drawable.surface_card)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+        }
+        item.addView(TextView(this).apply {
+            text = row.time
+            textSize = 14f
+            setTextColor(getColor(R.color.text_main))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        })
+        item.addView(TextView(this).apply {
+            text = row.title
+            textSize = 16f
+            setTextColor(getColor(R.color.text_main))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(0, dp(4), 0, dp(4))
+        })
+        val footer = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+        footer.addView(TextView(this).apply {
+            text = row.kind
+            textSize = 13f
+            setTextColor(getColor(R.color.text_muted))
+        }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        if (row.state == "COMPLETED" || row.state == "CANCELLED") {
+            footer.addView(TextView(this).apply {
+                text = getString(if (row.state == "COMPLETED") R.string.completed else R.string.cancelled)
+                textSize = 12f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTextColor(getColor(if (row.state == "COMPLETED") R.color.brand_success else R.color.brand_danger))
+                setBackgroundResource(if (row.state == "COMPLETED") R.drawable.success_soft else R.drawable.danger_soft)
+                setPadding(dp(9), dp(4), dp(9), dp(4))
+            })
+        }
+        item.addView(footer)
+        agendaList.addView(item, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { bottomMargin = dp(8) })
+    }
+
+    private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     private fun logout() {
         AlertDialog.Builder(this)
@@ -201,6 +254,8 @@ class MainActivity : AppCompatActivity() {
         token = null
         loggedInPanel.visibility = View.GONE
         loginPanel.visibility = View.VISIBLE
+        swipeRefresh.isRefreshing = false
+        swipeRefresh.isEnabled = false
         agendaList.removeAllViews()
         message.text = ""
         loginButton.isEnabled = true
