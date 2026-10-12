@@ -1,10 +1,14 @@
 # Fisio e Sports Android
 
 Client Android nativo in migrazione. Sono disponibili l'accesso del terapista,
-la home con l'agenda di oggi, la rubrica in sola lettura e l'uscita. I dati
-arrivano dal backend; la webapp legacy non viene caricata in una WebView.
-Scheda paziente, calendario completo e le altre funzioni arriveranno nei
-passi successivi.
+la home con l'agenda di oggi, la rubrica e la scheda anagrafica del paziente
+in sola lettura, e l'uscita. I dati arrivano dal backend; la webapp legacy
+non viene caricata in una WebView. In alto a destra, il pulsante della sezione
+corrente apre un menu sovrapposto con Home, Calendario, Rubrica, Storico, Dati,
+Impostazioni ed Esci; la voce corrente resta selezionata. Le sezioni non ancora
+migrate mostrano una schermata informativa.
+Anamnesi, modifica paziente, calendario completo e le altre funzioni
+arriveranno nei passi successivi.
 
 ## Requisiti e configurazione
 
@@ -51,14 +55,22 @@ deve rispondere `{"status":"ok"}`. Avvia l'app, inserisci le credenziali
 di un terapista esistente e verifica che compaiano il suo username e gli
 appuntamenti di oggi. Confronta orari, pazienti, stati e conteggi con il
 desktop. Dall'inizio della home trascina la schermata verso il basso per
-aggiornare l'agenda; prova anche una password errata e il pulsante Esci.
+aggiornare l'agenda; prova anche una password errata ed Esci nel menu.
 
-Apri **Rubrica** dalla barra Home/Rubrica: devono comparire solo i pazienti
+Apri **Rubrica** dal menu di navigazione: devono comparire solo i pazienti
 del terapista con nome, data di creazione e telefono. Cerca un nome e premi
 Invio sulla tastiera; svuota il campo per tornare all'elenco completo. Dalla
 cima della schermata trascina verso il basso per ricaricare la ricerca
-corrente. Torna a Home con la barra o con il tasto Indietro di Android.
-Le schede paziente non sono ancora apribili in questo passo.
+corrente. Tocca tutta la riga di un paziente: la scheda mostra stato, telefono,
+email, data di creazione e numero di appuntamenti collegati. Il tasto Indietro
+torna alla Rubrica; aprendo il menu dalla scheda e chiudendolo, la scheda deve
+restare visibile. Tocca il pulsante della sezione corrente in alto a destra:
+il menu deve sovrapporsi alla pagina, selezionare la voce attiva e aggiornare
+il pulsante quando cambi sezione. Calendario, Storico, Dati e Impostazioni
+mostrano per ora una schermata di migrazione. Verifica che intestazione e
+contenuto inizino sotto la barra delle notifiche e restino sopra la barra di
+navigazione Android. Esci deve comparire soltanto nel menu; dopo l'uscita il
+pulsante della sezione non deve più comparire.
 
 Login, home e rubrica usano la stessa palette del desktop: sfondo grigio chiaro, schede
 bianche con bordo, azioni blu e stati completato/cancellato in verde/rosso.

@@ -128,51 +128,22 @@
                         android:layout_weight="1"
                         android:text="@string/brand_caps"
                         android:textColor="@color/text_main"
-                        android:textSize="17sp"
+                        android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/logoutButton"
+                        android:id="@+id/currentSectionButton"
                         android:layout_width="wrap_content"
                         android:layout_height="48dp"
-                        android:text="@string/logout"
-                        android:textAllCaps="false"
-                        android:textColor="@color/brand_danger"
-                        app:backgroundTint="@color/brand_danger_soft"
-                        app:cornerRadius="12dp"
-                        app:strokeColor="@color/brand_danger"
-                        app:strokeWidth="1dp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:background="@drawable/surface_card"
-                    android:orientation="horizontal"
-                    android:padding="4dp">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/homeTab"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_weight="1"
+                        android:maxWidth="152dp"
                         android:text="@string/home"
                         android:textAllCaps="false"
                         android:textColor="@color/brand_primary"
                         app:backgroundTint="@color/brand_primary_soft"
-                        app:cornerRadius="12dp" />
+                        app:cornerRadius="12dp"
+                        app:strokeColor="@color/brand_primary"
+                        app:strokeWidth="1dp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/patientsTab"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_weight="1"
-                        android:text="@string/address_book"
-                        android:textAllCaps="false"
-                        android:textColor="@color/text_muted"
-                        app:backgroundTint="@color/surface"
-                        app:cornerRadius="12dp" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -341,6 +312,80 @@
                         android:layout_marginTop="8dp"
                         android:orientation="vertical" />
                 </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/patientDetailPanel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/patientDetailBack"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:text="@string/back_to_patients"
+                        android:textAllCaps="false"
+                        android:textColor="@color/brand_primary"
+                        app:backgroundTint="@color/brand_primary_soft"
+                        app:cornerRadius="12dp" />
+
+                    <TextView
+                        android:id="@+id/patientDetailTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:textColor="@color/text_main"
+                        android:textSize="26sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/patientDetailStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:accessibilityLiveRegion="polite"
+                        android:textColor="@color/text_muted" />
+
+                    <LinearLayout
+                        android:id="@+id/patientDetailFields"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/surface_card"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        android:visibility="gone" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/placeholderPanel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:background="@drawable/surface_card"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/placeholderTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_main"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/section_in_migration"
+                        android:textColor="@color/text_muted"
+                        android:textSize="16sp" />
+                </LinearLayout>
+
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
