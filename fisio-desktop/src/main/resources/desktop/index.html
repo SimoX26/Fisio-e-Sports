@@ -56,6 +56,7 @@
           <li class="nav-item"><button class="nav-link" id="treatmentsNav" type="button">Storico Trattamenti</button></li>
           <li class="nav-item"><button class="nav-link" id="statsNav" type="button">Dati e Statistiche</button></li>
           <li class="nav-item"><button class="nav-link" id="settingsNav" type="button">Impostazioni</button></li>
+          <li class="nav-item" id="adminHomeNavItem" hidden><button class="nav-link" id="adminHomeNav" type="button">Home</button></li>
           <li class="nav-item" id="adminRequestsNavItem" hidden><button class="nav-link" id="adminRequestsNav" type="button">Richieste di accesso</button></li>
           <li class="nav-item"><button class="nav-link logout-link" id="logoutButton" type="button">Logout</button></li>
         </ul>
@@ -72,6 +73,16 @@
       </form>
     </div></div>
   </div>
+
+  <main class="container app-shell mt-4" id="adminHomeScreen" hidden>
+    <div class="alert alert-warning d-none" id="adminHomeAuthNotice" role="status"></div>
+    <div class="glass-card section-card p-4">
+      <h2 class="h5 mb-3">Richieste di accesso</h2>
+      <p class="page-subtitle">Utenti in attesa di approvazione: <strong id="adminPendingCount">–</strong></p>
+      <div class="alert alert-danger d-none" id="adminHomeError" role="alert"></div>
+      <button class="btn btn-primary section-action-btn" id="adminManageRequests" type="button">Gestisci richieste</button>
+    </div>
+  </main>
 
   <main class="container app-shell mt-4" id="adminRequestsScreen" hidden>
     <div class="alert alert-warning d-none" id="adminAuthNotice" role="status"></div>

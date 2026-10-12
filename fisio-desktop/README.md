@@ -17,6 +17,27 @@ disponibile. Per effettuare il login e usare i dati, avviare il backend con
 `http://127.0.0.1:8081/ready` risponda `{"status":"ok"}`. Per chiudere il
 desktop usare la finestra o `Ctrl+C` nel terminale di avvio.
 
+Per scegliere un backend diverso, impostare `FISIO_BACKEND_URL` prima di avviare
+il desktop, per esempio:
+
+```bash
+FISIO_BACKEND_URL=https://backend.example.com ./run-desktop-locale.sh
+```
+
+Senza la variabile usa `http://127.0.0.1:8081`. Per un indirizzo remoto serve
+HTTPS con certificato attendibile; HTTP è ammesso solo su localhost. L'URL deve
+essere l'origine del backend, senza percorso, query o credenziali. Su Windows
+impostare la stessa variabile d'ambiente prima di avviare l'app installata.
+I token protetti sono separati per indirizzo: al primo collegamento a un
+backend diverso occorre fare login, mentre il token locale esistente resta
+disponibile per il backend locale. Il server remoto deve esporre le API tramite
+un proxy HTTPS; il backend Java continua ad ascoltare su loopback nel server.
+Se `/ready` risponde `ok` ma il login fallisce, controllare l'indirizzo mostrato
+nel messaggio del desktop. «Configurazione del backend non disponibile» indica
+che il collegamento fra JavaFX e la pagina locale non è stato inizializzato;
+riavviare il desktop dopo la build aggiornata. Se persiste, controllare il
+terminale del desktop per «pagina locale non riconosciuta».
+
 Per provare **Richiedi accesso**, aprire il link sotto il login, compilare i
 cinque campi e inviare. Il desktop deve tornare al login con conferma; la nuova
 richiesta deve comparire fra le pendenti nella webapp legacy, senza permettere
@@ -24,7 +45,8 @@ ancora l'accesso. Dopo l'approvazione da parte di un amministratore, provare
 il login desktop. Verificare anche username già esistente, richiesta pendente
 duplicata e backend spento: il modulo deve mostrare un errore e conservare i
 dati compilati, tranne la password. Accedere poi con un account `ADMIN`: la
-vista deve mostrare la richiesta tra quelle in attesa. Provare **Approva** su
+home deve mostrare il numero di richieste in attesa, aggiornato a ogni apertura.
+**Gestisci richieste** apre la lista con la richiesta appena inviata. Provare **Approva** su
 una richiesta di test e verificare, dopo conferma, che passi nello storico e
 che il nuovo terapista possa accedere. Provare **Rifiuta** su una seconda
 richiesta di test: deve passare nello storico senza creare un account. Un
@@ -170,8 +192,7 @@ La password non viene salvata su disco. Il login crea un token revocabile di
 Secret Service tramite `secret-tool`. Se l'archivio protetto non è disponibile,
 il desktop segnala che l'accesso automatico non è attivo e la sessione corrente
 resta utilizzabile. Dopo la conferma, Logout elimina il token locale e ne chiede la revoca al
-backend; se la revoca fallisce viene mostrato un avviso. Questa prova usa il backend
-locale su `127.0.0.1:8081`. La ricerca dei pazienti resta nella rubrica;
+backend; se la revoca fallisce viene mostrato un avviso. La ricerca dei pazienti resta nella rubrica;
 la barra di ricerca globale non è presente nel desktop.
 
 Le licenze degli asset incorporati sono in `src/main/resources/desktop/vendor/`.
@@ -195,6 +216,7 @@ installer EXE con runtime Java incluso in
 
 Il risultato portabile è una cartella con launcher `.exe` e runtime incluso:
 va copiata per intero. `-AppVersion 1.0.1` permette di cambiare la versione del
-pacchetto. La build Windows non è eseguibile da Linux. L'app desktop usa ancora
-`http://127.0.0.1:8081`: per provarla serve il backend avviato sullo stesso PC.
+pacchetto. La build Windows non è eseguibile da Linux. L'app desktop usa
+`http://127.0.0.1:8081` per impostazione predefinita; `FISIO_BACKEND_URL`
+permette di indicare il backend HTTPS remoto.
 L'installer non include il backend o il database e non modifica i dati.

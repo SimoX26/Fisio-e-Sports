@@ -95,9 +95,10 @@ dal desktop autenticato.
    i pulsanti Avvia/Arresta sono nascosti in modalità systemd. Il QR collega
    la sessione centrale del server. Dopo la scansione attendere `ready: true`.
 
-Il client desktop attuale usa ancora `127.0.0.1:8081` per il backend: per
-collegarsi da un PC diverso dal server serviranno l'URL remoto configurabile
-e HTTPS. Questo passaggio di rete è separato dalla gestione Baileys.
+Il client desktop usa `127.0.0.1:8081` per impostazione predefinita.
+`FISIO_BACKEND_URL` consente di scegliere un backend remoto HTTPS, dopo aver
+configurato il proxy e il certificato sul server. Questo passaggio di rete è
+separato dalla gestione Baileys.
 
 ## Se qualcosa non funziona
 

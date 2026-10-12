@@ -7,7 +7,7 @@ comportamento descritti nell'[inventario](02-inventario-funzionale.md).
 
 | Area | Stato | Prossimo criterio di parità |
 |---|---|---|
-| Accesso terapista | `/api/me` con Basic o Bearer; token di 30 giorni emesso e revocato da `/api/auth/remember` per il desktop locale; Logout desktop con conferma esplicita e pulizia della sessione; richiesta pubblica di accesso tramite `POST /api/access-requests` | Collaudo della registrazione sul DB di test; HTTPS, indirizzo server configurabile e autenticazione remota |
+| Accesso terapista | `/api/me` con Basic o Bearer; token di 30 giorni emesso e revocato da `/api/auth/remember`; Logout desktop con conferma esplicita e pulizia della sessione; richiesta pubblica di accesso tramite `POST /api/access-requests`; URL backend configurabile e token locale separato per origine | Collaudo della registrazione sul DB di test e del proxy HTTPS remoto |
 | Calendario | Lettura, dettaglio, creazione, modifica, completamento, cestino, anteprima e invio promemoria con modello modificabile | Collaudo completo con gateway reale |
 | Home e lista d'attesa | Lista d'attesa GET/POST/DELETE, apertura del nuovo appuntamento precompilato, tre contatori giornalieri e azioni rapide; Pazienti oggi apre la rubrica filtrata; agenda con stato degli appuntamenti | Collaudo home con dati reali e due terapisti |
 | Pazienti e anamnesi | Rubrica e scheda legacy con creazione, modifica, ultima anamnesi, condizioni, unione ed eliminazione | Collaudo con dati reali; le versioni precedenti non sono richieste nella scheda |
@@ -15,7 +15,7 @@ comportamento descritti nell'[inventario](02-inventario-funzionale.md).
 | Statistiche | Il servizio condiviso calcola gli snapshot; lo scheduler backend aggiorna mese corrente e precedente; `GET /api/kpi?scope=me|global&months` espone metriche personali e globali; il desktop mostra schede, grafico e dettaglio mensile | Collaudo con dati reali e confronto con la pagina legacy |
 | Ricerca | La rubrica desktop usa `GET /api/patients?q`; l'API `GET /api/calendar/search?q` resta disponibile nel backend. La barra globale desktop è stata rimossa su richiesta | Nessuna ricerca globale prevista nel desktop |
 | Promemoria e impostazioni | Anteprima, salvataggio modello e invio; stato, QR, avvio e arresto WhatsApp | Collaudo del gateway sul server |
-| Amministrazione | `GET /api/admin/me`, elenco richieste e revisione approva/rifiuta con ruolo ADMIN; vista desktop con richieste in attesa e storico recente | Collaudo con account amministratore e richiesta di prova |
+| Amministrazione | `GET /api/admin/me`, elenco richieste e revisione approva/rifiuta con ruolo ADMIN; home desktop con conteggio pendenti e collegamento alla lista, richieste in attesa e storico recente | Collaudo con account amministratore e richiesta di prova |
 
 `GET /api/calendar/search?q` restituisce al massimo 20 appuntamenti ordinati
 dal più recente. Cerca nome del paziente, note e stato, limita il risultato al

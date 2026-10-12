@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const apiBase = "http://127.0.0.1:8081";
+  let apiBase = null;
   const loginScreen = document.getElementById("loginScreen");
   const registerScreen = document.getElementById("registerScreen");
   const appScreen = document.getElementById("appScreen");
@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const trashScreen = document.getElementById("trashScreen");
   const settingsScreen = document.getElementById("settingsScreen");
   const statsScreen = document.getElementById("statsScreen");
+  const adminHomeScreen = document.getElementById("adminHomeScreen");
   const adminRequestsScreen = document.getElementById("adminRequestsScreen");
   const loginError = document.getElementById("loginError");
   const dataStatus = document.getElementById("dataStatus");
@@ -362,6 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function apiRequest(path, options = {}) {
+    if (!apiBase) throw new Error("backend_not_configured");
     const response = await fetch(`${apiBase}${path}`, {
       ...options,
       headers: { Authorization: authorization, ...options.headers },
@@ -403,18 +405,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const admin = currentRole === "ADMIN";
     for (const id of ["homeNav", "calendarNav", "patientsNav", "treatmentsNav", "statsNav", "settingsNav"])
       document.getElementById(id).parentElement.hidden = admin;
+    document.getElementById("adminHomeNavItem").hidden = !admin;
     document.getElementById("adminRequestsNavItem").hidden = !admin;
-    if (admin) showAdminRequests();
+    if (admin) showAdminHome();
     else showHome();
   }
 
   function showAuthNotice(message) {
-    const notice = document.getElementById(currentRole === "ADMIN" ? "adminAuthNotice" : "authNotice");
+    const notice = document.getElementById(currentRole !== "ADMIN" ? "authNotice"
+      : adminHomeScreen.hidden ? "adminAuthNotice" : "adminHomeAuthNotice");
     notice.textContent = message;
     notice.classList.remove("d-none");
   }
 
-  window.desktopBridgeReady = () => window.desktopBridge.loadToken();
+  window.desktopBridgeReady = () => {
+    if (apiBase) return;
+    try {
+      apiBase = window.fisioBackendUrl;
+      if (!apiBase) throw new Error("backend_not_configured");
+      window.desktopBridge.loadToken();
+    } catch (failure) {
+      loginError.textContent = apiBase
+        ? "Accesso automatico non disponibile. Puoi accedere con username e password."
+        : "Configurazione del backend non disponibile. Riavvia l'app desktop.";
+      loginError.classList.remove("d-none");
+    }
+  };
+  if (window.desktopBridge) window.desktopBridgeReady();
   window.desktopTokenLoaded = async token => {
     if (!token || manualLoginStarted || authorization || loginScreen.hidden) return;
     authorization = `Bearer ${token}`;
@@ -429,7 +446,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (failure.status === 401) {
         window.desktopBridge.clearToken();
       } else {
-        loginError.textContent = "Accesso automatico non riuscito. Controlla che il backend sia avviato.";
+        loginError.textContent = failure.message === "backend_not_configured"
+          ? "Configurazione del backend non disponibile. Riavvia l'app desktop."
+          : `Accesso automatico non riuscito. Controlla ${apiBase}/ready.`;
         loginError.classList.remove("d-none");
       }
     }
@@ -443,7 +462,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  const navIds = ["homeNav", "calendarNav", "patientsNav", "treatmentsNav", "statsNav", "settingsNav", "adminRequestsNav"];
+  const navIds = ["homeNav", "calendarNav", "patientsNav", "treatmentsNav", "statsNav", "settingsNav", "adminHomeNav", "adminRequestsNav"];
 
   function setActiveNav(activeId) {
     for (const id of navIds) {
@@ -463,10 +482,42 @@ document.addEventListener("DOMContentLoaded", () => {
     return value ? value.replace("T", " ").slice(0, 16) : "—";
   }
 
+  function showAdminHome() {
+    if (currentRole !== "ADMIN") return;
+    leaveStats();
+    for (const screen of [homeScreen, calendarScreen, patientsScreen, treatmentsScreen, trashScreen, settingsScreen, adminRequestsScreen])
+      screen.hidden = true;
+    adminHomeScreen.hidden = false;
+    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
+    document.body.classList.add("app-page");
+    setActiveNav("adminHomeNav");
+    document.title = "Home amministratore • Fisio e Sports";
+    loadAdminHome();
+  }
+
+  async function loadAdminHome() {
+    const request = ++adminRequestsRequest;
+    const session = sessionEpoch;
+    const count = document.getElementById("adminPendingCount");
+    const error = document.getElementById("adminHomeError");
+    count.textContent = "–";
+    error.classList.add("d-none");
+    try {
+      const data = await getJson("/api/admin/access-requests");
+      if (request !== adminRequestsRequest || session !== sessionEpoch || adminHomeScreen.hidden) return;
+      count.textContent = String(data.pending.length);
+    } catch (failure) {
+      if (request !== adminRequestsRequest || session !== sessionEpoch || adminHomeScreen.hidden) return;
+      error.textContent = failure.status === 401 ? "Sessione amministratore non valida. Esci e accedi di nuovo."
+        : "Impossibile caricare il numero delle richieste.";
+      error.classList.remove("d-none");
+    }
+  }
+
   function showAdminRequests() {
     if (currentRole !== "ADMIN") return;
     leaveStats();
-    for (const screen of [homeScreen, calendarScreen, patientsScreen, treatmentsScreen, trashScreen, settingsScreen])
+    for (const screen of [homeScreen, calendarScreen, patientsScreen, treatmentsScreen, trashScreen, settingsScreen, adminHomeScreen])
       screen.hidden = true;
     adminRequestsScreen.hidden = false;
     document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
@@ -1587,6 +1638,7 @@ document.addEventListener("DOMContentLoaded", () => {
     button.disabled = true;
     error.classList.add("d-none");
     try {
+      if (!apiBase) throw new Error("backend_not_configured");
       const response = await fetch(`${apiBase}/api/access-requests`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -1609,7 +1661,9 @@ document.addEventListener("DOMContentLoaded", () => {
       success.textContent = "Richiesta inviata. Attendi l'attivazione da parte di un amministratore prima di accedere.";
       success.classList.remove("d-none");
     } catch (failure) {
-      error.textContent = "Backend non raggiungibile. Avvialo e riprova.";
+      error.textContent = failure.message === "backend_not_configured"
+        ? "Configurazione del backend non disponibile. Riavvia l'app desktop."
+        : `Backend non raggiungibile. Controlla ${apiBase}/ready e riprova.`;
       error.classList.remove("d-none");
     } finally {
       document.getElementById("registerPassword").value = "";
@@ -1648,8 +1702,10 @@ document.addEventListener("DOMContentLoaded", () => {
       loginError.textContent = error.status === 401
         ? "Credenziali non valide"
         : error.status === 503
-          ? "Database non disponibile. Controlla /ready e riavvia il backend locale."
-          : "Backend non raggiungibile. Controlla /ready e avvialo con ./run-backend-locale.sh.";
+          ? `Database non disponibile. Controlla ${apiBase}/ready.`
+          : error.message === "backend_not_configured"
+            ? "Configurazione del backend non disponibile. Riavvia l'app desktop."
+            : `Backend non raggiungibile. Controlla ${apiBase}/ready.`;
       loginError.classList.remove("d-none");
       document.getElementById("password").value = "";
     } finally {
@@ -1658,6 +1714,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("homeNav").addEventListener("click", showHome);
+  document.getElementById("adminHomeNav").addEventListener("click", showAdminHome);
+  document.getElementById("adminManageRequests").addEventListener("click", showAdminRequests);
   document.getElementById("adminRequestsNav").addEventListener("click", showAdminRequests);
   document.getElementById("adminRequestsRefresh").addEventListener("click", () => loadAdminRequests());
   document.getElementById("adminReviewConfirm").addEventListener("click", async () => {
@@ -2166,7 +2224,11 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("authNotice").classList.add("d-none");
     loginError.classList.add("d-none");
     appScreen.hidden = true;
+    adminHomeScreen.hidden = true;
     adminRequestsScreen.hidden = true;
+    document.getElementById("adminPendingCount").textContent = "–";
+    document.getElementById("adminHomeError").classList.add("d-none");
+    document.getElementById("adminHomeAuthNotice").classList.add("d-none");
     document.getElementById("adminPendingRows").replaceChildren();
     document.getElementById("adminRecentRows").replaceChildren();
     document.getElementById("adminAuthNotice").classList.add("d-none");

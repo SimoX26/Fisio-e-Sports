@@ -5,6 +5,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -13,6 +15,20 @@ final class SecureTokenStore {
     private static final String ATTRIBUTE = "fisio-e-sports-desktop";
     private static final boolean WINDOWS = System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
     private static final boolean LINUX = System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("linux");
+    private final String namespace;
+
+    SecureTokenStore(String backendUrl) {
+        if (BackendEndpoint.LOCAL_URL.equals(backendUrl)) {
+            namespace = "";
+        } else {
+            try {
+                byte[] digest = MessageDigest.getInstance("SHA-256").digest(backendUrl.getBytes(StandardCharsets.UTF_8));
+                namespace = "-" + Base64.getUrlEncoder().withoutPadding().encodeToString(digest).substring(0, 16);
+            } catch (NoSuchAlgorithmException exception) {
+                throw new IllegalStateException("SHA-256 non disponibile", exception);
+            }
+        }
+    }
 
     String load() {
         try {
@@ -27,7 +43,7 @@ final class SecureTokenStore {
                 return valid(token) ? token : null;
             }
             if (LINUX) {
-                String token = run(new String[]{"/usr/bin/secret-tool", "lookup", "app", ATTRIBUTE}, "");
+                String token = run(new String[]{"/usr/bin/secret-tool", "lookup", "app", ATTRIBUTE + namespace}, "");
                 return token == null || token.isBlank() ? "" : valid(token.trim()) ? token.trim() : null;
             }
         } catch (IOException exception) {
@@ -58,7 +74,7 @@ final class SecureTokenStore {
                 return true;
             }
             if (LINUX) {
-                return run(new String[]{"/usr/bin/secret-tool", "store", "--label=Fisio e Sports", "app", ATTRIBUTE}, token) != null;
+                return run(new String[]{"/usr/bin/secret-tool", "store", "--label=Fisio e Sports", "app", ATTRIBUTE + namespace}, token) != null;
             }
         } catch (IOException exception) {
             return false;
@@ -72,7 +88,7 @@ final class SecureTokenStore {
                 Files.deleteIfExists(windowsPath());
                 return true;
             }
-            if (LINUX) return run(new String[]{"/usr/bin/secret-tool", "clear", "app", ATTRIBUTE}, "") != null;
+            if (LINUX) return run(new String[]{"/usr/bin/secret-tool", "clear", "app", ATTRIBUTE + namespace}, "") != null;
         } catch (IOException ignored) {
             return false;
         }
@@ -83,10 +99,10 @@ final class SecureTokenStore {
         return token != null && token.matches("[A-Za-z0-9_-]{43}");
     }
 
-    private static Path windowsPath() throws IOException {
+    private Path windowsPath() throws IOException {
         String appData = System.getenv("APPDATA");
         if (appData == null || appData.isBlank()) throw new IOException("APPDATA non disponibile");
-        return Path.of(appData, "Fisio-e-Sports", "remember-token.dpapi");
+        return Path.of(appData, "Fisio-e-Sports", "remember-token" + namespace + ".dpapi");
     }
 
     private static String runPowerShell(String script, String input) {
