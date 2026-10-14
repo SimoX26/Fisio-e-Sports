@@ -98,6 +98,8 @@ mostrano l'ora iniziale; il dettaglio conserva l'intervallo completo. I giorni
 senza eventi visibili devono apparire come colonne strette, mostrare la sigla
 del giorno (per esempio **SAB**) e il numero, senza campanella; il layout deve aggiornarsi cambiando
 periodo o aggiungendo un appuntamento.
+Passando da **2 settimane** a **settimana**, le colonne devono tornare tutte
+alla stessa larghezza, senza strisce vuote dopo la colonna degli orari.
 Verificare anche credenziali errate e Logout: i dati
 precedenti non devono restare visibili dopo l'uscita. Ripetere con un secondo
 terapista per verificare la separazione degli appuntamenti. Nel dettaglio di un

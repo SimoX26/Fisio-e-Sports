@@ -311,6 +311,11 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateCalendarLayout() {
     if (!calendar) return;
     const twoWeeks = calendar.view.type === "timeGridTwoWeeks";
+    const root = document.getElementById("calendar");
+    if (!twoWeeks) {
+      root.querySelectorAll(".fc-timegrid th[data-date], .fc-timegrid td[data-date]")
+        .forEach(cell => cell.style.removeProperty("width"));
+    }
     if (!twoWeeks && calendar.view.type !== "timeGridWeek") return;
     const days = [];
     for (let date = new Date(calendar.view.activeStart); date < calendar.view.activeEnd;) {
@@ -327,7 +332,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const end = event.end || new Date(event.start.getTime() + 1);
       return event.start < day.end && end > day.start;
     }));
-    const root = document.getElementById("calendar");
     if (twoWeeks) {
       const axisWidth = root.querySelector(".fc-col-header .fc-timegrid-axis")?.getBoundingClientRect().width || 0;
       const available = root.clientWidth - axisWidth - 16;
