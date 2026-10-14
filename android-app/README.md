@@ -91,6 +91,12 @@ lettura nel client Android.
 Il modulo usa una scheda chiara con campi arrotondati e azioni blu: prova a
 scorrerlo fino a **Salva** con la tastiera aperta, e verifica che gli errori
 restino leggibili senza chiudere il modulo.
+Le finestre di conferma, i dettagli, il cestino e la modifica del paziente
+usano il tema Material chiaro con la palette blu, superfici chiare e angoli
+arrotondati anche quando il telefono è in modalità scura.
+Data e ora dell'appuntamento si scelgono con i picker Material: verifica
+selezione iniziale, conferma e annullamento, anche modificando un evento.
+Controlla anche le conferme rosse per eliminazione, svuotamento ed Esci.
 
 Dopo un accesso riuscito, chiudi completamente l'app e riaprila: con backend
 raggiungibile deve entrare senza chiedere la password. Ripeti la prova dopo

@@ -1,8 +1,6 @@
 package it.simosw.fisioesport
 
 import android.graphics.drawable.GradientDrawable
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.text.Editable
@@ -30,6 +28,10 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.datepicker.MaterialDatePicker
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.timepicker.MaterialTimePicker
+import com.google.android.material.timepicker.TimeFormat
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -40,6 +42,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
@@ -589,7 +592,7 @@ class MainActivity : AppCompatActivity() {
         actions.addView(save, LinearLayout.LayoutParams(0, dp(48), 1f))
         form.addView(actions, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(12) })
-        val dialog = AlertDialog.Builder(this)
+        val dialog = MaterialAlertDialogBuilder(this)
             .setView(ScrollView(this).apply { setBackgroundResource(R.drawable.dialog_surface); addView(form) })
             .create()
         cancel.setOnClickListener { dialog.dismiss() }
@@ -780,25 +783,46 @@ class MainActivity : AppCompatActivity() {
             endField.visibility = if (checked) View.GONE else View.VISIBLE
         }
         dateButton.setOnClickListener {
-            DatePickerDialog(this, { _, year, month, day ->
-                date.set(year, month, day)
+            val utcDate = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                clear()
+                set(date.get(Calendar.YEAR), date.get(Calendar.MONTH), date.get(Calendar.DAY_OF_MONTH))
+            }
+            val picker = MaterialDatePicker.Builder.datePicker()
+                .setSelection(utcDate.timeInMillis)
+                .build()
+            picker.addOnPositiveButtonClickListener { selected ->
+                val chosen = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                    timeInMillis = selected
+                }
+                date.set(chosen.get(Calendar.YEAR), chosen.get(Calendar.MONTH), chosen.get(Calendar.DAY_OF_MONTH))
                 refreshChoices()
-            }, date.get(Calendar.YEAR), date.get(Calendar.MONTH), date.get(Calendar.DAY_OF_MONTH)).show()
+            }
+            picker.show(supportFragmentManager, "appointment_date")
+        }
+        fun showTimePicker(initialMinutes: Int, tag: String, onSelected: (Int) -> Unit) {
+            val picker = MaterialTimePicker.Builder()
+                .setTimeFormat(TimeFormat.CLOCK_24H)
+                .setHour(initialMinutes / 60)
+                .setMinute(initialMinutes % 60)
+                .build()
+            picker.addOnPositiveButtonClickListener {
+                onSelected(picker.hour * 60 + picker.minute)
+                refreshChoices()
+            }
+            picker.show(supportFragmentManager, tag)
         }
         startButton.setOnClickListener {
-            TimePickerDialog(this, { _, hour, minute ->
-                startMinutes = hour * 60 + minute
+            showTimePicker(startMinutes, "appointment_start_time") { selected ->
+                startMinutes = selected
                 endMinutes = (startMinutes + 60) % (24 * 60)
                 endNextDay = startMinutes + 60 >= 24 * 60
-                refreshChoices()
-            }, startMinutes / 60, startMinutes % 60, true).show()
+            }
         }
         endButton.setOnClickListener {
-            TimePickerDialog(this, { _, hour, minute ->
-                endMinutes = hour * 60 + minute
+            showTimePicker(endMinutes, "appointment_end_time") { selected ->
+                endMinutes = selected
                 endNextDay = endMinutes <= startMinutes
-                refreshChoices()
-            }, endMinutes / 60, endMinutes % 60, true).show()
+            }
         }
         val notes = EditText(this).apply {
             hint = getString(R.string.calendar_create_notes)
@@ -850,7 +874,7 @@ class MainActivity : AppCompatActivity() {
         })
         actions.addView(saveButton, LinearLayout.LayoutParams(0, dp(48), 1f))
         form.addView(actions)
-        val dialog = AlertDialog.Builder(this)
+        val dialog = MaterialAlertDialogBuilder(this)
             .setView(ScrollView(this).apply {
                 setBackgroundResource(R.drawable.dialog_surface)
                 addView(form)
@@ -1135,7 +1159,7 @@ class MainActivity : AppCompatActivity() {
             details.addView(this, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply { bottomMargin = dp(12) })
         } else null
-        val builder = AlertDialog.Builder(this)
+        val builder = MaterialAlertDialogBuilder(this)
             .setTitle(entry.title.ifBlank { entry.kind })
             .setView(ScrollView(this).apply { addView(details) })
             .setPositiveButton(R.string.calendar_detail_close, null)
@@ -1159,7 +1183,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun confirmCancelAppointment(entry: CalendarEntry) {
         val activeToken = token ?: return
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setTitle(R.string.calendar_delete_title)
             .setMessage(getString(R.string.calendar_delete_message, entry.title))
             .setNegativeButton(R.string.cancel, null)
@@ -1196,7 +1220,7 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(8), dp(20), dp(8))
         }
-        val dialog = AlertDialog.Builder(this)
+        val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(R.string.calendar_trash)
             .setView(ScrollView(this).apply { addView(rows) })
             .setNeutralButton(R.string.calendar_trash_empty_all, null)
@@ -1315,7 +1339,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun confirmTrashDeletion(dialog: AlertDialog, rows: LinearLayout, activeToken: String,
         id: Long?, name: String?, button: Button, otherButton: Button? = null) {
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setTitle(if (id == null) R.string.calendar_trash_empty_title else R.string.calendar_trash_delete_title)
             .setMessage(if (id == null) getString(R.string.calendar_trash_empty_message)
                 else getString(R.string.calendar_trash_delete_message, name))
@@ -1477,11 +1501,16 @@ class MainActivity : AppCompatActivity() {
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     private fun logout() {
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setMessage(R.string.logout_confirmation)
             .setNegativeButton(R.string.cancel, null)
             .setPositiveButton(R.string.logout) { _, _ -> confirmLogout() }
-            .show()
+            .create().apply {
+                setOnShowListener {
+                    getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getColor(R.color.brand_danger))
+                }
+                show()
+            }
     }
 
     private fun confirmLogout() {
