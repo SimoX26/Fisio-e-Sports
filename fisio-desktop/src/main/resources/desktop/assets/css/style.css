@@ -345,8 +345,11 @@ body.calendar-view-two-weeks .fc .calendar-two-weeks-empty .fc-col-header-cell-c
 }
 
 body.calendar-view-two-weeks .fc .calendar-two-weeks-empty .fc-col-header-cell-cushion::after{
-    content: attr(data-day-number);
-    font-size: .7rem;
+    content: attr(data-weekday) "\A" attr(data-day-number);
+    display: block;
+    font-size: .65rem;
+    line-height: 1.1;
+    white-space: pre;
 }
 
 body.calendar-view-week .fc .calendar-empty-day .calendar-reminder-btn,

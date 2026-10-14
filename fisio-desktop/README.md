@@ -95,8 +95,8 @@ con quella corrente evidenziata, anche dopo un cambio di vista. La vista
 le frecce devono avanzare o tornare di due settimane. Tutti i 14 giorni devono
 entrare nella larghezza della finestra, senza scorrimento orizzontale. Le card
 mostrano l'ora iniziale; il dettaglio conserva l'intervallo completo. I giorni
-senza eventi visibili devono avere colonne più strette, mostrare solo il numero
-del giorno e non avere la campanella; il layout deve aggiornarsi cambiando
+senza eventi visibili devono apparire come colonne strette, mostrare la sigla
+del giorno (per esempio **SAB**) e il numero, senza campanella; il layout deve aggiornarsi cambiando
 periodo o aggiungendo un appuntamento.
 Verificare anche credenziali errate e Logout: i dati
 precedenti non devono restare visibili dopo l'uscita. Ripetere con un secondo

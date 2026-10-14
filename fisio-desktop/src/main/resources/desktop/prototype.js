@@ -326,14 +326,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }));
     const root = document.getElementById("calendar");
     if (twoWeeks) {
-      const weights = occupied.map(hasEvent => hasEvent ? 1 : .5);
-      const total = weights.reduce((sum, weight) => sum + weight, 0);
-      root.querySelectorAll(".fc-timegrid colgroup").forEach(group => {
-        if (group.children.length < days.length) return;
-        const offset = group.children.length - days.length;
-        weights.forEach((weight, index) => {
-          group.children[offset + index].style.width = `${92 * weight / total}%`;
-        });
+      const axisWidth = root.querySelector(".fc-col-header .fc-timegrid-axis")?.getBoundingClientRect().width || 0;
+      const available = root.clientWidth - axisWidth - 16;
+      if (available <= 0) return;
+      const emptyCount = occupied.filter(hasEvent => !hasEvent).length;
+      const fullCount = occupied.length - emptyCount;
+      const emptyWidth = Math.min(28, available / days.length);
+      const fullWidth = fullCount ? (available - emptyCount * emptyWidth) / fullCount : emptyWidth;
+      root.querySelectorAll(".fc-timegrid th[data-date], .fc-timegrid td[data-date]").forEach(cell => {
+        const index = days.findIndex(day => day.date === cell.dataset.date);
+        if (index < 0) return;
+        cell.style.width = `${occupied[index] ? fullWidth : emptyWidth}px`;
       });
     }
     root.querySelectorAll(".fc-col-header-cell[data-date]").forEach(header => {
@@ -344,7 +347,11 @@ document.addEventListener("DOMContentLoaded", () => {
       header.classList.toggle("calendar-two-weeks-empty", twoWeeks && empty);
       if (twoWeeks) {
         const label = header.querySelector(".fc-col-header-cell-cushion");
-        if (label) label.dataset.dayNumber = String(days[index].start.getDate());
+        if (label) {
+          label.dataset.dayNumber = String(days[index].start.getDate());
+          label.dataset.weekday = days[index].start.toLocaleDateString("it-IT", { weekday: "short" })
+            .replace(/\.$/, "").toUpperCase();
+        }
       }
     });
   }
