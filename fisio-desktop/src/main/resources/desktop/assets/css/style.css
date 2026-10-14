@@ -1985,6 +1985,32 @@ body.calendar-view-week .fc .calendar-event--draggable{
     line-height: 1.2;
 }
 
+body.calendar-view-month .fc .fc-daygrid-event{
+    white-space: normal;
+    min-width: 0;
+}
+
+body.calendar-view-month .fc .fc-daygrid-event .fc-event-main{
+    min-width: 0;
+    width: 100%;
+}
+
+body.calendar-view-month .fc .calendar-month-event-content{
+    display: flex;
+    align-items: baseline;
+    min-width: 0;
+    padding: 2px 4px;
+}
+
+body.calendar-view-month .fc .fc-event-time-inline{
+    flex: none;
+}
+
+body.calendar-view-month .fc .fc-event-title-inline{
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 
 
 

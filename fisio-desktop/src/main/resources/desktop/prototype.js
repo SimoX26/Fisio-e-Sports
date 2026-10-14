@@ -763,6 +763,7 @@ document.addEventListener("DOMContentLoaded", () => {
       headerToolbar: { left: "prev,next today timeGridDay,timeGridWeek,dayGridMonth", center: "title", right: "trash newAppointment" },
       titleRangeSeparator: " - ",
       initialView: "timeGridWeek",
+      dayMaxEvents: false,
       views: {
         timeGridWeek: { titleFormat: { day: "numeric", month: "long", year: "numeric" } }
       },
@@ -825,7 +826,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const wrapper = document.createElement(month ? "span" : "div");
         const time = document.createElement(month ? "span" : "div");
         const title = document.createElement(month ? "span" : "div");
-        if (!month) wrapper.className = "calendar-event-content";
+        wrapper.className = month ? "calendar-month-event-content" : "calendar-event-content";
         time.className = month ? "fc-event-time-inline" : "fc-event-time-line";
         title.className = month ? "fc-event-title-inline" : "fc-event-title-line";
         time.textContent = arg.timeText || "";

@@ -115,7 +115,9 @@ mantenere la durata e aggiornarsi anche nel calendario Android. Provare una
 fascia occupata: la card deve tornare al punto di partenza e comparire un
 errore. Nelle viste giorno e mese provare a trascinare una card: deve restare
 ferma, senza lasciare copie grafiche. Tornando alla settimana, il trascinamento
-deve funzionare ancora. Verificare che il ridimensionamento non sia disponibile
+deve funzionare ancora. Nella vista mese, controllare che anche i giorni pieni
+mostrino tutti gli appuntamenti e che i nomi lunghi vadano a capo senza invadere
+le celle vicine. Verificare che il ridimensionamento non sia disponibile
 in nessuna vista e che trattamenti completati ed eventi tutto il giorno non si
 possano trascinare. Le card mostrano il telefono per gli appuntamenti di almeno
 90 minuti;
