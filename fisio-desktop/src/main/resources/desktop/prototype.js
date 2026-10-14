@@ -489,7 +489,7 @@ document.addEventListener("DOMContentLoaded", () => {
     for (const screen of [homeScreen, calendarScreen, patientsScreen, treatmentsScreen, trashScreen, settingsScreen, adminRequestsScreen])
       screen.hidden = true;
     adminHomeScreen.hidden = false;
-    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
+    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-two-weeks", "calendar-view-month", "address-book-page");
     document.body.classList.add("app-page");
     setActiveNav("adminHomeNav");
     document.title = "Home amministratore • Fisio e Sports";
@@ -521,7 +521,7 @@ document.addEventListener("DOMContentLoaded", () => {
     for (const screen of [homeScreen, calendarScreen, patientsScreen, treatmentsScreen, trashScreen, settingsScreen, adminHomeScreen])
       screen.hidden = true;
     adminRequestsScreen.hidden = false;
-    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
+    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-two-weeks", "calendar-view-month", "address-book-page");
     document.body.classList.add("app-page");
     setActiveNav("adminRequestsNav");
     document.title = "Richieste di accesso • Fisio e Sports";
@@ -602,7 +602,7 @@ document.addEventListener("DOMContentLoaded", () => {
     treatmentsScreen.hidden = true;
     trashScreen.hidden = true;
     settingsScreen.hidden = true;
-    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month");
+    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-two-weeks", "calendar-view-month");
     document.body.classList.remove("address-book-page");
     document.body.classList.add("app-page");
     setActiveNav("homeNav");
@@ -760,12 +760,20 @@ document.addEventListener("DOMContentLoaded", () => {
         trash: { text: "Cestino", hint: "Apri cestino appuntamenti", click: showTrash },
         newAppointment: { text: "+ Nuovo", hint: "Nuovo appuntamento", click: () => openAppointmentModal() }
       },
-      headerToolbar: { left: "prev,next today timeGridDay,timeGridWeek,dayGridMonth", center: "title", right: "trash newAppointment" },
+      headerToolbar: { left: "prev,next today timeGridDay,timeGridWeek,timeGridTwoWeeks,dayGridMonth", center: "title", right: "trash newAppointment" },
       titleRangeSeparator: " - ",
       initialView: "timeGridWeek",
       dayMaxEvents: false,
       views: {
-        timeGridWeek: { titleFormat: { day: "numeric", month: "long", year: "numeric" } }
+        timeGridWeek: { titleFormat: { day: "numeric", month: "long", year: "numeric" } },
+        timeGridTwoWeeks: {
+          type: "timeGrid",
+          duration: { weeks: 2 },
+          dateAlignment: "week",
+          dateIncrement: { weeks: 2 },
+          buttonText: "2 settimane",
+          titleFormat: { day: "numeric", month: "long", year: "numeric" }
+        }
       },
       slotDuration: "00:15:00",
       snapDuration: "00:15:00",
@@ -787,7 +795,7 @@ document.addEventListener("DOMContentLoaded", () => {
       slotLabelFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
       slotLabelInterval: "01:00",
       dayHeaderDidMount(info) {
-        if (info.view.type !== "timeGridWeek") return;
+        if (info.view.type !== "timeGridWeek" && info.view.type !== "timeGridTwoWeeks") return;
         const anchor = info.el.querySelector(".fc-col-header-cell-cushion");
         if (!anchor) return;
         const date = appointmentDate(info.date);
@@ -904,6 +912,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (calendar.getOption("editable") !== weekView) calendar.setOption("editable", weekView);
         document.body.classList.toggle("calendar-view-day", info.view.type === "timeGridDay");
         document.body.classList.toggle("calendar-view-week", weekView);
+        document.body.classList.toggle("calendar-view-two-weeks", info.view.type === "timeGridTwoWeeks");
         document.body.classList.toggle("calendar-view-month", info.view.type === "dayGridMonth");
       },
       select(info) {
@@ -974,6 +983,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (dayView) calendar.changeView("timeGridDay");
     document.body.classList.toggle("calendar-view-day", calendar.view.type === "timeGridDay");
     document.body.classList.toggle("calendar-view-week", calendar.view.type === "timeGridWeek");
+    document.body.classList.toggle("calendar-view-two-weeks", calendar.view.type === "timeGridTwoWeeks");
     document.body.classList.toggle("calendar-view-month", calendar.view.type === "dayGridMonth");
     calendar.updateSize();
   }
@@ -995,7 +1005,7 @@ document.addEventListener("DOMContentLoaded", () => {
     treatmentsScreen.hidden = true;
     trashScreen.hidden = true;
     settingsScreen.hidden = true;
-    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month");
+    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-two-weeks", "calendar-view-month");
     document.body.classList.add("app-page", "address-book-page");
     setActiveNav("patientsNav");
     document.title = "Rubrica Pazienti • Fisio e Sports";
@@ -1010,7 +1020,7 @@ document.addEventListener("DOMContentLoaded", () => {
     treatmentsScreen.hidden = false;
     trashScreen.hidden = true;
     settingsScreen.hidden = true;
-    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
+    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-two-weeks", "calendar-view-month", "address-book-page");
     document.body.classList.add("app-page");
     setActiveNav("treatmentsNav");
     document.getElementById("treatmentsTitle").textContent = patientId == null
@@ -1059,7 +1069,7 @@ document.addEventListener("DOMContentLoaded", () => {
     treatmentsScreen.hidden = true;
     trashScreen.hidden = true;
     settingsScreen.hidden = false;
-    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
+    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-two-weeks", "calendar-view-month", "address-book-page");
     document.body.classList.add("app-page");
     setActiveNav("settingsNav");
     document.title = "Impostazioni • Fisio e Sports";
@@ -1277,7 +1287,7 @@ document.addEventListener("DOMContentLoaded", () => {
     trashScreen.hidden = true;
     settingsScreen.hidden = true;
     statsScreen.hidden = false;
-    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
+    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-two-weeks", "calendar-view-month", "address-book-page");
     document.body.classList.add("app-page");
     setActiveNav("statsNav");
     document.title = "Dati e Statistiche • Fisio e Sports";
@@ -1292,7 +1302,7 @@ document.addEventListener("DOMContentLoaded", () => {
     treatmentsScreen.hidden = true;
     trashScreen.hidden = false;
     settingsScreen.hidden = true;
-    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-month", "address-book-page");
+    document.body.classList.remove("calendar-gcal-page", "calendar-view-day", "calendar-view-week", "calendar-view-two-weeks", "calendar-view-month", "address-book-page");
     document.body.classList.add("app-page");
     setActiveNav("calendarNav");
     document.title = "Cestino appuntamenti • Fisio e Sports";

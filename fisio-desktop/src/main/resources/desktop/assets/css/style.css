@@ -313,7 +313,8 @@ body.calendar-gcal-page{
 }
 
 body.calendar-view-day .fc .fc-scrollgrid-section-header th,
-body.calendar-view-week .fc .fc-scrollgrid-section-header th{
+body.calendar-view-week .fc .fc-scrollgrid-section-header th,
+body.calendar-view-two-weeks .fc .fc-scrollgrid-section-header th{
     background: #ffffff !important;
 }
 
@@ -590,6 +591,7 @@ body.calendar-view-week .fc .fc-scrollgrid-section-header th{
     }
 
     body.calendar-view-week .calendar-gcal-wrap,
+    body.calendar-view-two-weeks .calendar-gcal-wrap,
     body.calendar-view-month .calendar-gcal-wrap{
         max-width: none;
         margin-left: 0;
@@ -612,42 +614,52 @@ body.calendar-view-week .fc .fc-scrollgrid-section-header th{
         min-width: 0;
     }
 
+    body.calendar-view-two-weeks #calendar{
+        min-width: 1820px;
+    }
+
     .calendar-gcal-page .fc .fc-toolbar{
         flex-wrap: wrap;
         row-gap: .5rem;
     }
 
-    /* Desktop compact mode for timeGrid views (day/week only) */
+    /* Desktop compact mode for timeGrid views */
     body.calendar-view-day .fc .fc-timegrid-slot,
-    body.calendar-view-week .fc .fc-timegrid-slot{
+    body.calendar-view-week .fc .fc-timegrid-slot,
+    body.calendar-view-two-weeks .fc .fc-timegrid-slot{
         height: 9px;
         min-height: 9px;
     }
 
     body.calendar-view-day .fc .fc-timegrid-slot-label,
-    body.calendar-view-week .fc .fc-timegrid-slot-label{
+    body.calendar-view-week .fc .fc-timegrid-slot-label,
+    body.calendar-view-two-weeks .fc .fc-timegrid-slot-label{
         font-size: .72rem;
     }
 
     body.calendar-view-day .fc .fc-timegrid-event,
-    body.calendar-view-week .fc .fc-timegrid-event{
+    body.calendar-view-week .fc .fc-timegrid-event,
+    body.calendar-view-two-weeks .fc .fc-timegrid-event{
         min-height: 0;
         padding: 0 2px;
     }
 
     body.calendar-view-day .fc .fc-timegrid-event .fc-event-main,
-    body.calendar-view-week .fc .fc-timegrid-event .fc-event-main{
+    body.calendar-view-week .fc .fc-timegrid-event .fc-event-main,
+    body.calendar-view-two-weeks .fc .fc-timegrid-event .fc-event-main{
         padding: 3px 2px 0;
     }
 
     body.calendar-view-day .fc .fc-timegrid-event .fc-event-time-line,
-    body.calendar-view-week .fc .fc-timegrid-event .fc-event-time-line{
+    body.calendar-view-week .fc .fc-timegrid-event .fc-event-time-line,
+    body.calendar-view-two-weeks .fc .fc-timegrid-event .fc-event-time-line{
         font-size: .78rem;
         line-height: 1.2;
     }
 
     body.calendar-view-day .fc .fc-timegrid-event .fc-event-title-line,
-    body.calendar-view-week .fc .fc-timegrid-event .fc-event-title-line{
+    body.calendar-view-week .fc .fc-timegrid-event .fc-event-title-line,
+    body.calendar-view-two-weeks .fc .fc-timegrid-event .fc-event-title-line{
         font-size: .95rem;
         line-height: 1.25;
         font-weight: 600;

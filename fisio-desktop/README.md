@@ -86,17 +86,20 @@ prova: nome e telefono devono comparire nel modulo. Salvare una fascia libera,
 verificare il messaggio di conferma nella home, l'appuntamento nel calendario e
 la rimozione del contatto dalla lista. Ripetere con un secondo
 terapista per controllare che non compaiano i contatti del primo. Dal menu
-aprire il calendario e controllare giorno, settimana, mese, dettaglio evento e
-ritorno alla home. Giorno, Settimana e Mese devono stare a sinistra del periodo
+aprire il calendario e controllare giorno, settimana, 2 settimane, mese, dettaglio evento e
+ritorno alla home. Le quattro viste devono stare a sinistra del periodo
 centrato; **Cestino** rosso e **+ Nuovo** celeste devono stare a destra nella
-stessa barra. La barra ha un riquadro chiaro e le tre viste formano un gruppo
-con quella corrente evidenziata, anche dopo un cambio di vista.
+stessa barra. La barra ha un riquadro chiaro e le quattro viste formano un gruppo
+con quella corrente evidenziata, anche dopo un cambio di vista. La vista
+**2 settimane** deve mostrare 14 giorni consecutivi nella stessa griglia oraria;
+le frecce devono avanzare o tornare di due settimane. Su finestre strette la
+griglia può scorrere orizzontalmente dentro il calendario.
 Verificare anche credenziali errate e Logout: i dati
 precedenti non devono restare visibili dopo l'uscita. Ripetere con un secondo
 terapista per verificare la separazione degli appuntamenti. Nel dettaglio di un
 appuntamento controllare data, orario, telefono, note e pulsanti visibili secondo lo stato;
 la finestra deve restare compatta anche su uno schermo ampio;
-accanto a ogni giorno della vista settimana, la campanella deve aprire
+accanto a ogni giorno delle viste settimana e 2 settimane, la campanella deve aprire
 l'anteprima dei promemoria con quel giorno già selezionato, anche dopo aver
 cambiato settimana. Verificare che non compaia nelle viste giorno e mese;
 **Dettagli paziente** deve aprire la scheda nella rubrica. Provare anche un evento
@@ -105,7 +108,7 @@ suggerimenti dei pazienti, la creazione di un paziente nuovo con telefono, un
 evento generico e uno tutto il giorno con paziente già presente. Provare una
 fascia occupata: il modulo deve restare aperto e mostrare l'errore. Controllare
 che l'appuntamento salvato compaia anche nella webapp legacy dello stesso
-terapista e non nel calendario di un altro. Nelle viste giorno e settimana,
+terapista e non nel calendario di un altro. Nelle viste giorno, settimana e 2 settimane,
 verificare che le righe orarie siano compatte e che orario e nome restino
 leggibili anche negli appuntamenti di 15 minuti. Provare un nome lungo in un
 appuntamento di un'ora: deve andare a capo entro la card, con spazio sopra
@@ -113,7 +116,7 @@ l'orario e tra orario e nome. Nella vista settimana,
 trascinare un appuntamento programmato su un altro orario o giorno: deve
 mantenere la durata e aggiornarsi anche nel calendario Android. Provare una
 fascia occupata: la card deve tornare al punto di partenza e comparire un
-errore. Nelle viste giorno e mese provare a trascinare una card: deve restare
+errore. Nelle viste giorno, 2 settimane e mese provare a trascinare una card: deve restare
 ferma, senza lasciare copie grafiche. Tornando alla settimana, il trascinamento
 deve funzionare ancora. Nella vista mese, controllare che anche i giorni pieni
 mostrino tutti gli appuntamenti e che i nomi lunghi vadano a capo senza invadere
