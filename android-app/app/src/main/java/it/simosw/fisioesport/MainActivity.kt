@@ -10,6 +10,7 @@ import android.text.InputFilter
 import android.text.InputType
 import android.text.TextWatcher
 import android.util.Base64
+import android.util.Patterns
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -91,6 +92,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var patientDetailTitle: TextView
     private lateinit var patientDetailStatus: TextView
     private lateinit var patientDetailFields: LinearLayout
+    private lateinit var patientDetailEdit: MaterialButton
     private lateinit var placeholderPanel: View
     private lateinit var placeholderTitle: TextView
     private lateinit var currentSectionButton: MaterialButton
@@ -136,6 +138,7 @@ class MainActivity : AppCompatActivity() {
         patientDetailTitle = findViewById(R.id.patientDetailTitle)
         patientDetailStatus = findViewById(R.id.patientDetailStatus)
         patientDetailFields = findViewById(R.id.patientDetailFields)
+        patientDetailEdit = findViewById(R.id.patientDetailEdit)
         placeholderPanel = findViewById(R.id.placeholderPanel)
         placeholderTitle = findViewById(R.id.placeholderTitle)
         currentSectionButton = findViewById(R.id.currentSectionButton)
@@ -459,6 +462,7 @@ class MainActivity : AppCompatActivity() {
         patientsPanel.visibility = View.GONE
         patientDetailPanel.visibility = View.VISIBLE
         patientDetailTitle.text = patient.name
+        patientDetailEdit.visibility = View.GONE
         contentScroll.scrollTo(0, 0)
         loadPatientDetail(patient.id)
     }
@@ -471,6 +475,7 @@ class MainActivity : AppCompatActivity() {
         patientDetailStatus.setText(R.string.patient_detail_loading)
         patientDetailFields.visibility = View.GONE
         patientDetailFields.removeAllViews()
+        patientDetailEdit.visibility = View.GONE
         worker.execute {
             var error = R.string.patient_detail_error
             try {
@@ -498,6 +503,10 @@ class MainActivity : AppCompatActivity() {
                     addPatientDetailField(R.string.patient_detail_appointments,
                         patient.optInt("linkedAppointmentsCount").toString())
                     patientDetailFields.visibility = View.VISIBLE
+                    if (patient.optString("state") != "ARCHIVED") {
+                        patientDetailEdit.visibility = View.VISIBLE
+                        patientDetailEdit.setOnClickListener { openPatientProfileForm(patient) }
+                    }
                 }
             } catch (_: Exception) {
                 runOnUiThread {
@@ -509,6 +518,131 @@ class MainActivity : AppCompatActivity() {
                     patientDetailStatus.setText(error)
                 }
             }
+        }
+    }
+
+    private fun openPatientProfileForm(patient: JSONObject) {
+        val activeToken = token ?: return
+        val patientId = patient.optLong("id")
+        if (patientId <= 0 || selectedPatientId != patientId) return
+        val form = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(20), dp(20), dp(20))
+        }
+        form.addView(TextView(this).apply {
+            setText(R.string.patient_edit_title)
+            textSize = 22f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setTextColor(getColor(R.color.text_main))
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(16) })
+        fun field(label: Int, value: String, limit: Int, inputTypeValue: Int): EditText {
+            val group = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+            group.addView(TextView(this).apply {
+                setText(label)
+                setTextColor(getColor(R.color.text_main))
+            })
+            val input = EditText(this).apply {
+                setSingleLine(true)
+                setText(value)
+                inputType = inputTypeValue
+                filters = arrayOf(InputFilter.LengthFilter(limit))
+                setBackgroundResource(R.drawable.form_field)
+                setPadding(dp(12), 0, dp(12), 0)
+                setTextColor(getColor(R.color.text_main))
+            }
+            group.addView(input, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(48)).apply { topMargin = dp(4) })
+            form.addView(group, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(12) })
+            return input
+        }
+        val name = field(R.string.patient_edit_name, patient.optString("fullName"), 201,
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS)
+        val email = field(R.string.patient_edit_email, patient.optString("email").takeUnless { it == "null" } ?: "", 150,
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS)
+        val phone = field(R.string.patient_edit_phone, patient.optString("phone").takeUnless { it == "null" } ?: "", 20,
+            InputType.TYPE_CLASS_PHONE)
+        val error = TextView(this).apply {
+            setTextColor(getColor(R.color.brand_danger))
+            setBackgroundResource(R.drawable.danger_soft)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            visibility = View.GONE
+        }
+        form.addView(error)
+        val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val cancel = MaterialButton(this).apply {
+            setText(R.string.cancel)
+            isAllCaps = false
+            cornerRadius = dp(12)
+            setTextColor(getColor(R.color.brand_primary))
+            backgroundTintList = ColorStateList.valueOf(getColor(R.color.brand_primary_soft))
+        }
+        val save = MaterialButton(this).apply {
+            setText(R.string.calendar_create_save)
+            isAllCaps = false
+            cornerRadius = dp(12)
+            setTextColor(getColor(R.color.surface))
+            backgroundTintList = ColorStateList.valueOf(getColor(R.color.brand_primary))
+        }
+        actions.addView(cancel, LinearLayout.LayoutParams(0, dp(48), 1f).apply { rightMargin = dp(8) })
+        actions.addView(save, LinearLayout.LayoutParams(0, dp(48), 1f))
+        form.addView(actions, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(12) })
+        val dialog = AlertDialog.Builder(this)
+            .setView(ScrollView(this).apply { setBackgroundResource(R.drawable.dialog_surface); addView(form) })
+            .create()
+        cancel.setOnClickListener { dialog.dismiss() }
+        save.setOnClickListener {
+            val fullName = name.text.toString().trim().replace(Regex("\\s+"), " ")
+            val parts = fullName.split(" ", limit = 2)
+            val selectedEmail = email.text.toString().trim()
+            val selectedPhone = phone.text.toString().trim()
+            if (fullName.isEmpty() || parts[0].length > 100 || parts.getOrElse(1) { "" }.length > 100
+                || selectedEmail.isNotEmpty() && !Patterns.EMAIL_ADDRESS.matcher(selectedEmail).matches()) {
+                error.setText(R.string.patient_edit_invalid)
+                error.visibility = View.VISIBLE
+                return@setOnClickListener
+            }
+            val body = mapOf("fullName" to fullName, "email" to selectedEmail, "phone" to selectedPhone)
+                .entries.joinToString("&") { (key, value) ->
+                    URLEncoder.encode(key, StandardCharsets.UTF_8.name()) + "=" +
+                        URLEncoder.encode(value, StandardCharsets.UTF_8.name())
+                }
+            error.visibility = View.GONE
+            save.isEnabled = false
+            cancel.isEnabled = false
+            dialog.setCancelable(false)
+            worker.execute {
+                val status = try { request("PUT", "/api/patients/$patientId", "Bearer $activeToken", body).first }
+                    catch (_: Exception) { 0 }
+                runOnUiThread {
+                    if (isDestroyed || !dialog.isShowing) return@runOnUiThread
+                    if (status == 204) {
+                        dialog.dismiss()
+                        if (token == activeToken && section == Section.PATIENTS && selectedPatientId == patientId) {
+                            loadPatientDetail(patientId)
+                            Toast.makeText(this, R.string.patient_edit_saved, Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        error.setText(when (status) {
+                            400 -> R.string.patient_edit_invalid
+                            404 -> R.string.patient_edit_not_found
+                            else -> R.string.patient_edit_error
+                        })
+                        error.visibility = View.VISIBLE
+                        save.isEnabled = true
+                        cancel.isEnabled = true
+                        dialog.setCancelable(true)
+                    }
+                }
+            }
+        }
+        dialog.show()
+        dialog.window?.apply {
+            setBackgroundDrawableResource(android.R.color.transparent)
+            setLayout(resources.displayMetrics.widthPixels - dp(32), WindowManager.LayoutParams.WRAP_CONTENT)
+            setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         }
     }
 

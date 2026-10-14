@@ -76,6 +76,15 @@
     <string name="patients_error">Impossibile caricare la rubrica dal backend.</string>
     <string name="back_to_patients">← Rubrica</string>
     <string name="patient_detail_heading">SCHEDA PAZIENTE</string>
+    <string name="patient_detail_edit">Modifica</string>
+    <string name="patient_edit_title">Modifica paziente</string>
+    <string name="patient_edit_name">Nome e cognome</string>
+    <string name="patient_edit_email">Email</string>
+    <string name="patient_edit_phone">Telefono</string>
+    <string name="patient_edit_invalid">Controlla nome, email e telefono.</string>
+    <string name="patient_edit_not_found">Scheda non più disponibile. Torna alla Rubrica e aggiorna.</string>
+    <string name="patient_edit_error">Salvataggio non confermato. Aggiorna la scheda prima di riprovare.</string>
+    <string name="patient_edit_saved">Dati del paziente aggiornati.</string>
     <string name="patient_detail_loading">Caricamento scheda paziente…</string>
     <string name="patient_detail_error">Impossibile caricare la scheda paziente.</string>
     <string name="patient_detail_not_found">Scheda paziente non disponibile.</string>

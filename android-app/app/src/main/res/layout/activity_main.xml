@@ -470,15 +470,38 @@
                     android:orientation="vertical"
                     android:visibility="gone">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/patientDetailBack"
-                        android:layout_width="wrap_content"
-                        android:layout_height="48dp"
-                        android:text="@string/back_to_patients"
-                        android:textAllCaps="false"
-                        android:textColor="@color/brand_primary"
-                        app:backgroundTint="@color/brand_primary_soft"
-                        app:cornerRadius="12dp" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/patientDetailBack"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:text="@string/back_to_patients"
+                            android:textAllCaps="false"
+                            android:textColor="@color/brand_primary"
+                            app:backgroundTint="@color/brand_primary_soft"
+                            app:cornerRadius="12dp" />
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="1dp"
+                            android:layout_weight="1" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/patientDetailEdit"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:text="@string/patient_detail_edit"
+                            android:textAllCaps="false"
+                            android:textColor="@color/brand_primary"
+                            android:visibility="gone"
+                            app:backgroundTint="@color/brand_primary_soft"
+                            app:cornerRadius="12dp" />
+                    </LinearLayout>
 
                     <LinearLayout
                         android:layout_width="match_parent"
