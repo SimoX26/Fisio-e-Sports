@@ -763,7 +763,11 @@ document.addEventListener("DOMContentLoaded", () => {
       headerToolbar: { left: "prev,next today timeGridDay,timeGridWeek,dayGridMonth", center: "title", right: "trash newAppointment" },
       titleRangeSeparator: " - ",
       initialView: "timeGridWeek",
-      views: { timeGridWeek: { titleFormat: { day: "numeric", month: "long", year: "numeric" }, editable: true } },
+      views: {
+        timeGridWeek: { titleFormat: { day: "numeric", month: "long", year: "numeric" } },
+        timeGridDay: { editable: false },
+        dayGridMonth: { editable: false }
+      },
       slotDuration: "00:15:00",
       snapDuration: "00:15:00",
       nowIndicator: true,
@@ -771,7 +775,7 @@ document.addEventListener("DOMContentLoaded", () => {
       slotMaxTime: "21:00:00",
       scrollTime: "08:00:00",
       selectable: true,
-      editable: false,
+      editable: true,
       eventDurationEditable: false,
       eventAllow(drop, event) {
         return calendar.view.type === "timeGridWeek" && !drop.allDay
@@ -808,7 +812,8 @@ document.addEventListener("DOMContentLoaded", () => {
           const events = await getJson(`/api/calendar?${query}`);
           if (currentSession !== sessionEpoch) return;
           dataStatus.classList.add("d-none");
-          success(events);
+          success(events.map(event => event.extendedProps.state === "SCHEDULED" && !event.allDay
+            ? event : { ...event, startEditable: false }));
         } catch (error) {
           if (currentSession !== sessionEpoch) return;
           dataStatus.textContent = "Impossibile caricare gli appuntamenti dal backend.";
