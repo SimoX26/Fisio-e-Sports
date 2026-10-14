@@ -92,8 +92,9 @@ centrato; **Cestino** rosso e **+ Nuovo** celeste devono stare a destra nella
 stessa barra. La barra ha un riquadro chiaro e le quattro viste formano un gruppo
 con quella corrente evidenziata, anche dopo un cambio di vista. La vista
 **2 settimane** deve mostrare 14 giorni consecutivi nella stessa griglia oraria;
-le frecce devono avanzare o tornare di due settimane. Su finestre strette la
-griglia può scorrere orizzontalmente dentro il calendario.
+le frecce devono avanzare o tornare di due settimane. Tutti i 14 giorni devono
+entrare nella larghezza della finestra, senza scorrimento orizzontale. Le card
+mostrano l'ora iniziale; il dettaglio conserva l'intervallo completo.
 Verificare anche credenziali errate e Logout: i dati
 precedenti non devono restare visibili dopo l'uscita. Ripetere con un secondo
 terapista per verificare la separazione degli appuntamenti. Nel dettaglio di un

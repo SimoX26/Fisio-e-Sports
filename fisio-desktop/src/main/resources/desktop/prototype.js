@@ -772,6 +772,8 @@ document.addEventListener("DOMContentLoaded", () => {
           dateAlignment: "week",
           dateIncrement: { weeks: 2 },
           buttonText: "2 settimane",
+          dayHeaderFormat: { weekday: "short", day: "numeric", month: "numeric" },
+          displayEventEnd: false,
           titleFormat: { day: "numeric", month: "long", year: "numeric" }
         }
       },

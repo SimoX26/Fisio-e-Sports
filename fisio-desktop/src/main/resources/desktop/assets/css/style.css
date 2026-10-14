@@ -324,6 +324,34 @@ body.calendar-view-two-weeks .fc .fc-scrollgrid-section-header th{
     min-height: 760px;
 }
 
+body.calendar-view-two-weeks #calendar{
+    min-width: 0;
+}
+
+body.calendar-view-two-weeks .calendar-scroll-shell{
+    overflow-x: hidden;
+}
+
+body.calendar-view-two-weeks .fc .fc-col-header-cell-cushion{
+    display: block;
+    padding: 2px 0 0;
+    font-size: .7rem;
+    letter-spacing: 0;
+    white-space: nowrap;
+}
+
+body.calendar-view-two-weeks .calendar-reminder-btn{
+    display: flex;
+    width: 20px;
+    height: 20px;
+    margin: 0 auto 2px;
+}
+
+body.calendar-view-two-weeks .calendar-reminder-btn svg{
+    width: 12px;
+    height: 12px;
+}
+
 .calendar-reminder-btn {
     margin-left: 6px;
     width: 26px;
@@ -614,10 +642,6 @@ body.calendar-view-two-weeks .fc .fc-scrollgrid-section-header th{
         min-width: 0;
     }
 
-    body.calendar-view-two-weeks #calendar{
-        min-width: 1820px;
-    }
-
     .calendar-gcal-page .fc .fc-toolbar{
         flex-wrap: wrap;
         row-gap: .5rem;
@@ -669,6 +693,21 @@ body.calendar-view-two-weeks .fc .fc-scrollgrid-section-header th{
         max-height: 2.6em;
         margin-top: 4px;
         padding-bottom: 2px;
+    }
+
+    body.calendar-view-two-weeks .fc .fc-timegrid-event .fc-event-main{
+        padding: 2px 1px 0;
+    }
+
+    body.calendar-view-two-weeks .fc .fc-timegrid-event .fc-event-time-line{
+        font-size: .66rem;
+    }
+
+    body.calendar-view-two-weeks .fc .fc-timegrid-event .fc-event-title-line{
+        font-size: .73rem;
+        line-height: 1.12;
+        max-height: 2.24em;
+        margin-top: 2px;
     }
 
     body.calendar-week-fill .calendar-scroll-shell{
