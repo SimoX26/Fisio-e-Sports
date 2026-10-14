@@ -537,6 +537,51 @@
                         android:orientation="vertical"
                         android:padding="16dp"
                         android:visibility="gone" />
+
+                    <LinearLayout
+                        android:id="@+id/patientAnamnesisCard"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/surface_card"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/patient_anamnesis_heading"
+                                android:textColor="@color/brand_primary"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/patientAnamnesisEdit"
+                                android:layout_width="wrap_content"
+                                android:layout_height="40dp"
+                                android:text="@string/patient_detail_edit"
+                                android:textAllCaps="false"
+                                android:textColor="@color/brand_primary"
+                                android:visibility="gone"
+                                app:backgroundTint="@color/brand_primary_soft"
+                                app:cornerRadius="12dp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/patientAnamnesisFields"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:orientation="vertical" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <LinearLayout

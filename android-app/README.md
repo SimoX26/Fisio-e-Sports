@@ -2,14 +2,13 @@
 
 Client Android nativo in migrazione. Sono disponibili l'accesso del terapista,
 la home con l'agenda di oggi, il calendario mensile, la rubrica, lo storico
-trattamenti in sola lettura, la scheda
-anagrafica del paziente con modifica di nome, email e telefono, e l'uscita. I dati arrivano dal backend;
+trattamenti in sola lettura, la scheda del paziente con l'ultima anamnesi
+consultabile e modificabile e modifica di nome, email e telefono, e l'uscita. I dati arrivano dal backend;
 la webapp legacy non viene caricata in una WebView. In alto a destra, il pulsante della sezione
 corrente apre un menu sovrapposto con Home, Calendario, Rubrica, Storico, Dati,
 Impostazioni ed Esci; la voce corrente resta selezionata. Le sezioni non ancora
 migrate mostrano una schermata informativa.
-Anamnesi e le altre azioni sugli appuntamenti arriveranno
-nei passi successivi.
+Le altre azioni sugli appuntamenti arriveranno nei passi successivi.
 
 ## Requisiti e configurazione
 
@@ -122,10 +121,22 @@ corrente. Tocca tutta la riga di un paziente: la scheda mostra stato, telefono,
 email, data di creazione e numero di appuntamenti collegati. Verifica che nome
 e dati siano leggibili nelle schede chiare con titoli blu e separatori. Il tasto Indietro
 torna alla Rubrica; aprendo il menu dalla scheda e chiudendolo, la scheda deve
-restare visibile. Con **Modifica**, cambia il telefono di un paziente di test:
+restare visibile. La sezione **Scheda anamnesi** mostra solo i campi valorizzati
+dell'ultima versione tramite il backend; se manca, indica che non è stata
+compilata. Confronta un paziente con anamnesi e uno senza con la scheda desktop.
+Aggiorna la scheda trascinando verso il basso dopo una modifica dal desktop:
+i valori devono essere riletti dal backend. Il pulsante **Modifica** nella
+scheda anamnesi apre il modulo completo e scorrevole, con valori esistenti
+precompilati, selezioni per i campi a scelta e selettore della data. Salva
+una modifica su un paziente di test e verifica che compaia anche sul desktop;
+controlla che i campi non modificati restino compilati. Se la lettura
+dell'anamnesi fallisce, il pulsante non compare. Le schede archiviate non sono
+modificabili. La cancellazione di tutti i campi clinici insieme non è
+consentita in questo modulo.
+Con **Modifica** nella testata del paziente, cambia il telefono di un paziente di test:
 deve aggiornarsi nella scheda Android e nella Rubrica desktop. Prova anche un
 nome vuoto e un'email non valida; il modulo deve restare aperto con un errore.
-Per le schede archiviate il pulsante non compare. Tocca il pulsante della sezione corrente in alto a destra:
+Per le schede archiviate il pulsante di modifica anagrafica non compare. Tocca il pulsante della sezione corrente in alto a destra:
 il menu deve sovrapporsi alla pagina, selezionare la voce attiva e aggiornare
 il pulsante quando cambi sezione. La tendina usa la stessa palette delle
 schede, evidenzia la voce selezionata e mostra **Esci** in rosso. Dati e Impostazioni mostrano per ora

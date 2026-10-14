@@ -97,6 +97,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var patientDetailTitle: TextView
     private lateinit var patientDetailStatus: TextView
     private lateinit var patientDetailFields: LinearLayout
+    private lateinit var patientAnamnesisCard: LinearLayout
+    private lateinit var patientAnamnesisFields: LinearLayout
+    private lateinit var patientAnamnesisEdit: MaterialButton
     private lateinit var patientDetailEdit: MaterialButton
     private lateinit var placeholderPanel: View
     private lateinit var placeholderTitle: TextView
@@ -146,6 +149,9 @@ class MainActivity : AppCompatActivity() {
         patientDetailTitle = findViewById(R.id.patientDetailTitle)
         patientDetailStatus = findViewById(R.id.patientDetailStatus)
         patientDetailFields = findViewById(R.id.patientDetailFields)
+        patientAnamnesisCard = findViewById(R.id.patientAnamnesisCard)
+        patientAnamnesisFields = findViewById(R.id.patientAnamnesisFields)
+        patientAnamnesisEdit = findViewById(R.id.patientAnamnesisEdit)
         patientDetailEdit = findViewById(R.id.patientDetailEdit)
         placeholderPanel = findViewById(R.id.placeholderPanel)
         placeholderTitle = findViewById(R.id.placeholderTitle)
@@ -585,6 +591,9 @@ class MainActivity : AppCompatActivity() {
         patientDetailStatus.setText(R.string.patient_detail_loading)
         patientDetailFields.visibility = View.GONE
         patientDetailFields.removeAllViews()
+        patientAnamnesisCard.visibility = View.GONE
+        patientAnamnesisFields.removeAllViews()
+        patientAnamnesisEdit.visibility = View.GONE
         patientDetailEdit.visibility = View.GONE
         worker.execute {
             var error = R.string.patient_detail_error
@@ -602,6 +611,19 @@ class MainActivity : AppCompatActivity() {
                 if (status == 404) error = R.string.patient_detail_not_found
                 if (status != 200) throw IllegalStateException("HTTP $status")
                 val patient = JSONObject(body)
+                val anamnesis = try {
+                    val (anamnesisStatus, anamnesisBody) = request("GET", "/api/patients/$patientId/anamnesis", "Bearer $activeToken")
+                    if (anamnesisStatus == 401) {
+                        runOnUiThread {
+                            if (token == activeToken) {
+                                confirmLogout()
+                                message.setText(R.string.session_expired)
+                            }
+                        }
+                        return@execute
+                    }
+                    if (anamnesisStatus == 200) JSONObject(anamnesisBody) else null
+                } catch (_: Exception) { null }
                 runOnUiThread {
                     if (token != activeToken || section != Section.PATIENTS || selectedPatientId != patientId) {
                         return@runOnUiThread
@@ -622,9 +644,20 @@ class MainActivity : AppCompatActivity() {
                     addPatientDetailField(R.string.patient_detail_appointments,
                         patient.optInt("linkedAppointmentsCount").toString())
                     patientDetailFields.visibility = View.VISIBLE
+                    if (anamnesis == null) {
+                        patientAnamnesisFields.addView(TextView(this).apply {
+                            setText(R.string.patient_anamnesis_error)
+                            setTextColor(getColor(R.color.brand_danger))
+                        })
+                        patientAnamnesisCard.visibility = View.VISIBLE
+                    } else showPatientAnamnesis(anamnesis)
                     if (patient.optString("state") != "ARCHIVED") {
                         patientDetailEdit.visibility = View.VISIBLE
                         patientDetailEdit.setOnClickListener { openPatientProfileForm(patient) }
+                        if (anamnesis != null) {
+                            patientAnamnesisEdit.visibility = View.VISIBLE
+                            patientAnamnesisEdit.setOnClickListener { openPatientAnamnesisForm(patient, anamnesis) }
+                        }
                     }
                 }
             } catch (_: Exception) {
@@ -765,9 +798,268 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun anamnesisOptions(key: String): List<Pair<String, String>>? = when (key) {
+        "isDisabling", "nightPain", "morningPain", "usesPainMeds", "chewingDisorders" ->
+            listOf("si" to "Sì", "no" to "No")
+        "onsetType" -> listOf("ACUTE" to "Acuto", "SUBACUTE" to "Subacuto", "CHRONIC" to "Cronico")
+        "painFrequency" -> listOf("LOW" to "Bassa", "MEDIUM" to "Media", "HIGH" to "Alta")
+        "painProgression" -> listOf("CONSTANT" to "Costante", "WORSE" to "Peggiorato", "BETTER" to "Migliorato")
+        "painWithMovement", "painWithRest" ->
+            listOf("WORSE" to "Peggiora", "BETTER" to "Migliora", "UNCHANGED" to "Invariato")
+        "painMedsEffect" -> listOf("YES" to "Sì", "NO" to "No", "PARTIAL" to "Poco")
+        "lifestyle" -> listOf("SPORTY" to "Sportivo", "SEDENTARY" to "Sedentario", "MIXED" to "Misto")
+        "dietQuality" -> listOf("HEALTHY" to "Sana", "IMBALANCED" to "Squilibrata", "MIXED" to "Mista")
+        else -> null
+    }
+
+    private fun anamnesisNotes(raw: String): String = try {
+        val notes = JSONObject(raw)
+        if (notes.has("note")) notes.optString("note") else notes.keys().asSequence()
+            .mapNotNull { name -> notes.optString(name).takeIf { it.isNotBlank() }?.let { "$name: $it" } }
+            .joinToString("\n").ifBlank { raw }
+    } catch (_: Exception) { raw }
+
+    private fun openPatientAnamnesisForm(patient: JSONObject, anamnesis: JSONObject) {
+        val activeToken = token ?: return
+        val patientId = patient.optLong("id")
+        if (patientId <= 0 || selectedPatientId != patientId) return
+        val form = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(20), dp(20), dp(20))
+        }
+        form.addView(TextView(this).apply {
+            setText(R.string.anamnesis_edit_title)
+            textSize = 22f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setTextColor(getColor(R.color.text_main))
+        })
+        form.addView(TextView(this).apply {
+            setText(R.string.anamnesis_edit_hint)
+            setTextColor(getColor(R.color.text_muted))
+            setPadding(0, dp(8), 0, dp(16))
+        })
+        val readers = linkedMapOf<String, () -> String>()
+        for ((key, label) in anamnesisFieldLabels()) {
+            val section = when (key) {
+                "chiefComplaint" -> R.string.anamnesis_edit_section_pain
+                "clinicalTests" -> R.string.anamnesis_edit_section_history
+                "heightCm" -> R.string.anamnesis_edit_section_lifestyle
+                "conditionsPathology" -> R.string.anamnesis_edit_section_conditions
+                "freeNotesJson" -> R.string.anamnesis_edit_section_notes
+                else -> null
+            }
+            if (section != null) form.addView(TextView(this).apply {
+                setText(section)
+                textSize = 18f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTextColor(getColor(R.color.brand_primary))
+                setPadding(0, dp(16), 0, dp(12))
+            })
+            val group = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+            group.addView(TextView(this).apply {
+                setText(label)
+                setTextColor(getColor(R.color.text_main))
+                setTypeface(null, android.graphics.Typeface.BOLD)
+            })
+            val raw = anamnesis.optString(key).takeUnless { it == "null" } ?: ""
+            val options = anamnesisOptions(key)
+            val control: View
+            if (key == "assessmentDate") {
+                var selected = raw.ifBlank { calendarKey(Calendar.getInstance()) }
+                val button = MaterialButton(this).apply {
+                    isAllCaps = false
+                    cornerRadius = dp(12)
+                    setTextColor(getColor(R.color.brand_primary))
+                    backgroundTintList = ColorStateList.valueOf(getColor(R.color.brand_primary_soft))
+                    text = "${selected.substring(8, 10)}/${selected.substring(5, 7)}/${selected.substring(0, 4)}"
+                }
+                button.setOnClickListener {
+                    val parts = selected.split('-').map(String::toInt)
+                    val utcDate = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                        clear()
+                        set(parts[0], parts[1] - 1, parts[2])
+                    }
+                    val picker = MaterialDatePicker.Builder.datePicker().setSelection(utcDate.timeInMillis).build()
+                    picker.addOnPositiveButtonClickListener { timestamp ->
+                        val chosen = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = timestamp }
+                        selected = String.format(Locale.ROOT, "%04d-%02d-%02d",
+                            chosen.get(Calendar.YEAR), chosen.get(Calendar.MONTH) + 1, chosen.get(Calendar.DAY_OF_MONTH))
+                        button.text = "${selected.substring(8, 10)}/${selected.substring(5, 7)}/${selected.substring(0, 4)}"
+                    }
+                    picker.show(supportFragmentManager, "anamnesis_date")
+                }
+                readers[key] = { selected }
+                control = button
+            } else if (options != null) {
+                val choices = listOf("" to getString(R.string.anamnesis_edit_none)) + options
+                var selected = if (raw == "true") "si" else if (raw == "false") "no" else raw
+                val button = MaterialButton(this).apply {
+                    isAllCaps = false
+                    cornerRadius = dp(12)
+                    setTextColor(getColor(R.color.brand_primary))
+                    backgroundTintList = ColorStateList.valueOf(getColor(R.color.brand_primary_soft))
+                    text = choices.firstOrNull { it.first.equals(selected, true) }?.second ?: selected
+                }
+                button.setOnClickListener {
+                    MaterialAlertDialogBuilder(this).setTitle(label)
+                        .setItems(choices.map { it.second }.toTypedArray()) { _, index ->
+                            selected = choices[index].first
+                            button.text = choices[index].second
+                        }.show()
+                }
+                readers[key] = { selected }
+                control = button
+            } else {
+                val multiline = key in setOf("chiefComplaint", "associatedSymptoms", "clinicalTests", "specialistVisits",
+                    "previousTreatments", "pathologyHistory", "currentRegularDrugs", "surgeryHistory", "traumaHistory",
+                    "devicesHistory", "majorInfectionsHistory", "familyHistory", "conditionsPathology", "conditionsSymptom",
+                    "conditionsFamilyHistory", "conditionsAllergy", "conditionsDrug", "conditionsSystemReview",
+                    "conditionsOther", "freeNotesJson")
+                val numeric = key in setOf("painIntensity", "sleepQuality", "stressLevel", "heightCm", "weightKg")
+                val input = EditText(this).apply {
+                    inputType = when {
+                        key == "heightCm" || key == "weightKg" -> InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+                        numeric -> InputType.TYPE_CLASS_NUMBER
+                        multiline -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                        else -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                    }
+                    if (multiline) { minLines = 2; maxLines = 4; gravity = Gravity.TOP }
+                    else setSingleLine(true)
+                    val maxLength = when (key) {
+                        "chiefComplaint", "associatedSymptoms" -> 255
+                        "sportPractice" -> 120
+                        "heightCm", "weightKg" -> 6
+                        "painIntensity", "sleepQuality", "stressLevel" -> 2
+                        else -> if (multiline) null else 255
+                    }
+                    if (maxLength != null) filters = arrayOf(InputFilter.LengthFilter(maxLength))
+                    setText(if (key == "freeNotesJson") anamnesisNotes(raw) else raw)
+                    setBackgroundResource(R.drawable.form_field)
+                    setPadding(dp(12), dp(12), dp(12), dp(12))
+                    setTextColor(getColor(R.color.text_main))
+                }
+                readers[key] = { input.text.toString().trim() }
+                control = input
+            }
+            group.addView(control, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                if (control is EditText && control.minLines > 1) LinearLayout.LayoutParams.WRAP_CONTENT else dp(48))
+                .apply { topMargin = dp(6) })
+            form.addView(group, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(14) })
+        }
+        val initialValues = readers.mapValues { it.value() }
+        val error = TextView(this).apply {
+            setTextColor(getColor(R.color.brand_danger))
+            setBackgroundResource(R.drawable.danger_soft)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            visibility = View.GONE
+        }
+        form.addView(error)
+        val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val cancel = MaterialButton(this).apply {
+            setText(R.string.cancel)
+            isAllCaps = false
+            cornerRadius = dp(12)
+            setTextColor(getColor(R.color.brand_primary))
+            backgroundTintList = ColorStateList.valueOf(getColor(R.color.brand_primary_soft))
+        }
+        val save = MaterialButton(this).apply {
+            setText(R.string.calendar_create_save)
+            isAllCaps = false
+            cornerRadius = dp(12)
+            setTextColor(getColor(R.color.surface))
+            backgroundTintList = ColorStateList.valueOf(getColor(R.color.brand_primary))
+        }
+        actions.addView(cancel, LinearLayout.LayoutParams(0, dp(48), 1f).apply { rightMargin = dp(8) })
+        actions.addView(save, LinearLayout.LayoutParams(0, dp(48), 1f))
+        form.addView(actions, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(12) })
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setView(ScrollView(this).apply { setBackgroundResource(R.drawable.dialog_surface); addView(form) })
+            .create()
+        cancel.setOnClickListener { dialog.dismiss() }
+        save.setOnClickListener {
+            val values = readers.mapValues { it.value() }
+            if (values == initialValues) { dialog.dismiss(); return@setOnClickListener }
+            val date = values.getValue("assessmentDate")
+            val validDate = try {
+                SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).apply { isLenient = false }.parse(date) != null
+            } catch (_: Exception) { false }
+            val validNumbers = listOf("painIntensity" to 10, "sleepQuality" to 4, "stressLevel" to 4).all { (key, max) ->
+                values[key].isNullOrBlank() || values[key]?.toIntOrNull() in 0..max
+            } && listOf("heightCm", "weightKg").all { key ->
+                val raw = values[key].orEmpty().replace(',', '.')
+                raw.isBlank() || raw.toBigDecimalOrNull()?.let { it >= java.math.BigDecimal.ZERO &&
+                    it <= java.math.BigDecimal("999.99") && it.scale() <= 2 } == true
+            }
+            val validConditions = values.filterKeys { it.startsWith("conditions") }.values.all { value ->
+                value.split(Regex("[,;\\n]+")).all { it.trim().length <= 120 }
+            }
+            if (!validDate || !validNumbers || !validConditions ||
+                values.filterKeys { it != "assessmentDate" }.values.none { it.isNotBlank() }) {
+                error.setText(R.string.anamnesis_edit_invalid)
+                error.visibility = View.VISIBLE
+                return@setOnClickListener
+            }
+            val payload = linkedMapOf("fullName" to patient.optString("fullName"),
+                "email" to patient.optString("email").takeUnless { it == "null" }.orEmpty(),
+                "phone" to patient.optString("phone").takeUnless { it == "null" }.orEmpty())
+            payload.putAll(values)
+            val body = payload.entries.joinToString("&") { (key, value) ->
+                URLEncoder.encode(key, StandardCharsets.UTF_8.name()) + "=" +
+                    URLEncoder.encode(value, StandardCharsets.UTF_8.name())
+            }
+            if (body.toByteArray(StandardCharsets.UTF_8).size > 65536) {
+                error.setText(R.string.anamnesis_edit_too_large)
+                error.visibility = View.VISIBLE
+                return@setOnClickListener
+            }
+            error.visibility = View.GONE
+            save.isEnabled = false
+            cancel.isEnabled = false
+            dialog.setCancelable(false)
+            worker.execute {
+                val status = try { request("PUT", "/api/patients/$patientId", "Bearer $activeToken", body).first }
+                    catch (_: Exception) { 0 }
+                runOnUiThread {
+                    if (isDestroyed || !dialog.isShowing) return@runOnUiThread
+                    if (status == 204) {
+                        dialog.dismiss()
+                        if (token == activeToken && section == Section.PATIENTS && selectedPatientId == patientId) {
+                            loadPatientDetail(patientId)
+                            Toast.makeText(this, R.string.anamnesis_edit_saved, Toast.LENGTH_SHORT).show()
+                        }
+                    } else if (status == 401) {
+                        dialog.dismiss()
+                        if (token == activeToken) {
+                            confirmLogout()
+                            message.setText(R.string.session_expired)
+                        }
+                    } else {
+                        error.setText(if (status == 400) R.string.anamnesis_edit_invalid else R.string.anamnesis_edit_error)
+                        error.visibility = View.VISIBLE
+                        save.isEnabled = true
+                        cancel.isEnabled = true
+                        dialog.setCancelable(true)
+                    }
+                }
+            }
+        }
+        dialog.show()
+        dialog.window?.apply {
+            setBackgroundDrawableResource(android.R.color.transparent)
+            setLayout(resources.displayMetrics.widthPixels - dp(32), resources.displayMetrics.heightPixels - dp(80))
+            setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        }
+    }
+
     private fun addPatientDetailField(label: Int, value: String) {
+        addPatientDetailField(patientDetailFields, label, value)
+    }
+
+    private fun addPatientDetailField(target: LinearLayout, label: Int, value: String) {
         if (value.isBlank() || value == "null") return
-        if (patientDetailFields.childCount > 0) patientDetailFields.addView(View(this).apply {
+        if (target.childCount > 0) target.addView(View(this).apply {
             setBackgroundColor(getColor(R.color.border))
         }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(1)).apply {
             topMargin = dp(16); bottomMargin = dp(16)
@@ -785,9 +1077,102 @@ class MainActivity : AppCompatActivity() {
             setTextColor(getColor(R.color.text_main))
             setPadding(0, dp(6), 0, 0)
         })
-        patientDetailFields.addView(field, LinearLayout.LayoutParams(
+        target.addView(field, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
         ))
+    }
+
+    private fun anamnesisFieldLabels() = listOf(
+            "assessmentDate" to R.string.anamnesis_assessment_date,
+            "chiefComplaint" to R.string.anamnesis_chief_complaint,
+            "painLocation" to R.string.anamnesis_pain_location,
+            "painQuality" to R.string.anamnesis_pain_quality,
+            "associatedSymptoms" to R.string.anamnesis_associated_symptoms,
+            "onsetType" to R.string.anamnesis_onset_type,
+            "onsetContext" to R.string.anamnesis_onset_context,
+            "isDisabling" to R.string.anamnesis_is_disabling,
+            "painFrequency" to R.string.anamnesis_pain_frequency,
+            "painProgression" to R.string.anamnesis_pain_progression,
+            "painWithMovement" to R.string.anamnesis_pain_with_movement,
+            "painWithRest" to R.string.anamnesis_pain_with_rest,
+            "nightPain" to R.string.anamnesis_night_pain,
+            "morningPain" to R.string.anamnesis_morning_pain,
+            "painIntensity" to R.string.anamnesis_pain_intensity,
+            "usesPainMeds" to R.string.anamnesis_uses_pain_meds,
+            "painMedsEffect" to R.string.anamnesis_pain_meds_effect,
+            "clinicalTests" to R.string.anamnesis_clinical_tests,
+            "specialistVisits" to R.string.anamnesis_specialist_visits,
+            "previousTreatments" to R.string.anamnesis_previous_treatments,
+            "pathologyHistory" to R.string.anamnesis_pathology_history,
+            "currentRegularDrugs" to R.string.anamnesis_current_regular_drugs,
+            "surgeryHistory" to R.string.anamnesis_surgery_history,
+            "traumaHistory" to R.string.anamnesis_trauma_history,
+            "devicesHistory" to R.string.anamnesis_devices_history,
+            "chewingDisorders" to R.string.anamnesis_chewing_disorders,
+            "majorInfectionsHistory" to R.string.anamnesis_major_infections_history,
+            "familyHistory" to R.string.anamnesis_family_history,
+            "heightCm" to R.string.anamnesis_height_cm,
+            "weightKg" to R.string.anamnesis_weight_kg,
+            "lifestyle" to R.string.anamnesis_lifestyle,
+            "sportPractice" to R.string.anamnesis_sport_practice,
+            "substanceUse" to R.string.anamnesis_substance_use,
+            "sleepQuality" to R.string.anamnesis_sleep_quality,
+            "stressLevel" to R.string.anamnesis_stress_level,
+            "dietQuality" to R.string.anamnesis_diet_quality,
+            "femaleCycleNotes" to R.string.anamnesis_female_cycle_notes,
+            "conditionsPathology" to R.string.anamnesis_conditions_pathology,
+            "conditionsSymptom" to R.string.anamnesis_conditions_symptom,
+            "conditionsFamilyHistory" to R.string.anamnesis_conditions_family_history,
+            "conditionsAllergy" to R.string.anamnesis_conditions_allergy,
+            "conditionsDrug" to R.string.anamnesis_conditions_drug,
+            "conditionsSystemReview" to R.string.anamnesis_conditions_system_review,
+            "conditionsOther" to R.string.anamnesis_conditions_other,
+            "freeNotesJson" to R.string.anamnesis_free_notes
+    )
+
+    private fun showPatientAnamnesis(anamnesis: JSONObject) {
+        for ((key, label) in anamnesisFieldLabels()) {
+            val raw = anamnesis.optString(key).takeUnless { it.isBlank() || it == "null" } ?: continue
+            val value = when (key) {
+                "assessmentDate" -> if (raw.matches(Regex("\\d{4}-\\d{2}-\\d{2}")))
+                    "${raw.substring(8, 10)}/${raw.substring(5, 7)}/${raw.substring(0, 4)}" else raw
+                "freeNotesJson" -> try {
+                    val note = JSONObject(raw)
+                    if (note.has("note")) note.optString("note") else note.keys().asSequence()
+                        .mapNotNull { name -> note.optString(name).takeIf { it.isNotBlank() }?.let { "$name: $it" } }
+                        .joinToString("\n").ifBlank { raw }
+                } catch (_: Exception) { raw }
+                else -> when (raw) {
+                    "true", "si", "YES" -> "Sì"
+                    "false", "no", "NO" -> "No"
+                    "ACUTE" -> "Acuto"
+                    "SUBACUTE" -> "Subacuto"
+                    "CHRONIC" -> "Cronico"
+                    "LOW" -> "Bassa"
+                    "MEDIUM" -> "Media"
+                    "HIGH" -> "Alta"
+                    "CONSTANT" -> "Costante"
+                    "WORSE" -> "Peggiora"
+                    "BETTER" -> "Migliora"
+                    "UNCHANGED" -> "Invariato"
+                    "PARTIAL" -> "Poco"
+                    "SPORTY" -> "Sportivo"
+                    "SEDENTARY" -> "Sedentario"
+                    "MIXED" -> if (key == "dietQuality") "Mista" else "Misto"
+                    "HEALTHY" -> "Sana"
+                    "IMBALANCED" -> "Squilibrata"
+                    else -> raw
+                }
+            }
+            addPatientDetailField(patientAnamnesisFields, label, value)
+        }
+        if (patientAnamnesisFields.childCount == 0) {
+            patientAnamnesisFields.addView(TextView(this).apply {
+                setText(R.string.patient_anamnesis_empty)
+                setTextColor(getColor(R.color.text_muted))
+            })
+        }
+        patientAnamnesisCard.visibility = View.VISIBLE
     }
 
     private fun changeCalendarMonth(amount: Int) {
