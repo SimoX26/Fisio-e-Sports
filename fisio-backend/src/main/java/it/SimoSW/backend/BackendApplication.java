@@ -107,11 +107,13 @@ public final class BackendApplication {
         server.createContext("/api/kpi", new KpiApiHandler(authenticator, kpi));
         server.createContext("/api/me", calendarApi);
         server.createContext("/api/auth/remember", new RememberApiHandler(authenticator));
-        server.createContext("/api/waitlist", new WaitlistApiHandler(
-                authenticator, new WaitlistController(new DatabaseWaitlistEntryDAO(), users)));
-        server.createContext("/api/patients", new PatientsApiHandler(authenticator,
-                new AddressBookController(new DatabasePatientDAO(), new DatabasePatientAnamnesisDAO(),
-                        new DatabasePatientConditionDAO(), new DatabaseAppointmentDAO(), users)));
+        WaitlistController waitlist = new WaitlistController(new DatabaseWaitlistEntryDAO(), users);
+        AddressBookController addressBook = new AddressBookController(new DatabasePatientDAO(),
+                new DatabasePatientAnamnesisDAO(), new DatabasePatientConditionDAO(), new DatabaseAppointmentDAO(), users);
+        server.createContext("/api/waitlist", new WaitlistApiHandler(authenticator, waitlist));
+        server.createContext("/api/patients", new PatientsApiHandler(authenticator, addressBook));
+        server.createContext("/api/offline/snapshot", new OfflineSnapshotApiHandler(
+                authenticator, addressBook, calendar, treatments, waitlist));
         KpiSnapshotScheduler kpiScheduler = new KpiSnapshotScheduler(kpi);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             kpiScheduler.stop();

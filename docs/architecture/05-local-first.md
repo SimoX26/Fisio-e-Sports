@@ -68,7 +68,8 @@ genera un token diverso richiede un nuovo download della rubrica.
 Home conserva l'agenda del giorno e, sul desktop, la lista di attesa. Il
 Calendario conserva i periodi già visitati. Dopo l'accesso online entrambi i
 client scaricano anche il mese precedente, quello corrente e il successivo:
-il desktop usa una sola richiesta per l'intervallo, Android tre richieste.
+il desktop usa tre richieste entro il limite di 62 giorni dell'API, Android tre
+richieste.
 La Home del giorno seguente usa gli eventi del calendario salvato, se il
 periodo è coperto; un mese fuori dalla copia non viene presentato come vuoto,
 ma mostra un errore di caricamento.
@@ -80,10 +81,41 @@ Prima di introdurre modifiche offline, la coda dovrà usare una chiave locale
 stabile e distinta dal token: il rinnovo della sessione non deve rendere
 inaccessibile lavoro ancora da inviare.
 
+## Passo 2: esportazione iniziale dal backend
+
+`GET /api/offline/snapshot` richiede la sessione del terapista. Restituisce
+`version: 1`, `generatedAt`, tutti i pazienti assegnati, l'ultima anamnesi e le
+relative condizioni per ciascuno, tutti gli appuntamenti (anche cancellati),
+piani e sedute con i dati clinici completi, e la lista di attesa. Gli ID del
+terapista non sono accettati dal client; i riferimenti verso pazienti e
+appuntamenti fuori dall'account vengono inviati come `null`, conservando le
+sedute e gli appuntamenti appartenenti al terapista. L'esportazione è in sola
+lettura e non modifica il database.
+
+La risposta è ottenuta tramite più letture: `generatedAt` non è ancora un
+cursore né garantisce una fotografia transazionale. I client non la usano
+ancora per una sincronizzazione automatica. Il prossimo passo è salvarla in
+SQLite cifrato, separato per account e backend, prima sul desktop e poi su
+Android; la coda di scrittura richiederà cursore server e idempotenza.
+
+Per il collaudo sul database di test, riavvia il backend aggiornato e verifica
+prima che `GET /api/offline/snapshot` senza credenziali risponda 401. Poi usa
+un account terapista; `curl -u marco` chiede la password senza scriverla nel
+comando. Per controllare soltanto le quantità, senza salvare i dati clinici in
+chiaro su disco:
+
+```sh
+curl -fsS -u marco http://127.0.0.1:8081/api/offline/snapshot \
+  | python3 -c 'import json,sys; d=json.load(sys.stdin); print({k: len(d[k]) for k in ("patients","anamneses","appointments","treatmentPlans","treatmentSessions","waitlist")})'
+```
+
+Confronta in particolare `treatmentSessions` con i dati del DB e prova un
+secondo terapista: le due risposte devono contenere solo le rispettive schede.
+
 ## Passi successivi
 
-1. Fotografia e aggiornamenti incrementali di pazienti, calendario, anamnesi,
-   trattamenti e altri dati ancora necessari; gestione delle eliminazioni.
+1. Persistenza SQLite cifrata e lettura locale della fotografia su desktop e
+   Android; poi aggiornamenti incrementali e gestione delle eliminazioni.
 2. Coda di scrittura con invio automatico e deduplicazione sul backend;
    applicazione della regola «ultima modifica inviata vince» e stato di
    sincronizzazione visibile su entrambi i client.

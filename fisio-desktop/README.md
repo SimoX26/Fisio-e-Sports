@@ -232,7 +232,8 @@ in un file cifrato con una chiave derivata dal token protetto. Con backend spent
 il desktop riapre questa copia per la stessa sessione: ricerca e ordinamento
 funzionano localmente; la scheda mostra solo nome, telefono e data e non è
 modificabile. Home salva l'agenda di oggi e la lista di attesa; Calendario
-salva i periodi visitati e prepara i tre mesi intorno a quello corrente.
+salva i periodi visitati e prepara i tre mesi intorno a quello corrente con
+richieste separate, ciascuna entro il limite di 62 giorni dell'API.
 Senza backend si aprono Home, Calendario e Rubrica in sola lettura. Il filtro
 rubrica per data e le modifiche offline non sono disponibili. Logout elimina
 la copia locale. Per provare: accedi online, apri la Rubrica senza filtri e il

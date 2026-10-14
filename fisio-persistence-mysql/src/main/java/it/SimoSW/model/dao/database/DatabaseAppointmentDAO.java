@@ -245,6 +245,30 @@ public class DatabaseAppointmentDAO implements AppointmentDAO {
     }
 
     @Override
+    public List<CalendarEventView> findAllEventViewsByTherapist(long therapistId) {
+        String sql = """
+            SELECT a.id, a.patient_id, a.therapist_id, a.start_time, a.end_time,
+                   a.all_day, a.title, a.notes, a.state,
+                   p.first_name, p.last_name, p.phone
+            FROM appointments a
+            LEFT JOIN patients p ON p.id = a.patient_id AND p.therapist_id = a.therapist_id
+            WHERE a.therapist_id = ?
+            ORDER BY a.start_time
+        """;
+        List<CalendarEventView> result = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, therapistId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) result.add(mapEventView(rs));
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException("Errore esportazione eventi calendario terapista", e);
+        }
+    }
+
+    @Override
     public List<CalendarEventView> searchEventViewsForTherapist(long therapistId, String query) {
         String sql = """
             SELECT a.id, a.patient_id, a.therapist_id, a.start_time, a.end_time,

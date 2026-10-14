@@ -197,7 +197,7 @@ final class PatientsApiHandler implements HttpHandler {
         return null;
     }
 
-    private static String toJson(List<Patient> patients) {
+    static String toJson(List<Patient> patients) {
         StringBuilder json = new StringBuilder("[");
         for (Patient patient : patients) {
             if (json.length() > 1) json.append(',');
@@ -214,12 +214,13 @@ final class PatientsApiHandler implements HttpHandler {
                     .append(",\"phone\":").append(ApiJson.quote(patient.getPhone()))
                     .append(",\"email\":").append(ApiJson.quote(patient.getEmail()))
                     .append(",\"createdDateLabel\":").append(ApiJson.quote(patient.getCreatedDateLabel()))
+                    .append(",\"createdAt\":").append(ApiJson.quote(patient.getCreatedAt() == null ? null : patient.getCreatedAt().toString()))
                     .append(",\"state\":").append(ApiJson.quote(patient.getState() == null ? null : patient.getState().name()))
                     .append(",\"linkedAppointmentsCount\":").append(patient.getLinkedAppointmentsCount())
                     .append('}').toString();
     }
 
-    private static String anamnesisJson(PatientAnamnesis a, List<PatientCondition> conditions) {
+    static String anamnesisJson(PatientAnamnesis a, List<PatientCondition> conditions) {
         if (a == null) return "{}";
         StringBuilder json = new StringBuilder("{");
         field(json, "assessmentDate", a.getAssessmentDate());

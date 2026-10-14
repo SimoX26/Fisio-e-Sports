@@ -21,6 +21,8 @@ public interface AppointmentDAO {
 
     List<CalendarEventView> findEventViewsByTherapistInPeriod(long therapistId, LocalDateTime start, LocalDateTime end);
 
+    List<CalendarEventView> findAllEventViewsByTherapist(long therapistId);
+
     List<CalendarEventView> searchEventViewsForTherapist(long therapistId, String query);
 
     List<Appointment> findCancelledByTherapist(long therapistId);

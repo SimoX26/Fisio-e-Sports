@@ -115,7 +115,7 @@ final class WaitlistApiHandler implements HttpHandler {
         return fields;
     }
 
-    private static String toJson(List<WaitlistEntry> entries) {
+    static String toJson(List<WaitlistEntry> entries) {
         StringBuilder json = new StringBuilder("[");
         for (WaitlistEntry entry : entries) {
             if (json.length() > 1) {

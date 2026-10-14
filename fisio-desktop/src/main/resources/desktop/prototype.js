@@ -501,20 +501,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function primeCalendarCache() {
     const currentSession = sessionEpoch;
-    const start = new Date();
-    start.setDate(1);
-    start.setMonth(start.getMonth() - 1);
-    start.setHours(0, 0, 0, 0);
-    start.setDate(start.getDate() - 7);
-    const end = new Date(start);
-    end.setMonth(end.getMonth() + 3);
-    end.setDate(end.getDate() + 14);
-    const from = localDateTime(start), to = localDateTime(end);
-    try {
-      const events = await getJson(`/api/calendar?${new URLSearchParams({ start: from, end: to })}`);
-      if (currentSession === sessionEpoch && currentIdentity?.role === "THERAPIST")
-        saveCalendarRange(from, to, events);
-    } catch (_) { /* La schermata mostra l'errore solo se viene aperta. */ }
+    await Promise.all([-1, 0, 1].map(async offset => {
+      const month = new Date();
+      month.setDate(1);
+      month.setMonth(month.getMonth() + offset);
+      month.setHours(0, 0, 0, 0);
+      const start = new Date(month);
+      start.setDate(start.getDate() - 14);
+      const end = new Date(month);
+      end.setMonth(end.getMonth() + 1);
+      end.setDate(end.getDate() + 14);
+      const from = localDateTime(start), to = localDateTime(end);
+      try {
+        const events = await getJson(`/api/calendar?${new URLSearchParams({ start: from, end: to })}`);
+        if (currentSession === sessionEpoch && currentIdentity?.role === "THERAPIST")
+          saveCalendarRange(from, to, events);
+      } catch (_) { /* La schermata mostra l'errore solo se viene aperta. */ }
+    }));
   }
 
   function setOfflineMode(value) {

@@ -270,7 +270,7 @@ final class CalendarApiHandler implements HttpHandler {
         }
     }
 
-    private static String toJson(List<CalendarEventView> events) {
+    static String toJson(List<CalendarEventView> events) {
         StringBuilder json = new StringBuilder("[");
         for (CalendarEventView event : events) {
             if (json.length() > 1) {

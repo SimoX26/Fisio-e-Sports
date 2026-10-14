@@ -71,6 +71,11 @@ public class CalendarController {
         return appointmentDAO.findEventViewsByTherapistInPeriod(therapistId, start, end);
     }
 
+    public List<CalendarEventView> getAllCalendarEventViewsForTherapist(long therapistId) {
+        checkTherapistUserExists(therapistId);
+        return appointmentDAO.findAllEventViewsByTherapist(therapistId);
+    }
+
     public List<CalendarEventView> searchEventViewsForTherapist(long therapistId, String query) {
         checkTherapistUserExists(therapistId);
         if (query == null || query.isBlank() || query.length() > 200) {
