@@ -764,9 +764,7 @@ document.addEventListener("DOMContentLoaded", () => {
       titleRangeSeparator: " - ",
       initialView: "timeGridWeek",
       views: {
-        timeGridWeek: { titleFormat: { day: "numeric", month: "long", year: "numeric" } },
-        timeGridDay: { editable: false },
-        dayGridMonth: { editable: false }
+        timeGridWeek: { titleFormat: { day: "numeric", month: "long", year: "numeric" } }
       },
       slotDuration: "00:15:00",
       snapDuration: "00:15:00",
@@ -776,6 +774,7 @@ document.addEventListener("DOMContentLoaded", () => {
       scrollTime: "08:00:00",
       selectable: true,
       editable: true,
+      dragRevertDuration: 0,
       eventDurationEditable: false,
       eventAllow(drop, event) {
         return calendar.view.type === "timeGridWeek" && !drop.allDay
@@ -864,7 +863,8 @@ document.addEventListener("DOMContentLoaded", () => {
       async eventDrop(info) {
         const currentSession = sessionEpoch;
         const event = info.event;
-        if (!event.start || !event.end || event.allDay || event.extendedProps.state !== "SCHEDULED") {
+        if (info.view.type !== "timeGridWeek" || !event.start || !event.end
+            || event.allDay || event.extendedProps.state !== "SCHEDULED") {
           info.revert();
           return;
         }
@@ -899,8 +899,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       },
       datesSet(info) {
+        const weekView = info.view.type === "timeGridWeek";
+        if (calendar.getOption("editable") !== weekView) calendar.setOption("editable", weekView);
         document.body.classList.toggle("calendar-view-day", info.view.type === "timeGridDay");
-        document.body.classList.toggle("calendar-view-week", info.view.type === "timeGridWeek");
+        document.body.classList.toggle("calendar-view-week", weekView);
         document.body.classList.toggle("calendar-view-month", info.view.type === "dayGridMonth");
       },
       select(info) {

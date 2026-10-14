@@ -113,9 +113,12 @@ l'orario e tra orario e nome. Nella vista settimana,
 trascinare un appuntamento programmato su un altro orario o giorno: deve
 mantenere la durata e aggiornarsi anche nel calendario Android. Provare una
 fascia occupata: la card deve tornare al punto di partenza e comparire un
-errore. Verificare che trascinamento e ridimensionamento non siano disponibili
-nelle viste giorno e mese, né per trattamenti completati o eventi tutto il
-giorno. Le card mostrano il telefono per gli appuntamenti di almeno 90 minuti;
+errore. Nelle viste giorno e mese provare a trascinare una card: deve restare
+ferma, senza lasciare copie grafiche. Tornando alla settimana, il trascinamento
+deve funzionare ancora. Verificare che il ridimensionamento non sia disponibile
+in nessuna vista e che trattamenti completati ed eventi tutto il giorno non si
+possano trascinare. Le card mostrano il telefono per gli appuntamenti di almeno
+90 minuti;
 passando il puntatore si leggono nome, telefono e note completi.
 Provare **Modifica** sullo stesso
 appuntamento: cambiare orario e note, verificare il risultato anche nel legacy
