@@ -43,6 +43,15 @@
     <string name="calendar_trash_restored">Appuntamento ripristinato.</string>
     <string name="calendar_trash_conflict">Ripristino impossibile: fascia occupata o appuntamento non più nel cestino.</string>
     <string name="calendar_trash_restore_error">Ripristino non confermato. Chiudi e riapri il cestino prima di riprovare.</string>
+    <string name="calendar_trash_delete_permanently">Elimina</string>
+    <string name="calendar_trash_delete_title">Elimina definitivamente</string>
+    <string name="calendar_trash_delete_message">Eliminare definitivamente «%1$s»? Non potrai ripristinarlo.</string>
+    <string name="calendar_trash_deleted">Appuntamento eliminato definitivamente.</string>
+    <string name="calendar_trash_empty_all">Svuota</string>
+    <string name="calendar_trash_empty_title">Svuota il cestino</string>
+    <string name="calendar_trash_empty_message">Eliminare definitivamente tutti gli appuntamenti nel cestino? Non potrai ripristinarli.</string>
+    <string name="calendar_trash_emptied">Cestino svuotato.</string>
+    <string name="calendar_trash_delete_error">Esito non confermato. Chiudi e riapri il cestino prima di riprovare.</string>
     <string name="calendar_previous">Mese precedente</string>
     <string name="calendar_next">Mese successivo</string>
     <string name="calendar_loading">Caricamento appuntamenti…</string>

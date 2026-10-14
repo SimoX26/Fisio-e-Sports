@@ -1199,14 +1199,23 @@ class MainActivity : AppCompatActivity() {
         val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.calendar_trash)
             .setView(ScrollView(this).apply { addView(rows) })
+            .setNeutralButton(R.string.calendar_trash_empty_all, null)
             .setPositiveButton(R.string.calendar_detail_close, null)
             .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).apply {
+                isEnabled = false
+                setTextColor(getColor(R.color.brand_danger))
+                setOnClickListener { confirmTrashDeletion(dialog, rows, activeToken, null, null, this) }
+            }
+        }
         dialog.show()
         loadCalendarTrash(dialog, rows, activeToken)
     }
 
     private fun loadCalendarTrash(dialog: AlertDialog, rows: LinearLayout, activeToken: String) {
         rows.removeAllViews()
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL).isEnabled = false
         addAgendaLine(getString(R.string.calendar_trash_loading), target = rows)
         worker.execute {
             val entries = try {
@@ -1218,9 +1227,11 @@ class MainActivity : AppCompatActivity() {
                 if (isDestroyed || !dialog.isShowing || token != activeToken) return@runOnUiThread
                 rows.removeAllViews()
                 if (entries == null) {
+                    dialog.getButton(AlertDialog.BUTTON_NEUTRAL).isEnabled = false
                     addAgendaLine(getString(R.string.calendar_trash_error), R.color.brand_danger, rows)
                     return@runOnUiThread
                 }
+                dialog.getButton(AlertDialog.BUTTON_NEUTRAL).isEnabled = entries.length() > 0
                 if (entries.length() == 0) {
                     addAgendaLine(getString(R.string.calendar_trash_empty), target = rows)
                 }
@@ -1244,35 +1255,55 @@ class MainActivity : AppCompatActivity() {
                         text = getString(R.string.calendar_trash_when, start, end)
                         setTextColor(getColor(R.color.text_muted))
                     })
-                    item.addView(MaterialButton(this).apply {
+                    val restoreButton = MaterialButton(this).apply {
                         setText(R.string.calendar_trash_restore)
                         isAllCaps = false
                         cornerRadius = dp(12)
                         setTextColor(getColor(R.color.brand_primary))
                         backgroundTintList = ColorStateList.valueOf(getColor(R.color.brand_primary_soft))
+                    }
+                    val deleteButton = MaterialButton(this).apply {
+                        setText(R.string.calendar_trash_delete_permanently)
+                        isAllCaps = false
+                        cornerRadius = dp(12)
+                        setTextColor(getColor(R.color.brand_danger))
+                        backgroundTintList = ColorStateList.valueOf(getColor(R.color.brand_danger_soft))
                         setOnClickListener {
-                            isEnabled = false
-                            worker.execute {
-                                val status = try { request("PUT", "/api/calendar/trash/$id", "Bearer $activeToken").first }
-                                    catch (_: Exception) { 0 }
-                                runOnUiThread {
-                                    if (isDestroyed || !dialog.isShowing || token != activeToken) return@runOnUiThread
-                                    if (status == 204) {
-                                        loadCalendarMonth()
-                                        loadCalendarTrash(dialog, rows, activeToken)
-                                        Toast.makeText(this@MainActivity, R.string.calendar_trash_restored, Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        isEnabled = true
-                                        Toast.makeText(this@MainActivity, when (status) {
-                                            404 -> R.string.calendar_edit_not_found
-                                            409 -> R.string.calendar_trash_conflict
-                                            else -> R.string.calendar_trash_restore_error
-                                        }, Toast.LENGTH_LONG).show()
-                                    }
+                            confirmTrashDeletion(dialog, rows, activeToken, id, name, this, restoreButton)
+                        }
+                    }
+                    restoreButton.setOnClickListener {
+                        restoreButton.isEnabled = false
+                        deleteButton.isEnabled = false
+                        worker.execute {
+                            val status = try { request("PUT", "/api/calendar/trash/$id", "Bearer $activeToken").first }
+                                catch (_: Exception) { 0 }
+                            runOnUiThread ui@ {
+                                if (isDestroyed || !dialog.isShowing || token != activeToken) return@ui
+                                if (status == 204) {
+                                    loadCalendarMonth()
+                                    loadCalendarTrash(dialog, rows, activeToken)
+                                    Toast.makeText(this@MainActivity, R.string.calendar_trash_restored, Toast.LENGTH_SHORT).show()
+                                } else {
+                                    restoreButton.isEnabled = true
+                                    deleteButton.isEnabled = true
+                                    Toast.makeText(this@MainActivity, when (status) {
+                                        404 -> R.string.calendar_edit_not_found
+                                        409 -> R.string.calendar_trash_conflict
+                                        else -> R.string.calendar_trash_restore_error
+                                    }, Toast.LENGTH_LONG).show()
                                 }
                             }
                         }
-                    }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply {
+                    }
+                    val actions = LinearLayout(this).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        addView(restoreButton, LinearLayout.LayoutParams(0, dp(48), 1f))
+                        addView(deleteButton, LinearLayout.LayoutParams(0, dp(48), 1f).apply {
+                            marginStart = dp(8)
+                        })
+                    }
+                    item.addView(actions, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply {
                         topMargin = dp(8)
                     })
                     rows.addView(item, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
@@ -1280,6 +1311,44 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun confirmTrashDeletion(dialog: AlertDialog, rows: LinearLayout, activeToken: String,
+        id: Long?, name: String?, button: Button, otherButton: Button? = null) {
+        AlertDialog.Builder(this)
+            .setTitle(if (id == null) R.string.calendar_trash_empty_title else R.string.calendar_trash_delete_title)
+            .setMessage(if (id == null) getString(R.string.calendar_trash_empty_message)
+                else getString(R.string.calendar_trash_delete_message, name))
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(if (id == null) R.string.calendar_trash_empty_all
+                else R.string.calendar_trash_delete_permanently) { _, _ ->
+                button.isEnabled = false
+                otherButton?.isEnabled = false
+                worker.execute {
+                    val path = if (id == null) "/api/calendar/trash" else "/api/calendar/trash/$id"
+                    val status = try { request("DELETE", path, "Bearer $activeToken").first }
+                        catch (_: Exception) { 0 }
+                    runOnUiThread {
+                        if (isDestroyed || !dialog.isShowing || token != activeToken) return@runOnUiThread
+                        if (status == (if (id == null) 200 else 204)) {
+                            loadCalendarTrash(dialog, rows, activeToken)
+                            Toast.makeText(this@MainActivity, if (id == null) R.string.calendar_trash_emptied
+                                else R.string.calendar_trash_deleted, Toast.LENGTH_SHORT).show()
+                        } else {
+                            button.isEnabled = true
+                            otherButton?.isEnabled = true
+                            Toast.makeText(this@MainActivity, if (status == 404) R.string.calendar_edit_not_found
+                                else R.string.calendar_trash_delete_error, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+            .create().apply {
+                setOnShowListener {
+                    getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getColor(R.color.brand_danger))
+                }
+                show()
+            }
     }
 
     private fun loadTodayAgenda() {

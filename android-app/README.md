@@ -75,8 +75,11 @@ aggiornato nella Rubrica Android e desktop.
 per un trattamento completato. Prova con un appuntamento di test: deve sparire
 dal calendario Android. Apri **Cestino** e usa **Ripristina**: l'appuntamento
 deve tornare nel calendario Android e sul desktop. Prova anche un ripristino
-con fascia oraria occupata: l'appuntamento deve restare nel cestino.
-L'eliminazione definitiva e lo svuotamento sono disponibili solo sul desktop.
+con fascia oraria occupata: l'appuntamento deve restare nel cestino. Nel
+cestino, **Elimina** cancella definitivamente una singola voce e **Svuota**
+cancella tutte le voci dopo una conferma. Provali solo con appuntamenti di
+test: verifica che le voci spariscano dal cestino Android e desktop e che
+**Svuota** sia disabilitato quando il cestino è vuoto.
 **+ Nuovo** apre il modulo per creare
 appuntamenti con paziente o eventi generici, anche tutto il giorno. Prova un
 appuntamento di test con orari a scatti di 15 minuti e verifica che appaia
