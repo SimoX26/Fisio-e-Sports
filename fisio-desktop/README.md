@@ -103,9 +103,11 @@ precedenti non devono restare visibili dopo l'uscita. Ripetere con un secondo
 terapista per verificare la separazione degli appuntamenti. Nel dettaglio di un
 appuntamento controllare data, orario, telefono, note e pulsanti visibili secondo lo stato;
 la finestra deve restare compatta anche su uno schermo ampio;
-accanto a ogni giorno delle viste settimana e 2 settimane, la campanella deve aprire
-l'anteprima dei promemoria con quel giorno già selezionato, anche dopo aver
-cambiato settimana. Verificare che non compaia nelle viste giorno e mese;
+accanto ai giorni con appuntamenti delle viste settimana e 2 settimane, la
+campanella deve aprire l'anteprima dei promemoria con quel giorno già
+selezionato, anche dopo aver cambiato settimana. Nella settimana singola i
+giorni vuoti conservano la stessa larghezza degli altri. Verificare che la
+campanella non compaia nei giorni vuoti né nelle viste giorno e mese;
 **Dettagli paziente** deve aprire la scheda nella rubrica. Provare anche un evento
 generico e uno tutto il giorno. **+ Nuovo** apre il modulo legacy: verificare i
 suggerimenti dei pazienti, la creazione di un paziente nuovo con telefono, un

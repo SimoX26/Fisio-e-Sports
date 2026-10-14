@@ -349,7 +349,8 @@ body.calendar-view-two-weeks .fc .calendar-two-weeks-empty .fc-col-header-cell-c
     font-size: .7rem;
 }
 
-body.calendar-view-two-weeks .fc .calendar-two-weeks-empty .calendar-reminder-btn{
+body.calendar-view-week .fc .calendar-empty-day .calendar-reminder-btn,
+body.calendar-view-two-weeks .fc .calendar-empty-day .calendar-reminder-btn{
     display: none;
 }
 
