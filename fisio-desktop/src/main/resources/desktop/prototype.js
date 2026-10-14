@@ -782,6 +782,25 @@ document.addEventListener("DOMContentLoaded", () => {
       eventTimeFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
       slotLabelFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
       slotLabelInterval: "01:00",
+      dayHeaderDidMount(info) {
+        if (info.view.type !== "timeGridWeek") return;
+        const anchor = info.el.querySelector(".fc-col-header-cell-cushion");
+        if (!anchor) return;
+        const date = appointmentDate(info.date);
+        const label = info.date.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "calendar-reminder-btn";
+        button.title = `Promemoria di ${label}`;
+        button.setAttribute("aria-label", `Apri promemoria di ${label}`);
+        button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3a5 5 0 0 0-5 5v2.8l-1.7 2.8a1 1 0 0 0 .85 1.5h11.7a1 1 0 0 0 .85-1.5L17 10.8V8a5 5 0 0 0-5-5Zm0 18a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 21Z"></path></svg>';
+        button.addEventListener("click", event => {
+          event.preventDefault();
+          event.stopPropagation();
+          openReminderPreview(date);
+        });
+        anchor.after(button);
+      },
       async events(range, success, failure) {
         const currentSession = sessionEpoch;
         try {

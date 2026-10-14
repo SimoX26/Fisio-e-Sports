@@ -350,6 +350,11 @@ body.calendar-view-week .fc .fc-scrollgrid-section-header th{
     background: rgba(13, 110, 253, .08);
 }
 
+.calendar-reminder-btn:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+}
+
 .reminder-preview-list {
     max-height: 320px;
     overflow-y: auto;
