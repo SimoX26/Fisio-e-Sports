@@ -43,7 +43,7 @@ import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
     private data class AgendaRow(val time: String, val title: String, val kind: String, val state: String)
-    private data class CalendarEntry(val start: String, val end: String, val allDay: Boolean,
+    private data class CalendarEntry(val id: Long, val start: String, val end: String, val allDay: Boolean,
         val title: String, val kind: String, val state: String, val patientId: Long?,
         val phone: String, val notes: String)
     private data class PatientRow(val id: Long, val name: String, val phone: String, val created: String)
@@ -164,7 +164,8 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.calendarPrevious).setOnClickListener { changeCalendarMonth(-1) }
         findViewById<View>(R.id.calendarNext).setOnClickListener { changeCalendarMonth(1) }
-        findViewById<View>(R.id.calendarCreate).setOnClickListener { openCreateAppointment() }
+        findViewById<View>(R.id.calendarCreate).setOnClickListener { openAppointmentForm() }
+        findViewById<View>(R.id.calendarTrash).setOnClickListener { openCalendarTrash() }
         findViewById<Button>(R.id.patientDetailBack).setOnClickListener { showSection(Section.PATIENTS) }
         patientsSearch.setOnEditorActionListener { _, _, _ ->
             patientsSearch.clearFocus()
@@ -513,21 +514,27 @@ class MainActivity : AppCompatActivity() {
 
     private fun addPatientDetailField(label: Int, value: String) {
         if (value.isBlank() || value == "null") return
+        if (patientDetailFields.childCount > 0) patientDetailFields.addView(View(this).apply {
+            setBackgroundColor(getColor(R.color.border))
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(1)).apply {
+            topMargin = dp(16); bottomMargin = dp(16)
+        })
         val field = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         field.addView(TextView(this).apply {
             setText(label)
-            textSize = 13f
+            textSize = 12f
+            setTypeface(null, android.graphics.Typeface.BOLD)
             setTextColor(getColor(R.color.text_muted))
         })
         field.addView(TextView(this).apply {
             text = value
-            textSize = 17f
+            textSize = 16f
             setTextColor(getColor(R.color.text_main))
-            setPadding(0, dp(4), 0, 0)
+            setPadding(0, dp(6), 0, 0)
         })
         patientDetailFields.addView(field, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { bottomMargin = dp(16) })
+        ))
     }
 
     private fun changeCalendarMonth(amount: Int) {
@@ -546,17 +553,22 @@ class MainActivity : AppCompatActivity() {
         return calendarEntries.filter { it.start < end && it.end > start }
     }
 
-    private fun openCreateAppointment() {
+    private fun openAppointmentForm(editing: CalendarEntry? = null) {
         val activeToken = token ?: return
         val date = selectedCalendarDay.clone() as Calendar
-        var startMinutes = 9 * 60
-        var endMinutes = 10 * 60
+        if (editing != null) {
+            date.time = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).parse(editing.start.take(10)) ?: return
+        }
+        fun minutes(value: String) = value.substring(11, 13).toInt() * 60 + value.substring(14, 16).toInt()
+        var startMinutes = if (editing == null) 9 * 60 else minutes(editing.start)
+        var endMinutes = if (editing == null) 10 * 60 else minutes(editing.end)
+        var endNextDay = editing != null && editing.end.take(10) > editing.start.take(10)
         val form = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(20), dp(20), dp(20))
         }
         form.addView(TextView(this).apply {
-            setText(R.string.calendar_create_title)
+            setText(if (editing == null) R.string.calendar_create_title else R.string.calendar_edit_title)
             textSize = 22f
             setTypeface(null, android.graphics.Typeface.BOLD)
             setTextColor(getColor(R.color.text_main))
@@ -623,7 +635,7 @@ class MainActivity : AppCompatActivity() {
         fun refreshChoices() {
             dateButton.text = SimpleDateFormat("dd/MM/yyyy", Locale.ITALIAN).format(date.time)
             startButton.text = timeLabel(startMinutes)
-            endButton.text = timeLabel(endMinutes)
+            endButton.text = timeLabel(endMinutes) + if (endNextDay) getString(R.string.calendar_next_day) else ""
         }
         refreshChoices()
         addField(R.string.calendar_create_date, dateButton)
@@ -642,12 +654,15 @@ class MainActivity : AppCompatActivity() {
         startButton.setOnClickListener {
             TimePickerDialog(this, { _, hour, minute ->
                 startMinutes = hour * 60 + minute
+                endMinutes = (startMinutes + 60) % (24 * 60)
+                endNextDay = startMinutes + 60 >= 24 * 60
                 refreshChoices()
             }, startMinutes / 60, startMinutes % 60, true).show()
         }
         endButton.setOnClickListener {
             TimePickerDialog(this, { _, hour, minute ->
                 endMinutes = hour * 60 + minute
+                endNextDay = endMinutes <= startMinutes
                 refreshChoices()
             }, endMinutes / 60, endMinutes % 60, true).show()
         }
@@ -662,6 +677,13 @@ class MainActivity : AppCompatActivity() {
             setHintTextColor(getColor(R.color.text_muted))
         }
         addField(R.string.calendar_create_notes, notes).getChildAt(1).layoutParams.height = dp(80)
+        if (editing != null) {
+            name.setText(editing.title)
+            phone.setText(editing.phone.takeUnless { it == "null" } ?: "")
+            notes.setText(editing.notes.takeUnless { it == "null" } ?: "")
+            generic.isChecked = editing.patientId == null
+            allDay.isChecked = editing.allDay
+        }
         val error = TextView(this).apply {
             setTextColor(getColor(R.color.brand_danger))
             setBackgroundResource(R.drawable.danger_soft)
@@ -707,7 +729,7 @@ class MainActivity : AppCompatActivity() {
                 val selectedNotes = notes.text.toString().trim()
                 val selectedAllDay = allDay.isChecked
                 val selectedGeneric = generic.isChecked
-                val validTime = selectedAllDay || (startMinutes < endMinutes &&
+                val validTime = selectedAllDay || ((endNextDay || startMinutes < endMinutes) &&
                     startMinutes % 15 == 0 && endMinutes % 15 == 0)
                 if (patientName.isEmpty() || !validTime) {
                     error.setText(R.string.calendar_create_invalid)
@@ -719,7 +741,7 @@ class MainActivity : AppCompatActivity() {
                 val start = if (selectedAllDay) "${dateKey}T00:00:00" else "${dateKey}T${timeLabel(startMinutes)}:00"
                 val nextDay = (submittedDate.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, 1) }
                 val end = if (selectedAllDay) "${calendarKey(nextDay)}T00:00:00"
-                    else "${dateKey}T${timeLabel(endMinutes)}:00"
+                    else "${if (endNextDay) calendarKey(nextDay) else dateKey}T${timeLabel(endMinutes)}:00"
                 val fields = mapOf("patientName" to patientName, "patientPhone" to selectedPhone,
                     "start" to start, "end" to end, "allDay" to selectedAllDay.toString(),
                     "nonTreatmentEvent" to selectedGeneric.toString(), "notes" to selectedNotes)
@@ -732,22 +754,28 @@ class MainActivity : AppCompatActivity() {
                 cancelButton.isEnabled = false
                 dialog.setCancelable(false)
                 worker.execute {
-                    val status = try { request("POST", "/api/calendar", "Bearer $activeToken", body).first }
+                    val status = try {
+                        request(if (editing == null) "POST" else "PUT",
+                            if (editing == null) "/api/calendar" else "/api/calendar/${editing.id}",
+                            "Bearer $activeToken", body).first
+                    }
                         catch (_: Exception) { 0 }
                     runOnUiThread {
                         if (isDestroyed || !dialog.isShowing) return@runOnUiThread
-                        if (status == 201) {
+                        if (status == if (editing == null) 201 else 204) {
                             dialog.dismiss()
                             if (token == activeToken && section == Section.CALENDAR) {
                                 selectedCalendarDay.timeInMillis = submittedDate.timeInMillis
                                 displayedMonth.timeInMillis = submittedDate.timeInMillis
                                 displayedMonth.set(Calendar.DAY_OF_MONTH, 1)
                                 loadCalendarMonth()
-                                Toast.makeText(this, R.string.calendar_create_saved, Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this, if (editing == null) R.string.calendar_create_saved
+                                    else R.string.calendar_edit_saved, Toast.LENGTH_SHORT).show()
                             }
                         } else {
                             error.setText(when (status) {
-                                409 -> R.string.calendar_create_conflict
+                                409 -> if (editing == null) R.string.calendar_create_conflict else R.string.calendar_edit_conflict
+                                404 -> R.string.calendar_edit_not_found
                                 400 -> if (selectedAllDay && !selectedGeneric)
                                     R.string.calendar_create_all_day_patient else R.string.calendar_create_invalid
                                 else -> R.string.calendar_create_error
@@ -787,7 +815,7 @@ class MainActivity : AppCompatActivity() {
                 val entries = (0 until events.length()).map { index ->
                     val event = events.getJSONObject(index)
                     val props = event.getJSONObject("extendedProps")
-                    CalendarEntry(event.getString("start"), event.getString("end"), event.optBoolean("allDay"),
+                    CalendarEntry(event.getLong("id"), event.getString("start"), event.getString("end"), event.optBoolean("allDay"),
                         event.optString("title"),
                         if (props.optBoolean("nonTreatmentEvent")) getString(R.string.event) else getString(R.string.patient),
                         props.optString("state"),
@@ -950,17 +978,174 @@ class MainActivity : AppCompatActivity() {
         addField(R.string.calendar_detail_state, stateLabel)
         addField(R.string.calendar_detail_phone, entry.phone)
         addField(R.string.calendar_detail_notes, entry.notes.ifBlank { getString(R.string.calendar_detail_no_notes) })
-        val dialog = AlertDialog.Builder(this)
+        val nextDate = Calendar.getInstance().apply { time = startDate; add(Calendar.DAY_OF_MONTH, 1) }
+        val supportedRange = if (entry.allDay) dateLabel.format(nextDate.time) == endLabel
+            else startLabel == endLabel
+        val editButton = if (entry.state == "SCHEDULED" && supportedRange) MaterialButton(this).apply {
+            setText(R.string.calendar_edit)
+            isAllCaps = false
+            cornerRadius = dp(12)
+            setTextColor(getColor(R.color.brand_primary))
+            backgroundTintList = ColorStateList.valueOf(getColor(R.color.brand_primary_soft))
+            details.addView(this, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply { bottomMargin = dp(12) })
+        } else null
+        val canCancel = entry.state != "CANCELLED" &&
+            (entry.state != "COMPLETED" || entry.patientId == null)
+        val cancelButton = if (canCancel) MaterialButton(this).apply {
+            setText(R.string.calendar_delete)
+            isAllCaps = false
+            cornerRadius = dp(12)
+            setTextColor(getColor(R.color.brand_danger))
+            backgroundTintList = ColorStateList.valueOf(getColor(R.color.brand_danger_soft))
+            details.addView(this, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply { bottomMargin = dp(12) })
+        } else null
+        val builder = AlertDialog.Builder(this)
             .setTitle(entry.title.ifBlank { entry.kind })
             .setView(ScrollView(this).apply { addView(details) })
             .setPositiveButton(R.string.calendar_detail_close, null)
         entry.patientId?.let { patientId ->
-            dialog.setNeutralButton(R.string.calendar_detail_patient) { _, _ ->
+            builder.setNeutralButton(R.string.calendar_detail_patient) { _, _ ->
                 showSection(Section.PATIENTS)
                 openPatientDetail(PatientRow(patientId, entry.title, entry.phone, ""))
             }
         }
+        val dialog = builder.create()
+        editButton?.setOnClickListener {
+            dialog.dismiss()
+            openAppointmentForm(entry)
+        }
+        cancelButton?.setOnClickListener {
+            dialog.dismiss()
+            confirmCancelAppointment(entry)
+        }
         dialog.show()
+    }
+
+    private fun confirmCancelAppointment(entry: CalendarEntry) {
+        val activeToken = token ?: return
+        AlertDialog.Builder(this)
+            .setTitle(R.string.calendar_delete_title)
+            .setMessage(getString(R.string.calendar_delete_message, entry.title))
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.calendar_delete) { _, _ ->
+                worker.execute {
+                    val status = try { request("DELETE", "/api/calendar/${entry.id}", "Bearer $activeToken").first }
+                        catch (_: Exception) { 0 }
+                    runOnUiThread {
+                        if (isDestroyed || token != activeToken || section != Section.CALENDAR) return@runOnUiThread
+                        if (status == 204) {
+                            loadCalendarMonth()
+                            Toast.makeText(this, R.string.calendar_delete_saved, Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this, when (status) {
+                                404 -> R.string.calendar_edit_not_found
+                                409 -> R.string.calendar_delete_conflict
+                                else -> R.string.calendar_delete_error
+                            }, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+            .create().apply {
+                setOnShowListener {
+                    getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getColor(R.color.brand_danger))
+                }
+                show()
+            }
+    }
+
+    private fun openCalendarTrash() {
+        val activeToken = token ?: return
+        val rows = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(8), dp(20), dp(8))
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.calendar_trash)
+            .setView(ScrollView(this).apply { addView(rows) })
+            .setPositiveButton(R.string.calendar_detail_close, null)
+            .create()
+        dialog.show()
+        loadCalendarTrash(dialog, rows, activeToken)
+    }
+
+    private fun loadCalendarTrash(dialog: AlertDialog, rows: LinearLayout, activeToken: String) {
+        rows.removeAllViews()
+        addAgendaLine(getString(R.string.calendar_trash_loading), target = rows)
+        worker.execute {
+            val entries = try {
+                val (status, body) = request("GET", "/api/calendar/trash", "Bearer $activeToken")
+                if (status != 200) error("trash unavailable")
+                JSONArray(body)
+            } catch (_: Exception) { null }
+            runOnUiThread {
+                if (isDestroyed || !dialog.isShowing || token != activeToken) return@runOnUiThread
+                rows.removeAllViews()
+                if (entries == null) {
+                    addAgendaLine(getString(R.string.calendar_trash_error), R.color.brand_danger, rows)
+                    return@runOnUiThread
+                }
+                if (entries.length() == 0) {
+                    addAgendaLine(getString(R.string.calendar_trash_empty), target = rows)
+                }
+                for (index in 0 until entries.length()) {
+                    val entry = entries.getJSONObject(index)
+                    val id = entry.getLong("id")
+                    val name = entry.optString("patientFullName")
+                    val start = entry.optString("startLabel")
+                    val end = entry.optString("endLabel")
+                    val item = LinearLayout(this).apply {
+                        orientation = LinearLayout.VERTICAL
+                        setPadding(dp(12), dp(12), dp(12), dp(12))
+                        setBackgroundResource(R.drawable.surface_card)
+                    }
+                    item.addView(TextView(this).apply {
+                        text = name
+                        textSize = 16f
+                        setTextColor(getColor(R.color.text_main))
+                    })
+                    item.addView(TextView(this).apply {
+                        text = getString(R.string.calendar_trash_when, start, end)
+                        setTextColor(getColor(R.color.text_muted))
+                    })
+                    item.addView(MaterialButton(this).apply {
+                        setText(R.string.calendar_trash_restore)
+                        isAllCaps = false
+                        cornerRadius = dp(12)
+                        setTextColor(getColor(R.color.brand_primary))
+                        backgroundTintList = ColorStateList.valueOf(getColor(R.color.brand_primary_soft))
+                        setOnClickListener {
+                            isEnabled = false
+                            worker.execute {
+                                val status = try { request("PUT", "/api/calendar/trash/$id", "Bearer $activeToken").first }
+                                    catch (_: Exception) { 0 }
+                                runOnUiThread {
+                                    if (isDestroyed || !dialog.isShowing || token != activeToken) return@runOnUiThread
+                                    if (status == 204) {
+                                        loadCalendarMonth()
+                                        loadCalendarTrash(dialog, rows, activeToken)
+                                        Toast.makeText(this@MainActivity, R.string.calendar_trash_restored, Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        isEnabled = true
+                                        Toast.makeText(this@MainActivity, when (status) {
+                                            404 -> R.string.calendar_edit_not_found
+                                            409 -> R.string.calendar_trash_conflict
+                                            else -> R.string.calendar_trash_restore_error
+                                        }, Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            }
+                        }
+                    }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply {
+                        topMargin = dp(8)
+                    })
+                    rows.addView(item, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(10) })
+                }
+            }
+        }
     }
 
     private fun loadTodayAgenda() {

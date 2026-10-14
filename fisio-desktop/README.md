@@ -101,7 +101,9 @@ suggerimenti dei pazienti, la creazione di un paziente nuovo con telefono, un
 evento generico e uno tutto il giorno con paziente già presente. Provare una
 fascia occupata: il modulo deve restare aperto e mostrare l'errore. Controllare
 che l'appuntamento salvato compaia anche nella webapp legacy dello stesso
-terapista e non nel calendario di un altro. Provare **Modifica** sullo stesso
+terapista e non nel calendario di un altro. Nelle viste giorno e settimana,
+verificare che le righe orarie siano compatte e che orario e nome restino
+leggibili anche negli appuntamenti di 15 minuti. Provare **Modifica** sullo stesso
 appuntamento: cambiare orario e note, verificare il risultato anche nel legacy
 e provare una fascia occupata. Provare **Elimina** su un appuntamento di test:
 la conferma deve precedere la cancellazione e l'evento deve sparire dal

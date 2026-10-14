@@ -7,7 +7,7 @@ la webapp legacy non viene caricata in una WebView. In alto a destra, il pulsant
 corrente apre un menu sovrapposto con Home, Calendario, Rubrica, Storico, Dati,
 Impostazioni ed Esci; la voce corrente resta selezionata. Le sezioni non ancora
 migrate mostrano una schermata informativa.
-Anamnesi, modifica paziente e modifica degli appuntamenti arriveranno
+Anamnesi, modifica paziente e le altre azioni sugli appuntamenti arriveranno
 nei passi successivi.
 
 ## Requisiti e configurazione
@@ -64,13 +64,27 @@ attuale. Trascina verso il basso per aggiornare il mese. Confronta un giorno
 con più appuntamenti, uno vuoto e un evento a cavallo di due giorni con il
 desktop. Tocca la scheda di un appuntamento: si aprono orario, tipo, stato,
 telefono e note; se è collegato a un paziente, **Dettagli paziente** apre la
-sua scheda. Verifica anche un evento generico senza paziente. La vista e i
-dettagli sono per ora in sola lettura. **+ Nuovo** apre il modulo per creare
+sua scheda. Verifica anche un evento generico senza paziente. Nei dettagli,
+**Modifica** apre lo stesso modulo con i dati precompilati per gli eventi
+programmati di un solo giorno; per gli appuntamenti completati il pulsante
+non compare. Cambia l'ora di inizio di un appuntamento di test: la fine deve
+spostarsi automaticamente un'ora dopo, anche se cade nel giorno successivo.
+Modifica il telefono e salva: verifica il nuovo orario sul desktop e il numero
+aggiornato nella Rubrica Android e desktop.
+**Elimina** chiede conferma e sposta l'appuntamento nel cestino; non compare
+per un trattamento completato. Prova con un appuntamento di test: deve sparire
+dal calendario Android. Apri **Cestino** e usa **Ripristina**: l'appuntamento
+deve tornare nel calendario Android e sul desktop. Prova anche un ripristino
+con fascia oraria occupata: l'appuntamento deve restare nel cestino.
+L'eliminazione definitiva e lo svuotamento sono disponibili solo sul desktop.
+**+ Nuovo** apre il modulo per creare
 appuntamenti con paziente o eventi generici, anche tutto il giorno. Prova un
 appuntamento di test con orari a scatti di 15 minuti e verifica che appaia
 nel giorno scelto e sul desktop; verifica anche un orario occupato e gli
 orari non validi. Gli eventi tutto il giorno con paziente richiedono un
 paziente già presente, come nel desktop.
+Gli eventi importati che attraversano più giorni restano per ora in sola
+lettura nel client Android.
 Il modulo usa una scheda chiara con campi arrotondati e azioni blu: prova a
 scorrerlo fino a **Salva** con la tastiera aperta, e verifica che gli errori
 restino leggibili senza chiudere il modulo.
@@ -88,7 +102,8 @@ all'elenco completo. La barra riprende il campo arrotondato del desktop, con
 testo di ricerca leggibile e lente a destra. Dalla
 cima della schermata trascina verso il basso per ricaricare la ricerca
 corrente. Tocca tutta la riga di un paziente: la scheda mostra stato, telefono,
-email, data di creazione e numero di appuntamenti collegati. Il tasto Indietro
+email, data di creazione e numero di appuntamenti collegati. Verifica che nome
+e dati siano leggibili nelle schede chiare con titoli blu e separatori. Il tasto Indietro
 torna alla Rubrica; aprendo il menu dalla scheda e chiudendolo, la scheda deve
 restare visibile. Tocca il pulsante della sezione corrente in alto a destra:
 il menu deve sovrapporsi alla pagina, selezionare la voce attiva e aggiornare

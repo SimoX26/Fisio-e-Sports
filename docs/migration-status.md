@@ -1,6 +1,6 @@
 # Stato della migrazione
 
-Aggiornato: 12 ottobre 2026. Questo registro descrive il codice del repository;
+Aggiornato: 14 ottobre 2026. Questo registro descrive il codice del repository;
 non attesta un deploy in produzione.
 
 | Passo | Stato | Verifica o lavoro rimasto |
@@ -12,7 +12,7 @@ non attesta un deploy in produzione.
 | API backend | Identità e funzioni autenticate del terapista; richiesta pubblica di accesso collegata al caso d'uso legacy; calendario, cestino, promemoria, WhatsApp, trattamenti, lista d'attesa, pazienti e KPI | Collaudare richiesta di accesso e gateway systemd sul DB di test; HTTPS prima del collegamento da altri PC |
 | Client desktop | Si apre sul login anche senza backend; richiesta di accesso collegata al backend; accesso automatico con archivio protetto separato per URL backend; home con lista d'attesa trasformabile in appuntamento, tre contatori, azioni rapide, filtro Pazienti oggi e stati agenda; ricerca nella rubrica, calendario, promemoria, Impostazioni WhatsApp, storico trattamenti, scheda paziente e Dati e Statistiche con filtri, grafico e tabella. URL backend configurabile tramite `FISIO_BACKEND_URL`; barra di ricerca globale rimossa su richiesta | Verificare registrazione e statistiche con dati reali, home, rubrica e isolamento fra terapisti; proxy HTTPS remoto e relativo collaudo restano da fare |
 | Amministrazione desktop | Accesso ADMIN, home con numero di richieste pendenti, lista e storico recente, approvazione/rifiuto tramite backend; token revocabile al Logout | Collaudo manuale con richiesta di prova e account ADMIN; confronto con la legacy |
-| Client Android autonomo | Login terapista con sessione cifrata e ripristino all'avvio, home con agenda odierna e tre conteggi, calendario mensile con agenda del giorno, dettagli appuntamento in sola lettura e creazione di appuntamenti/eventi; rubrica con ricerca arrotondata e scheda anagrafica in sola lettura; pulsante della sezione corrente in alto a destra con menu sovrapposto e uscita, contenuto adattato alle barre di sistema, aggiornamento trascinando verso il basso e WebView legacy rimossa | Collaudare ricerca e creazione appuntamenti sul telefono con dati di test; migrare modifica appuntamenti, anamnesi, modifica paziente e restanti funzioni |
+| Client Android autonomo | Login terapista con sessione cifrata e ripristino all'avvio, home con agenda odierna e tre conteggi, calendario mensile con dettagli, creazione e modifica degli appuntamenti programmati di un giorno, annullamento e ripristino dal cestino; rubrica con ricerca arrotondata e scheda anagrafica in sola lettura, ora allineata alla palette delle altre schede; pulsante della sezione corrente in alto a destra con menu sovrapposto e uscita, contenuto adattato alle barre di sistema, aggiornamento trascinando verso il basso e WebView legacy rimossa | Collaudare azioni calendario e scheda paziente sul telefono con dati di test; migrare eliminazione definitiva e svuotamento cestino, altre azioni calendario, anamnesi, modifica paziente e restanti funzioni |
 | Dismissione webapp | Da fare | Solo dopo parità funzionale e collaudo |
 
 La regola scelta per i pazienti è: ciascuna scheda appartiene a un terapista;

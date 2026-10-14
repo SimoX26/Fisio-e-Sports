@@ -94,6 +94,11 @@ public class CalendarController {
     }
 
     public Appointment rescheduleAppointment(long appointmentId, long therapistId, String patientName, LocalDateTime newStart, LocalDateTime newEnd, boolean allDay, boolean nonTreatmentEvent, String notes) {
+        return rescheduleAppointment(appointmentId, therapistId, patientName, newStart, newEnd,
+                allDay, nonTreatmentEvent, notes, null);
+    }
+
+    public Appointment rescheduleAppointment(long appointmentId, long therapistId, String patientName, LocalDateTime newStart, LocalDateTime newEnd, boolean allDay, boolean nonTreatmentEvent, String notes, String patientPhone) {
         Appointment existing = getAppointmentForTherapist(appointmentId, therapistId);
 
         if (existing.getState() != AppointmentState.SCHEDULED) {
@@ -108,7 +113,7 @@ public class CalendarController {
         } else if (patientName != null && !patientName.isBlank()) {
             long patientId = allDay
                     ? resolveExistingPatientId(patientName, existing.getTherapistId())
-                    : resolveOrCreatePatientId(patientName, null, existing.getTherapistId());
+                    : resolveOrCreatePatientId(patientName, patientPhone, existing.getTherapistId());
             checkPatientExists(patientId, existing.getTherapistId());
             existing.setPatientId(patientId);
             existing.setTitle(null);
@@ -120,7 +125,22 @@ public class CalendarController {
 
         checkForConflicts(existing);
 
-        return appointmentDAO.update(existing);
+        Patient patient = patientPhone == null || existing.getPatientId() == null ? null
+                : patientDAO.findByIdForTherapist(existing.getPatientId(), therapistId)
+                        .orElseThrow(() -> new IllegalArgumentException("Patient not found: " + existing.getPatientId()));
+        String normalizedPhone = normalizeOptionalPhone(patientPhone);
+        if (patient != null && patient.getState() == PatientState.ARCHIVED
+                && !java.util.Objects.equals(patient.getPhone(), normalizedPhone)) {
+            throw new InvalidAppointmentStateException("Archived patient cannot be modified");
+        }
+        Appointment updated = appointmentDAO.update(existing);
+        if (patient != null) {
+            if (!java.util.Objects.equals(patient.getPhone(), normalizedPhone)) {
+                patient.setPhone(normalizedPhone);
+                patientDAO.update(patient);
+            }
+        }
+        return updated;
     }
 
     public void cancelAppointment(long appointmentId, long therapistId) {

@@ -615,8 +615,8 @@ body.calendar-view-week .fc .fc-scrollgrid-section-header th{
     /* Desktop compact mode for timeGrid views (day/week only) */
     body.calendar-view-day .fc .fc-timegrid-slot,
     body.calendar-view-week .fc .fc-timegrid-slot{
-        height: 11px;
-        min-height: 11px;
+        height: 10px;
+        min-height: 10px;
     }
 
     body.calendar-view-day .fc .fc-timegrid-slot-label,

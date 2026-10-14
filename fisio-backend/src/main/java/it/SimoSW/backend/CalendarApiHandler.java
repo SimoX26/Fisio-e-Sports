@@ -153,8 +153,10 @@ final class CalendarApiHandler implements HttpHandler {
         Map<String, String> fields = readForm(exchange);
         if (fields == null) return;
         String name = fields.get("patientName");
+        String phone = fields.get("patientPhone");
         String notes = fields.get("notes");
-        if (name == null || name.isBlank() || name.length() > 180 || notes != null && notes.length() > 3000) {
+        if (name == null || name.isBlank() || name.length() > 180
+                || phone != null && phone.length() > 20 || notes != null && notes.length() > 3000) {
             ApiJson.send(exchange, 400, "{\"error\":\"invalid_input\"}");
             return;
         }
@@ -165,7 +167,7 @@ final class CalendarApiHandler implements HttpHandler {
             return;
         }
         calendar.rescheduleAppointment(appointmentId, therapistId, name, start, end,
-                Boolean.parseBoolean(fields.get("allDay")), Boolean.parseBoolean(fields.get("nonTreatmentEvent")), notes);
+                Boolean.parseBoolean(fields.get("allDay")), Boolean.parseBoolean(fields.get("nonTreatmentEvent")), notes, phone);
         exchange.sendResponseHeaders(204, -1);
     }
 

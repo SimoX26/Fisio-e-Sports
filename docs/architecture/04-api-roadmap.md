@@ -71,6 +71,9 @@ salva una nuova anamnesi. Con `mergeTargetId` unisce invece la scheda al
 contatto scelto, dopo conferma. `GET /api/patients/{id}/merge-candidates`
 restituisce i candidati dello stesso terapista. `DELETE /api/patients/{id}`
 segue la conferma legacy; se sono presenti appuntamenti, richiede `force=1`.
+`PUT /api/calendar/{id}` accetta anche `patientPhone`: quando l'appuntamento
+è collegato a un paziente, aggiorna il numero nella sua scheda del terapista
+autenticato. Se il campo è omesso, il numero rimane invariato.
 
 Il backend ascolta su loopback per impostazione predefinita; lo script locale
 lo espone anche sulla LAN per il collaudo Android. Basic verifica il login e rilascia
