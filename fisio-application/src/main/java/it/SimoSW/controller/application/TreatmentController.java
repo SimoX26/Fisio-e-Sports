@@ -248,6 +248,16 @@ public class TreatmentController {
         return buildHistoryEntries(sessions);
     }
 
+    public List<TreatmentHistoryEntry> getAllHistoryForTherapist(long therapistId) {
+        List<TreatmentSession> sessions = new ArrayList<>();
+        for (TreatmentPlan plan : treatmentPlanDAO.findByTherapistId(therapistId)) {
+            for (TreatmentSession session : treatmentSessionDAO.findByTreatmentPlanId(plan.getId())) {
+                if (session.getTherapistId() == therapistId) sessions.add(session);
+            }
+        }
+        return buildHistoryEntries(sessions);
+    }
+
     private List<TreatmentHistoryEntry> buildHistoryEntries(List<TreatmentSession> sessions) {
         Map<Long, TreatmentPlan> planCache = new HashMap<>();
         Map<Long, Patient> patientCache = new HashMap<>();
@@ -280,6 +290,8 @@ public class TreatmentController {
             entry.setOutcome(session.getSessionOutcome());
             entry.setPainScorePre(session.getPainScorePre());
             entry.setPainScorePost(session.getPainScorePost());
+            entry.setHomeExercises(session.getHomeExercises());
+            entry.setNotes(session.getNotes());
             history.add(entry);
         }
 
@@ -339,6 +351,8 @@ public class TreatmentController {
         private String outcome;
         private Integer painScorePre;
         private Integer painScorePost;
+        private String homeExercises;
+        private String notes;
 
         public long getSessionId() {
             return sessionId;
@@ -427,6 +441,11 @@ public class TreatmentController {
         public void setPainScorePost(Integer painScorePost) {
             this.painScorePost = painScorePost;
         }
+
+        public String getHomeExercises() { return homeExercises; }
+        public void setHomeExercises(String homeExercises) { this.homeExercises = homeExercises; }
+        public String getNotes() { return notes; }
+        public void setNotes(String notes) { this.notes = notes; }
 
         public String getSessionDateLabel() {
             if (sessionStart == null) {

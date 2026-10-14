@@ -8,7 +8,7 @@ Uso:
 
 Descrizione:
   Genera APK Android debug (senza installazione).
-  URL predefinito: http://192.168.1.52:8081
+  URL predefinito: IP LAN rilevato sul computer, porta 8081
 
 Opzioni:
   --android-url <url>     URL API backend per build APK (FISIO_API_BASE_URL)
@@ -26,14 +26,12 @@ APK_DIR="${ANDROID_DIR}/app/build/outputs/apk/debug"
 BASE_APK_NAME="FisioESport.apk"
 
 ANDROID_URL=""
-ANDROID_URL_EXPLICIT="false"
 APK_OUTPUT_DIR="/home/simone/Scaricati"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --android-url)
       ANDROID_URL="${2:-}"
-      ANDROID_URL_EXPLICIT="true"
       shift 2
       ;;
     --apk-output-dir)
@@ -57,19 +55,21 @@ if [[ ! -d "$ANDROID_DIR" ]]; then
   exit 1
 fi
 
-if [[ "$ANDROID_URL_EXPLICIT" == "true" ]]; then
-  echo ">> Build APK con backend URL: $ANDROID_URL"
-  (
-    cd "$ANDROID_DIR"
-    ./gradlew assembleDebug "-PFISIO_API_BASE_URL=${ANDROID_URL}"
-  )
-else
-  echo ">> Build APK con configurazione di default"
-  (
-    cd "$ANDROID_DIR"
-    ./gradlew assembleDebug
-  )
+if [[ -z "$ANDROID_URL" ]]; then
+  if command -v ip >/dev/null 2>&1; then
+    LAN_IP="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{ for (i = 1; i <= NF; i++) if ($i == "src") { print $(i + 1); exit } }')"
+  fi
+  if [[ -z "${LAN_IP:-}" ]]; then
+    echo 'IP LAN non rilevato. Usa --android-url http://<IP_LAN>:8081' >&2
+    exit 1
+  fi
+  ANDROID_URL="http://${LAN_IP}:8081"
 fi
+echo ">> Build APK con backend URL: $ANDROID_URL"
+(
+  cd "$ANDROID_DIR"
+  ./gradlew assembleDebug "-PFISIO_API_BASE_URL=${ANDROID_URL}"
+)
 
 APK_FILE="${APK_DIR}/${BASE_APK_NAME}"
 if [[ -z "$APK_FILE" || ! -f "$APK_FILE" ]]; then

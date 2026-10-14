@@ -4,7 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
-import org.json.JSONObject
+import java.io.File
 import java.nio.charset.StandardCharsets
 import java.security.KeyStore
 import java.security.MessageDigest
@@ -14,6 +14,7 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 internal class SecureTokenStore(context: Context, backendUrl: String) {
+    private val appContext = context.applicationContext
     private val namespace = MessageDigest.getInstance("SHA-256")
         .digest(backendUrl.toByteArray(StandardCharsets.UTF_8))
         .take(8).joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
@@ -51,83 +52,35 @@ internal class SecureTokenStore(context: Context, backendUrl: String) {
         }
     }
 
-    fun cachedIdentity(): String? = decryptEntry("identity")
-
-    fun saveIdentity(username: String): Boolean {
-        val previous = cachedIdentity()
-        if (previous != username) {
-            val editor = preferences.edit().remove("patients")
-            preferences.all.keys.filter { it == "agenda" || it.startsWith("calendar_") }
-                .forEach(editor::remove)
-            editor.commit()
+    fun discardOfflineCopies() {
+        val sharedPrefs = File(appContext.applicationInfo.dataDir, "shared_prefs")
+        sharedPrefs.listFiles()?.filter { it.name.startsWith("fisio.session.") && it.name.endsWith(".xml") }
+            ?.forEach { file ->
+                try {
+                    val store = appContext.getSharedPreferences(file.name.removeSuffix(".xml"), Context.MODE_PRIVATE)
+                    val editor = store.edit()
+                    store.all.keys.filter { it != "token" }.forEach(editor::remove)
+                    editor.commit()
+                } catch (_: Exception) { }
+            }
+        appContext.databaseList().filter { it.startsWith("fisio.offline.") && it.endsWith(".db") }
+            .forEach { try { appContext.deleteDatabase(it) } catch (_: Exception) { } }
+        try {
+            val keys = keyStore()
+            val aliases = keys.aliases()
+            while (aliases.hasMoreElements()) {
+                val name = aliases.nextElement()
+                if (name.startsWith("fisio.offline.")) keys.deleteEntry(name)
+            }
+        } catch (_: Exception) {
+            // La pulizia di chiavi di vecchie versioni non deve bloccare l'accesso.
         }
-        return saveEntry("identity", username)
-    }
-
-    fun saveAgenda(username: String, day: String, json: String): Boolean =
-        saveSnapshot(username, "agenda", day, json)
-
-    fun cachedAgenda(username: String, day: String): Pair<String, Long>? =
-        cachedSnapshot(username, "agenda", day)
-
-    fun saveCalendar(username: String, month: String, json: String): Boolean =
-        saveSnapshot(username, "calendar_$month", month, json)
-
-    fun cachedCalendar(username: String, month: String): Pair<String, Long>? =
-        cachedSnapshot(username, "calendar_$month", month)
-
-    private fun saveSnapshot(username: String, key: String, period: String, json: String): Boolean {
-        if (cachedIdentity() != username) return false
-        return saveEntry(key, JSONObject().put("period", period)
-            .put("savedAt", System.currentTimeMillis()).put("rows", json).toString())
-    }
-
-    private fun cachedSnapshot(username: String, key: String, period: String): Pair<String, Long>? {
-        if (cachedIdentity() != username) return null
-        return try {
-            val value = JSONObject(decryptEntry(key) ?: return null)
-            if (value.getString("period") != period) return null
-            value.getString("rows") to value.getLong("savedAt")
-        } catch (_: Exception) { null }
-    }
-
-    fun savePatients(username: String, json: String): Boolean {
-        if (cachedIdentity() != username) return false
-        return saveEntry("patients", JSONObject().put("savedAt", System.currentTimeMillis())
-            .put("rows", json).toString())
-    }
-
-    fun cachedPatients(username: String): Pair<String, Long>? {
-        if (cachedIdentity() != username) return null
-        return try {
-            val value = JSONObject(decryptEntry("patients") ?: return null)
-            value.getString("rows") to value.getLong("savedAt")
-        } catch (_: Exception) { null }
     }
 
     fun clear(): Boolean = try {
         preferences.edit().clear().commit()
     } catch (_: Exception) {
         false
-    }
-
-    private fun saveEntry(name: String, value: String): Boolean = try {
-        preferences.edit().putString(name, encrypt(value)).commit()
-    } catch (_: Exception) { false }
-
-    private fun decryptEntry(name: String): String? {
-        return try {
-            val stored = preferences.getString(name, null) ?: return null
-            val bytes = Base64.decode(stored, Base64.NO_WRAP)
-            require(bytes.size > 28)
-            val key = keyStore().getKey(alias, null) as? SecretKey ?: return null
-            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-            cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, bytes.copyOfRange(0, 12)))
-            String(cipher.doFinal(bytes.copyOfRange(12, bytes.size)), StandardCharsets.UTF_8)
-        } catch (_: Exception) {
-            preferences.edit().remove(name).commit()
-            null
-        }
     }
 
     private fun encrypt(value: String): String {

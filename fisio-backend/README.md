@@ -64,8 +64,9 @@ curl -i http://127.0.0.1:8081/ready
 `{"status":"unavailable"}` indica che il backend non raggiunge il database.
 
 Per una prova con un telefono sulla stessa rete, verificare
-`http://192.168.1.52:8081/ready` dal browser del telefono. L'APK usa già
-questo indirizzo per impostazione predefinita. Se l'IP cambia, usare
+`http://<IP_LAN>:8081/ready` dal browser del telefono. Ricava l'indirizzo
+attuale con `ip -4 -br addr`: l'APK va ricompilato se cambia. `./deploy-apk.sh`
+rileva l'IP della rete locale; in presenza di VPN o più interfacce, usare
 `./deploy-apk.sh --android-url http://<IP_LAN>:8081`.
 `FISIO_BACKEND_BIND_ADDRESS=127.0.0.1 ./run-backend-locale.sh` limita di
 nuovo l'ascolto alla sola macchina locale. L'uso in rete senza HTTPS è adatto

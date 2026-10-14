@@ -39,8 +39,8 @@ Per provarlo localmente, configurare `fisio-backend/config.properties`, usare
 accedere ai dati, avviare il backend e verificare `/ready` prima del login.
 Lo script locale del backend ascolta su `0.0.0.0:8081` per servire desktop
 locale e telefono nella stessa LAN; il JAR avviato direttamente resta su
-`127.0.0.1` per impostazione predefinita. L'APK debug usa
-`192.168.1.52:8081`; se l'IP cambia, passare
+`127.0.0.1` per impostazione predefinita. `./deploy-apk.sh` rileva l'IP LAN
+attuale e lo inserisce nell'APK; con VPN o più interfacce passare
 `./deploy-apk.sh --android-url http://<IP_LAN>:8081`. Verificare
 `/ready` direttamente dal telefono dopo il riavvio del backend.
 `FISIO_BACKEND_URL=https://backend.example.com ./run-desktop-locale.sh`

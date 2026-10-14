@@ -60,6 +60,8 @@ final class TreatmentsApiHandler implements HttpHandler {
                         ApiJson.send(exchange, 404, "{\"error\":\"not_found\"}");
                         return;
                     }
+                } else if ("all".equals(query.get("scope"))) {
+                    history = treatments.getAllHistoryForTherapist(therapistId);
                 } else {
                     history = treatments.getStartedHistoryForTherapistWithMultiSessionPlans(therapistId);
                 }
@@ -170,7 +172,11 @@ final class TreatmentsApiHandler implements HttpHandler {
                     .append(",\"painScorePre\":").append(entry.getPainScorePre())
                     .append(",\"painScorePost\":").append(entry.getPainScorePost())
                     .append(",\"outcome\":").append(ApiJson.quote(entry.getOutcome()))
-                    .append(",\"state\":").append(ApiJson.quote(entry.getStateLabel())).append('}');
+                    .append(",\"homeExercises\":").append(ApiJson.quote(entry.getHomeExercises()))
+                    .append(",\"notes\":").append(ApiJson.quote(entry.getNotes()))
+                    .append(",\"state\":").append(ApiJson.quote(entry.getStateLabel()))
+                    .append(",\"stateCode\":").append(ApiJson.quote(entry.getState() == null ? null : entry.getState().name()))
+                    .append('}');
         }
         return json.append(']').toString();
     }

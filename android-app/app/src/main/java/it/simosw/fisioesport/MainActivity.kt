@@ -34,7 +34,6 @@ import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
@@ -61,7 +60,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tokenStore: SecureTokenStore
     private var token: String? = null
     private var accountUsername = ""
-    private var offline = false
     private var loginAttempt = 0
     private var section = Section.HOME
     private var selectedPatientId: Long? = null
@@ -79,7 +77,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var loggedInPanel: View
     private lateinit var loginPanel: View
     private lateinit var welcome: TextView
-    private lateinit var offlineBanner: TextView
     private var signedInName = ""
     private lateinit var agendaDate: TextView
     private lateinit var appointmentsCount: TextView
@@ -123,7 +120,6 @@ class MainActivity : AppCompatActivity() {
         loggedInPanel = findViewById(R.id.loggedInPanel)
         loginPanel = findViewById(R.id.loginPanel)
         welcome = findViewById(R.id.welcome)
-        offlineBanner = findViewById(R.id.offlineBanner)
         agendaDate = findViewById(R.id.agendaDate)
         appointmentsCount = findViewById(R.id.appointmentsCount)
         patientsCount = findViewById(R.id.patientsCount)
@@ -167,7 +163,7 @@ class MainActivity : AppCompatActivity() {
             when {
                 section == Section.HOME -> loadTodayAgenda()
                 section == Section.CALENDAR -> loadCalendarMonth()
-                section == Section.TREATMENTS -> refreshSnapshot()
+                section == Section.TREATMENTS -> loadTreatments()
                 selectedPatientId != null -> loadPatientDetail(selectedPatientId!!)
                 section == Section.PATIENTS -> loadPatients()
                 else -> swipeRefresh.isRefreshing = false
@@ -183,8 +179,8 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.calendarPrevious).setOnClickListener { changeCalendarMonth(-1) }
         findViewById<View>(R.id.calendarNext).setOnClickListener { changeCalendarMonth(1) }
-        findViewById<View>(R.id.calendarCreate).setOnClickListener { if (!offline) openAppointmentForm() }
-        findViewById<View>(R.id.calendarTrash).setOnClickListener { if (!offline) openCalendarTrash() }
+        findViewById<View>(R.id.calendarCreate).setOnClickListener { openAppointmentForm() }
+        findViewById<View>(R.id.calendarTrash).setOnClickListener { openCalendarTrash() }
         findViewById<Button>(R.id.patientDetailBack).setOnClickListener { showSection(Section.PATIENTS) }
         patientsSearch.setOnEditorActionListener { _, _, _ ->
             patientsSearch.clearFocus()
@@ -215,11 +211,11 @@ class MainActivity : AppCompatActivity() {
     private fun restoreSession() {
         val expectedAttempt = loginAttempt
         worker.execute {
+            tokenStore.discardOfflineCopies()
             val savedToken = tokenStore.load() ?: return@execute
             try {
                 val (status, body) = request("GET", "/api/me", "Bearer $savedToken")
                 if (status == 401) {
-                    tokenStore.cachedIdentity()?.let { offlineStore(it).clear() }
                     tokenStore.clear()
                     return@execute
                 }
@@ -228,19 +224,6 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     if (loginAttempt == expectedAttempt && token == null) {
                         enterSession(savedToken, displayName)
-                    }
-                }
-            } catch (_: IOException) {
-                val identity = tokenStore.cachedIdentity()?.takeIf {
-                    tokenStore.cachedPatients(it) != null ||
-                        offlineStore(it).savedAt() != null ||
-                        tokenStore.cachedAgenda(it, calendarKey(Calendar.getInstance())) != null ||
-                        tokenStore.cachedCalendar(it, calendarKey(displayedMonth)) != null
-                }
-                runOnUiThread {
-                    if (loginAttempt == expectedAttempt && token == null) {
-                        if (identity != null) enterSession(savedToken, identity, offlineSession = true)
-                        else message.setText(R.string.backend_unavailable)
                     }
                 }
             } catch (_: Exception) {
@@ -253,28 +236,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun enterSession(activeToken: String, displayName: String, offlineSession: Boolean = false) {
+    private fun enterSession(activeToken: String, displayName: String) {
         token = activeToken
         accountUsername = displayName
-        if (!offlineSession) tokenStore.saveIdentity(displayName)
-        setOfflineMode(offlineSession)
         signedInName = displayName.replaceFirstChar { it.titlecase(Locale.ITALIAN) }
         password.text.clear()
         updateGreeting()
         loginPanel.visibility = View.GONE
         loggedInPanel.visibility = View.VISIBLE
         showSection(Section.HOME)
-        if (!offlineSession) refreshSnapshot()
-    }
-
-    private fun setOfflineMode(value: Boolean, savedAt: Long? = null) {
-        offline = value
-        offlineBanner.visibility = if (value) View.VISIBLE else View.GONE
-        findViewById<View>(R.id.calendarCreate).visibility = if (value) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.calendarTrash).visibility = if (value) View.GONE else View.VISIBLE
-        if (value) offlineBanner.text = if (savedAt == null) getString(R.string.offline_cache_notice)
-            else getString(R.string.offline_cache_saved_at,
-                SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.ITALIAN).format(Date(savedAt)))
     }
 
     private fun updateGreeting() {
@@ -367,62 +337,44 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun offlineStore(username: String) = OfflineSnapshotStore(this,
-        BuildConfig.FISIO_API_BASE_URL.trimEnd('/'), username)
-
-    private fun refreshSnapshot() {
-        val activeToken = token ?: return
-        val activeAccount = accountUsername
-        if (offline) {
-            swipeRefresh.isRefreshing = false
-            loadTreatments()
-            return
-        }
-        worker.execute {
-            try {
-                val (status, body) = request("GET", "/api/offline/snapshot", "Bearer $activeToken")
-                if (status == 200) offlineStore(activeAccount).replace(body)
-            } catch (_: Exception) {
-                // Le altre schermate e la copia precedente restano disponibili.
-            }
-            runOnUiThread {
-                if (token == activeToken && accountUsername == activeAccount) {
-                    swipeRefresh.isRefreshing = false
-                    if (section == Section.TREATMENTS) loadTreatments()
-                }
-            }
-        }
-    }
-
     private fun loadTreatments() {
         val activeAccount = accountUsername
         val activeToken = token ?: return
+        swipeRefresh.isRefreshing = true
         treatmentsStatus.setText(R.string.treatments_loading)
         treatmentsList.removeAllViews()
         worker.execute {
-            val data = try {
-                val store = offlineStore(activeAccount)
-                val savedAt = store.savedAt()
-                if (savedAt == null) null else Triple(store.rows("patients"), store.rows("treatmentPlans"), store.rows("treatmentSessions"))
+            val sessions = try {
+                val (status, body) = request("GET", "/api/treatments?scope=all", "Bearer $activeToken")
+                if (status == 401) {
+                    runOnUiThread {
+                        if (token == activeToken) {
+                            confirmLogout()
+                            message.setText(R.string.session_expired)
+                        }
+                    }
+                    return@execute
+                }
+                if (status != 200) throw IllegalStateException("HTTP $status")
+                val data = JSONArray(body)
+                (0 until data.length()).map { data.getJSONObject(it) }
+                    .sortedByDescending { it.optString("sessionStart") }
             } catch (_: Exception) { null }
             runOnUiThread {
                 if (token != activeToken || accountUsername != activeAccount || section != Section.TREATMENTS) return@runOnUiThread
+                swipeRefresh.isRefreshing = false
                 treatmentsList.removeAllViews()
-                if (data == null) {
+                if (sessions == null) {
                     treatmentsStatus.setText(R.string.treatments_unavailable)
                     return@runOnUiThread
                 }
-                val names = data.first.associate { it.optLong("id") to it.optString("fullName") }
-                val plans = data.second.associate { it.optLong("id") to it.optString("title") }
-                val sessions = data.third.sortedByDescending { it.optString("start") }
                 treatmentsStatus.text = resources.getQuantityString(R.plurals.treatment_count, sessions.size, sessions.size)
                 if (sessions.isEmpty()) addAgendaLine(getString(R.string.treatments_empty), target = treatmentsList)
                 sessions.forEach { session ->
-                    val patient = names[session.optLong("patientId")]?.takeIf { it.isNotBlank() }
-                        ?: getString(R.string.treatments_patient_unknown)
-                    val plan = plans[session.optLong("treatmentPlanId")].orEmpty()
-                    val whenLabel = session.optString("start").replace('T', ' ').take(16)
-                    addAgendaRow(AgendaRow(whenLabel, patient, plan, session.optString("state")), treatmentsList) {
+                    val patient = session.optString("patientName").ifBlank { getString(R.string.treatments_patient_unknown) }
+                    val plan = session.optString("planTitle")
+                    val whenLabel = session.optString("sessionStart").replace('T', ' ').take(16)
+                    addAgendaRow(AgendaRow(whenLabel, patient, plan, session.optString("stateCode")), treatmentsList) {
                         showTreatmentDetail(session, patient, plan)
                     }
                 }
@@ -433,7 +385,7 @@ class MainActivity : AppCompatActivity() {
     private fun showTreatmentDetail(session: JSONObject, patient: String, plan: String) {
         val details = buildList {
             if (plan.isNotBlank()) add(plan)
-            add(getString(R.string.treatments_when, session.optString("start").replace('T', ' ').take(16)))
+            add(getString(R.string.treatments_when, session.optString("sessionStart").replace('T', ' ').take(16)))
             listOf("outcome" to R.string.treatments_outcome, "homeExercises" to R.string.treatments_exercises,
                 "notes" to R.string.calendar_detail_notes).forEach { (key, label) ->
                 session.optString(key).takeIf { it.isNotBlank() && it != "null" }?.let { add("${getString(label)}: $it") }
@@ -533,27 +485,12 @@ class MainActivity : AppCompatActivity() {
                 }
                 if (status != 200) throw IllegalStateException("HTTP $status")
                 val patients = parsePatients(body)
-                if (query.isEmpty()) tokenStore.savePatients(activeAccount, body)
                 runOnUiThread {
                     if (token != activeToken || accountUsername != activeAccount ||
                         section != Section.PATIENTS || requestId != patientsRequest) {
                         return@runOnUiThread
                     }
-                    setOfflineMode(false)
                     showPatientRows(patients)
-                }
-            } catch (_: IOException) {
-                val cached = tokenStore.cachedPatients(activeAccount)
-                val patients = runCatching { cached?.first?.let(::parsePatients) }.getOrNull()
-                    ?.filter { it.name.contains(query, ignoreCase = true) }
-                runOnUiThread {
-                    if (token != activeToken || accountUsername != activeAccount ||
-                        section != Section.PATIENTS || requestId != patientsRequest) return@runOnUiThread
-                    if (patients == null) showPatientsError()
-                    else {
-                        setOfflineMode(true, cached?.second)
-                        showPatientRows(patients)
-                    }
                 }
             } catch (_: Exception) {
                 runOnUiThread {
@@ -637,16 +574,7 @@ class MainActivity : AppCompatActivity() {
         patientDetailTitle.text = patient.name
         patientDetailEdit.visibility = View.GONE
         contentScroll.scrollTo(0, 0)
-        if (offline) {
-            swipeRefresh.isRefreshing = false
-            patientDetailStatus.visibility = View.VISIBLE
-            patientDetailStatus.setTextColor(getColor(R.color.text_muted))
-            patientDetailStatus.setText(R.string.patient_detail_offline)
-            patientDetailFields.removeAllViews()
-            addPatientDetailField(R.string.patient_detail_phone, patient.phone)
-            addPatientDetailField(R.string.patient_detail_created, patient.created)
-            patientDetailFields.visibility = View.VISIBLE
-        } else loadPatientDetail(patient.id)
+        loadPatientDetail(patient.id)
     }
 
     private fun loadPatientDetail(patientId: Long) {
@@ -679,7 +607,6 @@ class MainActivity : AppCompatActivity() {
                         return@runOnUiThread
                     }
                     swipeRefresh.isRefreshing = false
-                    setOfflineMode(false)
                     patientDetailTitle.text = patient.getString("fullName")
                     patientDetailStatus.visibility = View.GONE
                     val state = when (patient.optString("state")) {
@@ -1157,15 +1084,8 @@ class MainActivity : AppCompatActivity() {
         swipeRefresh.isRefreshing = true
         worker.execute {
             try {
-                val (body, cachedAt) = try {
-                    val (status, response) = request("GET", "/api/calendar?start=$start&end=$end", "Bearer $activeToken")
-                    if (status != 200) throw IllegalStateException("HTTP $status")
-                    tokenStore.saveCalendar(accountUsername, month, response)
-                    response to null
-                } catch (_: IOException) {
-                    tokenStore.cachedCalendar(accountUsername, month)
-                        ?: throw IOException("Mese non disponibile offline")
-                }
+                val (status, body) = request("GET", "/api/calendar?start=$start&end=$end", "Bearer $activeToken")
+                if (status != 200) throw IllegalStateException("HTTP $status")
                 val events = JSONArray(body)
                 val entries = (0 until events.length()).map { index ->
                     val event = events.getJSONObject(index)
@@ -1180,7 +1100,6 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     if (token != activeToken || section != Section.CALENDAR || requestId != calendarRequest) return@runOnUiThread
                     swipeRefresh.isRefreshing = false
-                    setOfflineMode(cachedAt != null, cachedAt)
                     calendarEntries = entries
                     calendarLoading = false
                     renderCalendar()
@@ -1337,7 +1256,7 @@ class MainActivity : AppCompatActivity() {
         val nextDate = Calendar.getInstance().apply { time = startDate; add(Calendar.DAY_OF_MONTH, 1) }
         val supportedRange = if (entry.allDay) dateLabel.format(nextDate.time) == endLabel
             else startLabel == endLabel
-        val editButton = if (!offline && entry.state == "SCHEDULED" && supportedRange) MaterialButton(this).apply {
+        val editButton = if (entry.state == "SCHEDULED" && supportedRange) MaterialButton(this).apply {
             setText(R.string.calendar_edit)
             isAllCaps = false
             cornerRadius = dp(12)
@@ -1348,7 +1267,7 @@ class MainActivity : AppCompatActivity() {
         } else null
         val canCancel = entry.state != "CANCELLED" &&
             (entry.state != "COMPLETED" || entry.patientId == null)
-        val cancelButton = if (!offline && canCancel) MaterialButton(this).apply {
+        val cancelButton = if (canCancel) MaterialButton(this).apply {
             setText(R.string.calendar_delete)
             isAllCaps = false
             cornerRadius = dp(12)
@@ -1584,7 +1503,6 @@ class MainActivity : AppCompatActivity() {
         val dateTimeFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ROOT)
         val start = dateTimeFormat.format(today.time)
         val end = dateTimeFormat.format((today.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, 1) }.time)
-        val day = calendarKey(today)
         agendaDate.text = SimpleDateFormat("EEEE d MMMM yyyy", Locale.ITALIAN).format(today.time)
         swipeRefresh.isRefreshing = true
         appointmentsCount.setText(R.string.count_initial)
@@ -1594,27 +1512,8 @@ class MainActivity : AppCompatActivity() {
         addAgendaLine(getString(R.string.agenda_loading))
         worker.execute {
             try {
-                val (body, cachedAt) = try {
-                    val (status, response) = request(
-                        "GET", "/api/calendar?start=$start&end=$end", "Bearer $activeToken"
-                    )
-                    if (status != 200) throw IllegalStateException("HTTP $status")
-                    tokenStore.saveAgenda(accountUsername, day, response)
-                    response to null
-                } catch (_: IOException) {
-                    tokenStore.cachedAgenda(accountUsername, day)
-                        ?: tokenStore.cachedCalendar(accountUsername, "${day.take(7)}-01")?.let { (json, savedAt) ->
-                            val monthEvents = JSONArray(json)
-                            val daily = JSONArray()
-                            for (index in 0 until monthEvents.length()) {
-                                val event = monthEvents.getJSONObject(index)
-                                if (event.optString("start") < end && event.optString("end") > start)
-                                    daily.put(event)
-                            }
-                            daily.toString() to savedAt
-                        }
-                        ?: throw IOException("Agenda non disponibile offline")
-                }
+                val (status, body) = request("GET", "/api/calendar?start=$start&end=$end", "Bearer $activeToken")
+                if (status != 200) throw IllegalStateException("HTTP $status")
                 val events = JSONArray(body)
                 val patientIds = mutableSetOf<Long>()
                 val rows = mutableListOf<AgendaRow>()
@@ -1638,14 +1537,12 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     if (token != activeToken || section != Section.HOME) return@runOnUiThread
                     swipeRefresh.isRefreshing = false
-                    setOfflineMode(cachedAt != null, cachedAt)
                     appointmentsCount.text = events.length().toString()
                     patientsCount.text = patientIds.size.toString()
                     remindersCount.text = reminders.toString()
                     agendaList.removeAllViews()
                     if (rows.isEmpty()) addAgendaLine(getString(R.string.agenda_empty))
                     rows.forEach(::addAgendaRow)
-                    if (cachedAt == null) primeCalendarMonths(activeToken)
                 }
             } catch (_: Exception) {
                 runOnUiThread {
@@ -1654,27 +1551,6 @@ class MainActivity : AppCompatActivity() {
                     agendaList.removeAllViews()
                     addAgendaLine(getString(R.string.agenda_error), R.color.brand_danger)
                 }
-            }
-        }
-    }
-
-    private fun primeCalendarMonths(activeToken: String) {
-        val months = listOf(0, -1, 1).map { offset ->
-            Calendar.getInstance().apply {
-                set(Calendar.DAY_OF_MONTH, 1)
-                add(Calendar.MONTH, offset)
-            }
-        }
-        worker.execute {
-            for (month in months) {
-                if (token != activeToken) return@execute
-                val start = calendarKey(month)
-                val end = calendarKey((month.clone() as Calendar).apply { add(Calendar.MONTH, 1) })
-                try {
-                    val (status, body) = request("GET",
-                        "/api/calendar?start=${start}T00:00:00&end=${end}T00:00:00", "Bearer $activeToken")
-                    if (status == 200) tokenStore.saveCalendar(accountUsername, start, body)
-                } catch (_: Exception) { continue }
             }
         }
     }
@@ -1754,7 +1630,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun confirmLogout() {
         val currentToken = token ?: return
-        val previousAccount = accountUsername
         if (!tokenStore.clear()) {
             Toast.makeText(this, R.string.session_clear_error, Toast.LENGTH_LONG).show()
             return
@@ -1762,7 +1637,6 @@ class MainActivity : AppCompatActivity() {
         loginAttempt++
         token = null
         accountUsername = ""
-        setOfflineMode(false)
         section = Section.HOME
         selectedPatientId = null
         patientsRequest++
@@ -1783,7 +1657,6 @@ class MainActivity : AppCompatActivity() {
         message.text = ""
         loginButton.isEnabled = true
         worker.execute {
-            try { offlineStore(previousAccount).clear() } catch (_: Exception) { }
             try {
                 request("DELETE", "/api/auth/remember", "Bearer $currentToken")
             } catch (_: Exception) {
@@ -1799,7 +1672,7 @@ class MainActivity : AppCompatActivity() {
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = method
             connectTimeout = 5000
-            readTimeout = if (path == "/api/offline/snapshot") 30000 else 5000
+            readTimeout = 5000
             setRequestProperty("Authorization", authorization)
             setRequestProperty("Accept", "application/json")
             if (body != null) {

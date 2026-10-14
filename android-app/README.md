@@ -21,12 +21,12 @@ Apri `android-app` in Android Studio. Se necessario, crea
 `local.properties` da `local.properties.example` e imposta `sdk.dir`.
 Il file locale non è versionato.
 
-La build legge `FISIO_API_BASE_URL`. Il valore predefinito
-`http://192.168.1.52:8081` punta al backend nella LAN di test. Se
-l'indirizzo cambia, passane uno raggiungibile dal telefono:
+La build Gradle legge `FISIO_API_BASE_URL`; il valore predefinito è ora
+`http://192.168.1.18:8081`. Se l'indirizzo del computer cambia, passane uno
+raggiungibile dal telefono oppure usa `deploy-apk.sh`, che rileva l'IP LAN:
 
 ```bash
-./gradlew assembleDebug -PFISIO_API_BASE_URL=http://192.168.1.50:8081
+./gradlew assembleDebug -PFISIO_API_BASE_URL=http://192.168.1.18:8081
 ```
 
 La URL deve essere l'origine delle API, senza il contesto
@@ -48,10 +48,12 @@ adb install -r app/build/outputs/apk/debug/FisioESport.apk
 Oppure dalla radice del repository:
 
 ```bash
-./deploy-apk.sh --android-url http://192.168.1.50:8081 --apk-output-dir /percorso/output
+./deploy-apk.sh --apk-output-dir /percorso/output
 ```
 
-Prima della prova verifica `http://192.168.1.52:8081/ready` dal dispositivo:
+`deploy-apk.sh` rileva l'IP della rete locale e lo inserisce nell'APK; usa
+`--android-url http://<IP_LAN>:8081` se il computer ha più interfacce o una VPN.
+Prima della prova verifica `http://<IP_LAN>:8081/ready` dal dispositivo:
 deve rispondere `{"status":"ok"}`. Avvia l'app, inserisci le credenziali
 di un terapista esistente e verifica che compaiano il suo username e gli
 appuntamenti di oggi. Confronta orari, pazienti, stati e conteggi con il
@@ -145,26 +147,16 @@ La password non viene salvata. Android cifra il token nel proprio archivio
 privato usando Android Keystore e lo separa per URL del backend; il backup
 dell'app è disabilitato perché la chiave non è trasferibile. Alla riapertura
 verifica la sessione con `/api/me`: se il token è scaduto o revocato torna
-al login. Se il backend non è raggiungibile e sul dispositivo esiste una
-copia già scaricata per quell'account, apre Home, Calendario e Rubrica in sola
-lettura; altrimenti resta sul login. Home conserva l'agenda del giorno;
-Calendario prepara il mese precedente, corrente e successivo dopo un accesso
-online e salva anche i mesi visitati. La Home usa il mese salvato se cambia
-giorno. Un giorno o mese mai scaricato mostra
-un errore, senza fingere che sia vuoto. Per provare: accedi online, attendi
-il caricamento della Home, apri la Rubrica senza filtri, chiudi l'app, spegni
-il backend e riaprila. Controlla Home, Calendario, ricerca per nome e scheda
-parziale senza **Modifica**. Riavvia il backend e ricarica le schermate: il
-banner deve sparire.
-Lo Storico usa la fotografia scaricata da `/api/offline/snapshot` dopo l'accesso:
-contiene piani e sedute, con nome del paziente e dettagli della seduta. Le righe
-cliniche sono cifrate nel database SQLite privato con una chiave Android Keystore
-separata per backend e account. Per provarlo, riavvia il backend aggiornato,
-accedi online e apri **Storico**: confronta numero e dettagli di alcune sedute
-con il desktop. Chiudi l'app, spegni il backend e riaprila: lo Storico deve
-restare consultabile. Il gesto verso il basso aggiorna la copia quando il
-backend è disponibile. Questo passo non permette ancora modifiche offline.
-Prova anche un altro account sullo stesso backend: non deve vedere la copia
-del primo. Esci elimina il token locale e la copia dei dati e chiede al
+al login. Home, Calendario e Rubrica chiedono i dati al backend quando vengono
+aperte o aggiornate: non salvano copie offline e non scaricano mesi in anticipo.
+Lo Storico usa `GET /api/treatments?scope=all`, che restituisce tutte le sedute
+del terapista autenticato con i dettagli necessari alla schermata. Anche lo
+Storico richiede il backend; trascina verso il basso per ricaricarlo. Le copie
+cliniche create dalle versioni precedenti vengono eliminate all'avvio senza
+cancellare il token di accesso. Per provare: accedi online, confronta Home,
+Calendario, Rubrica e Storico con il desktop; spegni il backend e riapri l'app.
+Il login deve mostrare l'errore di connessione, senza dati clinici offline.
+Riavvia il backend e riprova l'accesso.
+Esci elimina il token locale e chiede al
 backend di revocarlo quando la rete è disponibile. Il token scade dopo 30
 giorni; ogni dispositivo ha una sessione distinta.
