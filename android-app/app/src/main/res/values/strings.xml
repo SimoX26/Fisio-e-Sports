@@ -70,6 +70,18 @@
     <string name="calendar_detail_close">Chiudi</string>
     <string name="address_book">Rubrica</string>
     <string name="treatments">Storico</string>
+    <string name="treatments_loading">Caricamento storico salvato…</string>
+    <string name="treatments_unavailable">Storico non ancora scaricato. Collegati al backend aggiornato e aggiorna la schermata.</string>
+    <string name="treatments_empty">Nessun trattamento nello storico.</string>
+    <string name="treatments_patient_unknown">Paziente non disponibile</string>
+    <string name="treatments_when">Data: %1$s</string>
+    <string name="treatments_outcome">Esito</string>
+    <string name="treatments_exercises">Esercizi a casa</string>
+    <string name="treatments_pain">Dolore prima: %1$s · dopo: %2$s</string>
+    <plurals name="treatment_count">
+        <item quantity="one">%d trattamento salvato sul dispositivo</item>
+        <item quantity="other">%d trattamenti salvati sul dispositivo</item>
+    </plurals>
     <string name="statistics">Dati</string>
     <string name="settings">Impostazioni</string>
     <string name="navigation_current">%1$s ▾</string>

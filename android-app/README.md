@@ -1,7 +1,8 @@
 # Fisio e Sports Android
 
 Client Android nativo in migrazione. Sono disponibili l'accesso del terapista,
-la home con l'agenda di oggi, il calendario mensile, la rubrica, la scheda
+la home con l'agenda di oggi, il calendario mensile, la rubrica, lo storico
+trattamenti in sola lettura, la scheda
 anagrafica del paziente con modifica di nome, email e telefono, e l'uscita. I dati arrivano dal backend;
 la webapp legacy non viene caricata in una WebView. In alto a destra, il pulsante della sezione
 corrente apre un menu sovrapposto con Home, Calendario, Rubrica, Storico, Dati,
@@ -125,8 +126,7 @@ nome vuoto e un'email non valida; il modulo deve restare aperto con un errore.
 Per le schede archiviate il pulsante non compare. Tocca il pulsante della sezione corrente in alto a destra:
 il menu deve sovrapporsi alla pagina, selezionare la voce attiva e aggiornare
 il pulsante quando cambi sezione. La tendina usa la stessa palette delle
-schede, evidenzia la voce selezionata e mostra **Esci** in rosso. Storico,
-Dati e Impostazioni mostrano per ora
+schede, evidenzia la voce selezionata e mostra **Esci** in rosso. Dati e Impostazioni mostrano per ora
 una schermata di migrazione. Verifica che intestazione e
 contenuto inizino sotto la barra delle notifiche e restino sopra la barra di
 navigazione Android. Esci deve comparire soltanto nel menu; dopo l'uscita il
@@ -156,6 +156,14 @@ il caricamento della Home, apri la Rubrica senza filtri, chiudi l'app, spegni
 il backend e riaprila. Controlla Home, Calendario, ricerca per nome e scheda
 parziale senza **Modifica**. Riavvia il backend e ricarica le schermate: il
 banner deve sparire.
+Lo Storico usa la fotografia scaricata da `/api/offline/snapshot` dopo l'accesso:
+contiene piani e sedute, con nome del paziente e dettagli della seduta. Le righe
+cliniche sono cifrate nel database SQLite privato con una chiave Android Keystore
+separata per backend e account. Per provarlo, riavvia il backend aggiornato,
+accedi online e apri **Storico**: confronta numero e dettagli di alcune sedute
+con il desktop. Chiudi l'app, spegni il backend e riaprila: lo Storico deve
+restare consultabile. Il gesto verso il basso aggiorna la copia quando il
+backend è disponibile. Questo passo non permette ancora modifiche offline.
 Prova anche un altro account sullo stesso backend: non deve vedere la copia
 del primo. Esci elimina il token locale e la copia dei dati e chiede al
 backend di revocarlo quando la rete è disponibile. Il token scade dopo 30

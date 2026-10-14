@@ -107,6 +107,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var patientsSearch: EditText
     private lateinit var patientResults: TextView
     private lateinit var patientList: LinearLayout
+    private lateinit var treatmentsPanel: View
+    private lateinit var treatmentsStatus: TextView
+    private lateinit var treatmentsList: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -154,6 +157,9 @@ class MainActivity : AppCompatActivity() {
         patientsSearch = findViewById(R.id.patientsSearch)
         patientResults = findViewById(R.id.patientResults)
         patientList = findViewById(R.id.patientList)
+        treatmentsPanel = findViewById(R.id.treatmentsPanel)
+        treatmentsStatus = findViewById(R.id.treatmentsStatus)
+        treatmentsList = findViewById(R.id.treatmentsList)
         swipeRefresh.isEnabled = false
         swipeRefresh.setColorSchemeResources(R.color.brand_primary)
         swipeRefresh.setOnChildScrollUpCallback { _, _ -> contentScroll.canScrollVertically(-1) }
@@ -161,6 +167,7 @@ class MainActivity : AppCompatActivity() {
             when {
                 section == Section.HOME -> loadTodayAgenda()
                 section == Section.CALENDAR -> loadCalendarMonth()
+                section == Section.TREATMENTS -> refreshSnapshot()
                 selectedPatientId != null -> loadPatientDetail(selectedPatientId!!)
                 section == Section.PATIENTS -> loadPatients()
                 else -> swipeRefresh.isRefreshing = false
@@ -212,6 +219,7 @@ class MainActivity : AppCompatActivity() {
             try {
                 val (status, body) = request("GET", "/api/me", "Bearer $savedToken")
                 if (status == 401) {
+                    tokenStore.cachedIdentity()?.let { offlineStore(it).clear() }
                     tokenStore.clear()
                     return@execute
                 }
@@ -225,6 +233,7 @@ class MainActivity : AppCompatActivity() {
             } catch (_: IOException) {
                 val identity = tokenStore.cachedIdentity()?.takeIf {
                     tokenStore.cachedPatients(it) != null ||
+                        offlineStore(it).savedAt() != null ||
                         tokenStore.cachedAgenda(it, calendarKey(Calendar.getInstance())) != null ||
                         tokenStore.cachedCalendar(it, calendarKey(displayedMonth)) != null
                 }
@@ -255,6 +264,7 @@ class MainActivity : AppCompatActivity() {
         loginPanel.visibility = View.GONE
         loggedInPanel.visibility = View.VISIBLE
         showSection(Section.HOME)
+        if (!offlineSession) refreshSnapshot()
     }
 
     private fun setOfflineMode(value: Boolean, savedAt: Long? = null) {
@@ -337,12 +347,13 @@ class MainActivity : AppCompatActivity() {
         if (next == Section.HOME) updateGreeting()
         selectedPatientId = null
         swipeRefresh.isRefreshing = false
-        swipeRefresh.isEnabled = next == Section.HOME || next == Section.CALENDAR || next == Section.PATIENTS
+        swipeRefresh.isEnabled = next == Section.HOME || next == Section.CALENDAR || next == Section.PATIENTS || next == Section.TREATMENTS
         homePanel.visibility = if (next == Section.HOME) View.VISIBLE else View.GONE
         calendarPanel.visibility = if (next == Section.CALENDAR) View.VISIBLE else View.GONE
         patientsPanel.visibility = if (next == Section.PATIENTS) View.VISIBLE else View.GONE
         patientDetailPanel.visibility = View.GONE
-        placeholderPanel.visibility = if (next == Section.HOME || next == Section.CALENDAR || next == Section.PATIENTS) View.GONE else View.VISIBLE
+        treatmentsPanel.visibility = if (next == Section.TREATMENTS) View.VISIBLE else View.GONE
+        placeholderPanel.visibility = if (next == Section.STATISTICS || next == Section.SETTINGS) View.VISIBLE else View.GONE
         if (placeholderPanel.visibility == View.VISIBLE) placeholderTitle.setText(next.title)
         currentSectionButton.text = getString(R.string.navigation_current, getString(next.title))
         currentSectionButton.contentDescription = getString(R.string.navigation_open_description, getString(next.title))
@@ -351,8 +362,88 @@ class MainActivity : AppCompatActivity() {
             Section.HOME -> loadTodayAgenda()
             Section.CALENDAR -> loadCalendarMonth()
             Section.PATIENTS -> loadPatients()
+            Section.TREATMENTS -> loadTreatments()
             else -> Unit
         }
+    }
+
+    private fun offlineStore(username: String) = OfflineSnapshotStore(this,
+        BuildConfig.FISIO_API_BASE_URL.trimEnd('/'), username)
+
+    private fun refreshSnapshot() {
+        val activeToken = token ?: return
+        val activeAccount = accountUsername
+        if (offline) {
+            swipeRefresh.isRefreshing = false
+            loadTreatments()
+            return
+        }
+        worker.execute {
+            try {
+                val (status, body) = request("GET", "/api/offline/snapshot", "Bearer $activeToken")
+                if (status == 200) offlineStore(activeAccount).replace(body)
+            } catch (_: Exception) {
+                // Le altre schermate e la copia precedente restano disponibili.
+            }
+            runOnUiThread {
+                if (token == activeToken && accountUsername == activeAccount) {
+                    swipeRefresh.isRefreshing = false
+                    if (section == Section.TREATMENTS) loadTreatments()
+                }
+            }
+        }
+    }
+
+    private fun loadTreatments() {
+        val activeAccount = accountUsername
+        val activeToken = token ?: return
+        treatmentsStatus.setText(R.string.treatments_loading)
+        treatmentsList.removeAllViews()
+        worker.execute {
+            val data = try {
+                val store = offlineStore(activeAccount)
+                val savedAt = store.savedAt()
+                if (savedAt == null) null else Triple(store.rows("patients"), store.rows("treatmentPlans"), store.rows("treatmentSessions"))
+            } catch (_: Exception) { null }
+            runOnUiThread {
+                if (token != activeToken || accountUsername != activeAccount || section != Section.TREATMENTS) return@runOnUiThread
+                treatmentsList.removeAllViews()
+                if (data == null) {
+                    treatmentsStatus.setText(R.string.treatments_unavailable)
+                    return@runOnUiThread
+                }
+                val names = data.first.associate { it.optLong("id") to it.optString("fullName") }
+                val plans = data.second.associate { it.optLong("id") to it.optString("title") }
+                val sessions = data.third.sortedByDescending { it.optString("start") }
+                treatmentsStatus.text = resources.getQuantityString(R.plurals.treatment_count, sessions.size, sessions.size)
+                if (sessions.isEmpty()) addAgendaLine(getString(R.string.treatments_empty), target = treatmentsList)
+                sessions.forEach { session ->
+                    val patient = names[session.optLong("patientId")]?.takeIf { it.isNotBlank() }
+                        ?: getString(R.string.treatments_patient_unknown)
+                    val plan = plans[session.optLong("treatmentPlanId")].orEmpty()
+                    val whenLabel = session.optString("start").replace('T', ' ').take(16)
+                    addAgendaRow(AgendaRow(whenLabel, patient, plan, session.optString("state")), treatmentsList) {
+                        showTreatmentDetail(session, patient, plan)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showTreatmentDetail(session: JSONObject, patient: String, plan: String) {
+        val details = buildList {
+            if (plan.isNotBlank()) add(plan)
+            add(getString(R.string.treatments_when, session.optString("start").replace('T', ' ').take(16)))
+            listOf("outcome" to R.string.treatments_outcome, "homeExercises" to R.string.treatments_exercises,
+                "notes" to R.string.calendar_detail_notes).forEach { (key, label) ->
+                session.optString(key).takeIf { it.isNotBlank() && it != "null" }?.let { add("${getString(label)}: $it") }
+            }
+            val before = session.optString("painScorePre").takeIf { it.isNotBlank() && it != "null" }
+            val after = session.optString("painScorePost").takeIf { it.isNotBlank() && it != "null" }
+            if (before != null || after != null) add(getString(R.string.treatments_pain, before ?: "–", after ?: "–"))
+        }
+        MaterialAlertDialogBuilder(this).setTitle(patient).setMessage(details.joinToString("\n\n"))
+            .setPositiveButton(R.string.calendar_detail_close, null).show()
     }
 
     private fun showNavigationMenu() {
@@ -1663,6 +1754,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun confirmLogout() {
         val currentToken = token ?: return
+        val previousAccount = accountUsername
         if (!tokenStore.clear()) {
             Toast.makeText(this, R.string.session_clear_error, Toast.LENGTH_LONG).show()
             return
@@ -1686,10 +1778,12 @@ class MainActivity : AppCompatActivity() {
         calendarGrid.removeAllViews()
         calendarDayEvents.removeAllViews()
         patientList.removeAllViews()
+        treatmentsList.removeAllViews()
         patientsSearch.text.clear()
         message.text = ""
         loginButton.isEnabled = true
         worker.execute {
+            try { offlineStore(previousAccount).clear() } catch (_: Exception) { }
             try {
                 request("DELETE", "/api/auth/remember", "Bearer $currentToken")
             } catch (_: Exception) {
@@ -1705,7 +1799,7 @@ class MainActivity : AppCompatActivity() {
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = method
             connectTimeout = 5000
-            readTimeout = 5000
+            readTimeout = if (path == "/api/offline/snapshot") 30000 else 5000
             setRequestProperty("Authorization", authorization)
             setRequestProperty("Accept", "application/json")
             if (body != null) {

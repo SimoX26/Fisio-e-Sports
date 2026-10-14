@@ -93,10 +93,16 @@ sedute e gli appuntamenti appartenenti al terapista. L'esportazione è in sola
 lettura e non modifica il database.
 
 La risposta è ottenuta tramite più letture: `generatedAt` non è ancora un
-cursore né garantisce una fotografia transazionale. I client non la usano
-ancora per una sincronizzazione automatica. Il prossimo passo è salvarla in
-SQLite cifrato, separato per account e backend, prima sul desktop e poi su
-Android; la coda di scrittura richiederà cursore server e idempotenza.
+cursore né garantisce una fotografia transazionale. Android salva la risposta
+dopo l'accesso online in SQLite, separata per backend e account. Ogni elemento
+clinico è cifrato con AES-GCM usando una chiave distinta in Android Keystore;
+SQLite conserva in chiaro solo tipo e posizione delle righe e l'ora del download.
+La sostituzione è atomica: un download o una cifratura falliti lasciano la copia
+precedente. Lo Storico Android legge piani, sedute e nomi dei pazienti da questa
+copia anche offline. Il refresh si può avviare trascinando la schermata Storico
+verso il basso. Logout e revoca rilevata eliminano la copia dell'account.
+Le altre sezioni continuano a usare le cache precedenti; le scritture restano
+online. La coda di scrittura richiederà cursore server e idempotenza.
 
 Per il collaudo sul database di test, riavvia il backend aggiornato e verifica
 prima che `GET /api/offline/snapshot` senza credenziali risponda 401. Poi usa
@@ -114,8 +120,8 @@ secondo terapista: le due risposte devono contenere solo le rispettive schede.
 
 ## Passi successivi
 
-1. Persistenza SQLite cifrata e lettura locale della fotografia su desktop e
-   Android; poi aggiornamenti incrementali e gestione delle eliminazioni.
+1. Completare la lettura locale della fotografia su Android e desktop per le
+   altre sezioni; poi aggiornamenti incrementali e gestione delle eliminazioni.
 2. Coda di scrittura con invio automatico e deduplicazione sul backend;
    applicazione della regola «ultima modifica inviata vince» e stato di
    sincronizzazione visibile su entrambi i client.

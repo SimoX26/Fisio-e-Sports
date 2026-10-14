@@ -551,6 +551,29 @@
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/treatmentsPanel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/treatmentsStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="12dp"
+                        android:textColor="@color/text_muted"
+                        android:textSize="14sp" />
+
+                    <LinearLayout
+                        android:id="@+id/treatmentsList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+                </LinearLayout>
+
+                <LinearLayout
                     android:id="@+id/placeholderPanel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
