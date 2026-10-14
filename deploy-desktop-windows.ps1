@@ -54,6 +54,7 @@ try {
         throw 'Dipendenza JavaFX Web per Windows assente. Esegui lo script su Windows.'
     }
     Copy-Item $appJar $inputDir
+    if (Test-Path $outputDir) { Remove-Item $outputDir -Recurse -Force }
     New-Item $outputDir -ItemType Directory -Force | Out-Null
 
     $packageArgs = @(
@@ -65,7 +66,9 @@ try {
         '--dest', $outputDir,
         '--main-jar', 'fisio-desktop-1.0.jar',
         '--main-class', 'it.SimoSW.desktop.DesktopLauncher',
-        '--add-modules', 'ALL-MODULE-PATH'
+        '--java-options', "-Dfisio.desktop.version=$AppVersion",
+        '--java-options', "-Dfisio.desktop.installType=$Type",
+        '--add-modules', 'ALL-MODULE-PATH,java.desktop'
     )
     if ($Type -eq 'exe') {
         $packageArgs += @('--win-menu', '--win-shortcut', '--win-dir-chooser', '--win-per-user-install')
@@ -74,6 +77,17 @@ try {
     Write-Host ">> Crea pacchetto Windows ($Type)"
     & $jpackage @packageArgs
     if ($LASTEXITCODE -ne 0) { throw 'jpackage non ha creato il pacchetto.' }
+
+    if ($Type -eq 'exe') {
+        $installer = @(Get-ChildItem $outputDir -Filter '*.exe' -File)
+        if ($installer.Count -ne 1) { throw 'Installer EXE non trovato o ambiguo.' }
+        $releaseInstaller = Join-Path $outputDir 'Fisio-e-Sports.exe'
+        Copy-Item $installer[0].FullName $releaseInstaller -Force
+        $hash = (Get-FileHash $releaseInstaller -Algorithm SHA256).Hash.ToLowerInvariant()
+        @("version=$AppVersion", "sha256=$hash") |
+            Set-Content (Join-Path $outputDir 'desktop-update.properties') -Encoding ascii
+        Write-Host '>> Pubblica Fisio-e-Sports.exe e desktop-update.properties nella stessa GitHub Release'
+    }
 
     Write-Host ">> Pacchetto pronto in: $outputDir"
 } finally {

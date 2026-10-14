@@ -51,6 +51,7 @@ public final class DesktopApplication extends Application {
         stage.setMinHeight(600);
         stage.setScene(new Scene(view, 1120, 760));
         stage.show();
+        DesktopUpdater.checkOnStartup(stage);
     }
 
     public static void main(String[] args) {
