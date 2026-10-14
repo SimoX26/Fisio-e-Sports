@@ -64,6 +64,8 @@
     </div>
   </nav>
 
+  <div class="container app-shell alert alert-info py-2 px-3 mt-3 mb-0 d-none" id="offlineNotice" role="status">Dati locali disponibili in sola lettura. Riapri la schermata quando il backend torna disponibile per aggiornarli.</div>
+
   <div class="modal" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered"><div class="modal-content glass-card">
       <div class="modal-header"><h2 class="modal-title h5" id="logoutConfirmTitle">Conferma logout</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
@@ -153,6 +155,7 @@
         <button class="btn btn-primary section-action-btn address-book-toolbar__create" id="patientsCreateButton" type="button">Nuovo paziente</button>
       </form>
       <div class="alert alert-info d-none" id="patientsFilterNotice" role="status"><div class="d-flex justify-content-between align-items-center flex-wrap gap-2"><span id="patientsFilterLabel"></span><button class="btn btn-sm btn-outline-secondary" id="patientsClearFilter" type="button">Rimuovi filtro</button></div></div>
+      <div class="alert alert-info d-none" id="patientsOfflineNotice" role="status"></div>
       <div class="alert alert-danger d-none" id="patientsError" role="alert"></div>
       <div class="table-responsive address-book-table-wrap"><table class="table table-borderless align-middle mb-0 address-book-table"><thead><tr><th>Nome</th><th>Data creazione</th><th>Telefono</th><th class="text-end">Azioni</th></tr></thead><tbody id="patientsRows"></tbody></table></div>
       <div class="home-empty-state d-none" id="patientsEmpty">Nessun paziente presente.</div>

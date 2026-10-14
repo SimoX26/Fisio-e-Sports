@@ -83,6 +83,9 @@
     <string name="patients_loading">Caricamento rubrica…</string>
     <string name="patients_empty">Nessun paziente trovato.</string>
     <string name="patients_error">Impossibile caricare la rubrica dal backend.</string>
+    <string name="offline_cache_notice">Offline: dati salvati sul dispositivo, in sola lettura.</string>
+    <string name="offline_cache_saved_at">Offline: dati salvati il %1$s, in sola lettura.</string>
+    <string name="patient_detail_offline">Scheda parziale salvata sul dispositivo. Torna online per vedere tutti i dati.</string>
     <string name="back_to_patients">← Rubrica</string>
     <string name="patient_detail_heading">SCHEDA PAZIENTE</string>
     <string name="patient_detail_edit">Modifica</string>
@@ -115,6 +118,7 @@
     <string name="logout_confirmation">Vuoi uscire dall’app?</string>
     <string name="session_save_error">Accesso effettuato, ma il dispositivo non ha salvato la sessione protetta.</string>
     <string name="session_clear_error">Impossibile eliminare la sessione salvata. Riprova a uscire.</string>
+    <string name="session_expired">Sessione scaduta o revocata. Accedi di nuovo.</string>
     <string name="welcome_morning">Buongiorno, %1$s</string>
     <string name="welcome_evening">Buonasera, %1$s</string>
     <string name="appointments_label">Appuntamenti oggi</string>

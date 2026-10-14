@@ -31,7 +31,8 @@ public final class DesktopApplication extends Application {
         WebView view = new WebView();
         String backendUrl = BackendEndpoint.resolve(System.getenv("FISIO_BACKEND_URL"));
         SecureTokenStore tokenStore = new SecureTokenStore(backendUrl);
-        DesktopBridge bridge = new DesktopBridge(view, page, tokenStore, tokenExecutor);
+        EncryptedPatientCache patientCache = new EncryptedPatientCache(backendUrl);
+        DesktopBridge bridge = new DesktopBridge(view, page, tokenStore, patientCache, tokenExecutor);
         view.getEngine().getLoadWorker().stateProperty().addListener((observable, oldState, newState) -> {
             if (newState == Worker.State.SUCCEEDED) {
                 if (isTrustedPage(page, view.getEngine().getLocation())) {
@@ -79,13 +80,33 @@ public final class DesktopApplication extends Application {
         private final WebView view;
         private final URL trustedPage;
         private final SecureTokenStore store;
+        private final EncryptedPatientCache patientCache;
         private final ExecutorService executor;
 
-        DesktopBridge(WebView view, URL trustedPage, SecureTokenStore store, ExecutorService executor) {
+        DesktopBridge(WebView view, URL trustedPage, SecureTokenStore store,
+                      EncryptedPatientCache patientCache, ExecutorService executor) {
             this.view = view;
             this.trustedPage = trustedPage;
             this.store = store;
+            this.patientCache = patientCache;
             this.executor = executor;
+        }
+
+        public String loadPatientCache(String token) {
+            return isTrustedPage(trustedPage, view.getEngine().getLocation()) ? patientCache.load(token) : null;
+        }
+
+        public void savePatientCache(String token, String json) {
+            if (!isTrustedPage(trustedPage, view.getEngine().getLocation())) return;
+            executor.execute(() -> {
+                boolean saved = patientCache.save(token, json);
+                Platform.runLater(() -> {
+                    if (isTrustedPage(trustedPage, view.getEngine().getLocation())) {
+                        ((JSObject) view.getEngine().executeScript("window"))
+                                .call("desktopPatientCacheSaved", saved);
+                    }
+                });
+            });
         }
 
         public void loadToken() {
@@ -113,7 +134,11 @@ public final class DesktopApplication extends Application {
 
         public boolean clearToken() {
             try {
-                return executor.submit(store::clear).get(35, TimeUnit.SECONDS);
+                return executor.submit(() -> {
+                    boolean cacheCleared = patientCache.clear();
+                    boolean tokenCleared = store.clear();
+                    return cacheCleared && tokenCleared;
+                }).get(35, TimeUnit.SECONDS);
             } catch (InterruptedException exception) {
                 Thread.currentThread().interrupt();
                 return false;

@@ -34,6 +34,7 @@ import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
@@ -59,6 +60,8 @@ class MainActivity : AppCompatActivity() {
     private val worker = Executors.newSingleThreadExecutor()
     private lateinit var tokenStore: SecureTokenStore
     private var token: String? = null
+    private var accountUsername = ""
+    private var offline = false
     private var loginAttempt = 0
     private var section = Section.HOME
     private var selectedPatientId: Long? = null
@@ -76,6 +79,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var loggedInPanel: View
     private lateinit var loginPanel: View
     private lateinit var welcome: TextView
+    private lateinit var offlineBanner: TextView
     private var signedInName = ""
     private lateinit var agendaDate: TextView
     private lateinit var appointmentsCount: TextView
@@ -116,6 +120,7 @@ class MainActivity : AppCompatActivity() {
         loggedInPanel = findViewById(R.id.loggedInPanel)
         loginPanel = findViewById(R.id.loginPanel)
         welcome = findViewById(R.id.welcome)
+        offlineBanner = findViewById(R.id.offlineBanner)
         agendaDate = findViewById(R.id.agendaDate)
         appointmentsCount = findViewById(R.id.appointmentsCount)
         patientsCount = findViewById(R.id.patientsCount)
@@ -171,8 +176,8 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.calendarPrevious).setOnClickListener { changeCalendarMonth(-1) }
         findViewById<View>(R.id.calendarNext).setOnClickListener { changeCalendarMonth(1) }
-        findViewById<View>(R.id.calendarCreate).setOnClickListener { openAppointmentForm() }
-        findViewById<View>(R.id.calendarTrash).setOnClickListener { openCalendarTrash() }
+        findViewById<View>(R.id.calendarCreate).setOnClickListener { if (!offline) openAppointmentForm() }
+        findViewById<View>(R.id.calendarTrash).setOnClickListener { if (!offline) openCalendarTrash() }
         findViewById<Button>(R.id.patientDetailBack).setOnClickListener { showSection(Section.PATIENTS) }
         patientsSearch.setOnEditorActionListener { _, _, _ ->
             patientsSearch.clearFocus()
@@ -217,6 +222,18 @@ class MainActivity : AppCompatActivity() {
                         enterSession(savedToken, displayName)
                     }
                 }
+            } catch (_: IOException) {
+                val identity = tokenStore.cachedIdentity()?.takeIf {
+                    tokenStore.cachedPatients(it) != null ||
+                        tokenStore.cachedAgenda(it, calendarKey(Calendar.getInstance())) != null ||
+                        tokenStore.cachedCalendar(it, calendarKey(displayedMonth)) != null
+                }
+                runOnUiThread {
+                    if (loginAttempt == expectedAttempt && token == null) {
+                        if (identity != null) enterSession(savedToken, identity, offlineSession = true)
+                        else message.setText(R.string.backend_unavailable)
+                    }
+                }
             } catch (_: Exception) {
                 runOnUiThread {
                     if (loginAttempt == expectedAttempt && token == null) {
@@ -227,14 +244,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun enterSession(activeToken: String, displayName: String) {
+    private fun enterSession(activeToken: String, displayName: String, offlineSession: Boolean = false) {
         token = activeToken
+        accountUsername = displayName
+        if (!offlineSession) tokenStore.saveIdentity(displayName)
+        setOfflineMode(offlineSession)
         signedInName = displayName.replaceFirstChar { it.titlecase(Locale.ITALIAN) }
         password.text.clear()
         updateGreeting()
         loginPanel.visibility = View.GONE
         loggedInPanel.visibility = View.VISIBLE
         showSection(Section.HOME)
+    }
+
+    private fun setOfflineMode(value: Boolean, savedAt: Long? = null) {
+        offline = value
+        offlineBanner.visibility = if (value) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.calendarCreate).visibility = if (value) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.calendarTrash).visibility = if (value) View.GONE else View.VISIBLE
+        if (value) offlineBanner.text = if (savedAt == null) getString(R.string.offline_cache_notice)
+            else getString(R.string.offline_cache_saved_at,
+                SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.ITALIAN).format(Date(savedAt)))
     }
 
     private fun updateGreeting() {
@@ -381,6 +411,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadPatients() {
         val activeToken = token ?: return
+        val activeAccount = accountUsername
         val requestId = ++patientsRequest
         val query = patientsSearch.text.toString().trim()
         if (query.length > 200) {
@@ -400,40 +431,74 @@ class MainActivity : AppCompatActivity() {
                 val (status, body) = request(
                     "GET", "/api/patients?q=$encodedQuery&sort=created-desc", "Bearer $activeToken"
                 )
-                if (status != 200) throw IllegalStateException("HTTP $status")
-                val result = JSONArray(body)
-                val patients = (0 until result.length()).map { index ->
-                    val item = result.getJSONObject(index)
-                    PatientRow(
-                        item.getLong("id"),
-                        item.getString("fullName"),
-                        if (item.isNull("phone")) "" else item.optString("phone"),
-                        if (item.isNull("createdDateLabel")) "" else item.optString("createdDateLabel")
-                    )
+                if (status == 401) {
+                    runOnUiThread {
+                        if (token == activeToken) {
+                            confirmLogout()
+                            message.setText(R.string.session_expired)
+                        }
+                    }
+                    return@execute
                 }
+                if (status != 200) throw IllegalStateException("HTTP $status")
+                val patients = parsePatients(body)
+                if (query.isEmpty()) tokenStore.savePatients(activeAccount, body)
                 runOnUiThread {
-                    if (token != activeToken || section != Section.PATIENTS || requestId != patientsRequest) {
+                    if (token != activeToken || accountUsername != activeAccount ||
+                        section != Section.PATIENTS || requestId != patientsRequest) {
                         return@runOnUiThread
                     }
-                    swipeRefresh.isRefreshing = false
-                    patientResults.text = if (patients.size == 1) getString(R.string.patient_results_one)
-                        else getString(R.string.patient_results, patients.size)
-                    patientList.removeAllViews()
-                    if (patients.isEmpty()) addPatientMessage(R.string.patients_empty)
-                    patients.forEach(::addPatientRow)
+                    setOfflineMode(false)
+                    showPatientRows(patients)
+                }
+            } catch (_: IOException) {
+                val cached = tokenStore.cachedPatients(activeAccount)
+                val patients = runCatching { cached?.first?.let(::parsePatients) }.getOrNull()
+                    ?.filter { it.name.contains(query, ignoreCase = true) }
+                runOnUiThread {
+                    if (token != activeToken || accountUsername != activeAccount ||
+                        section != Section.PATIENTS || requestId != patientsRequest) return@runOnUiThread
+                    if (patients == null) showPatientsError()
+                    else {
+                        setOfflineMode(true, cached?.second)
+                        showPatientRows(patients)
+                    }
                 }
             } catch (_: Exception) {
                 runOnUiThread {
-                    if (token != activeToken || section != Section.PATIENTS || requestId != patientsRequest) {
-                        return@runOnUiThread
-                    }
-                    swipeRefresh.isRefreshing = false
-                    patientResults.setTextColor(getColor(R.color.brand_danger))
-                    patientResults.setText(R.string.patients_error)
-                    patientList.removeAllViews()
+                    if (token != activeToken || accountUsername != activeAccount ||
+                        section != Section.PATIENTS || requestId != patientsRequest) return@runOnUiThread
+                    showPatientsError()
                 }
             }
         }
+    }
+
+    private fun parsePatients(body: String): List<PatientRow> {
+        val result = JSONArray(body)
+        return (0 until result.length()).map { index ->
+            val item = result.getJSONObject(index)
+            PatientRow(item.getLong("id"), item.getString("fullName"),
+                if (item.isNull("phone")) "" else item.optString("phone"),
+                if (item.isNull("createdDateLabel")) "" else item.optString("createdDateLabel"))
+        }
+    }
+
+    private fun showPatientRows(patients: List<PatientRow>) {
+        swipeRefresh.isRefreshing = false
+        patientResults.setTextColor(getColor(R.color.text_muted))
+        patientResults.text = if (patients.size == 1) getString(R.string.patient_results_one)
+            else getString(R.string.patient_results, patients.size)
+        patientList.removeAllViews()
+        if (patients.isEmpty()) addPatientMessage(R.string.patients_empty)
+        patients.forEach(::addPatientRow)
+    }
+
+    private fun showPatientsError() {
+        swipeRefresh.isRefreshing = false
+        patientResults.setTextColor(getColor(R.color.brand_danger))
+        patientResults.setText(R.string.patients_error)
+        patientList.removeAllViews()
     }
 
     private fun addPatientMessage(resource: Int) {
@@ -481,7 +546,16 @@ class MainActivity : AppCompatActivity() {
         patientDetailTitle.text = patient.name
         patientDetailEdit.visibility = View.GONE
         contentScroll.scrollTo(0, 0)
-        loadPatientDetail(patient.id)
+        if (offline) {
+            swipeRefresh.isRefreshing = false
+            patientDetailStatus.visibility = View.VISIBLE
+            patientDetailStatus.setTextColor(getColor(R.color.text_muted))
+            patientDetailStatus.setText(R.string.patient_detail_offline)
+            patientDetailFields.removeAllViews()
+            addPatientDetailField(R.string.patient_detail_phone, patient.phone)
+            addPatientDetailField(R.string.patient_detail_created, patient.created)
+            patientDetailFields.visibility = View.VISIBLE
+        } else loadPatientDetail(patient.id)
     }
 
     private fun loadPatientDetail(patientId: Long) {
@@ -497,6 +571,15 @@ class MainActivity : AppCompatActivity() {
             var error = R.string.patient_detail_error
             try {
                 val (status, body) = request("GET", "/api/patients/$patientId", "Bearer $activeToken")
+                if (status == 401) {
+                    runOnUiThread {
+                        if (token == activeToken) {
+                            confirmLogout()
+                            message.setText(R.string.session_expired)
+                        }
+                    }
+                    return@execute
+                }
                 if (status == 404) error = R.string.patient_detail_not_found
                 if (status != 200) throw IllegalStateException("HTTP $status")
                 val patient = JSONObject(body)
@@ -505,6 +588,7 @@ class MainActivity : AppCompatActivity() {
                         return@runOnUiThread
                     }
                     swipeRefresh.isRefreshing = false
+                    setOfflineMode(false)
                     patientDetailTitle.text = patient.getString("fullName")
                     patientDetailStatus.visibility = View.GONE
                     val state = when (patient.optString("state")) {
@@ -971,7 +1055,8 @@ class MainActivity : AppCompatActivity() {
     private fun loadCalendarMonth() {
         val activeToken = token ?: return
         val requestId = ++calendarRequest
-        val start = calendarKey(displayedMonth) + "T00:00:00"
+        val month = calendarKey(displayedMonth)
+        val start = month + "T00:00:00"
         val nextMonth = (displayedMonth.clone() as Calendar).apply { add(Calendar.MONTH, 1) }
         val end = calendarKey(nextMonth) + "T00:00:00"
         calendarEntries = emptyList()
@@ -981,8 +1066,15 @@ class MainActivity : AppCompatActivity() {
         swipeRefresh.isRefreshing = true
         worker.execute {
             try {
-                val (status, body) = request("GET", "/api/calendar?start=$start&end=$end", "Bearer $activeToken")
-                if (status != 200) throw IllegalStateException("HTTP $status")
+                val (body, cachedAt) = try {
+                    val (status, response) = request("GET", "/api/calendar?start=$start&end=$end", "Bearer $activeToken")
+                    if (status != 200) throw IllegalStateException("HTTP $status")
+                    tokenStore.saveCalendar(accountUsername, month, response)
+                    response to null
+                } catch (_: IOException) {
+                    tokenStore.cachedCalendar(accountUsername, month)
+                        ?: throw IOException("Mese non disponibile offline")
+                }
                 val events = JSONArray(body)
                 val entries = (0 until events.length()).map { index ->
                     val event = events.getJSONObject(index)
@@ -997,6 +1089,7 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     if (token != activeToken || section != Section.CALENDAR || requestId != calendarRequest) return@runOnUiThread
                     swipeRefresh.isRefreshing = false
+                    setOfflineMode(cachedAt != null, cachedAt)
                     calendarEntries = entries
                     calendarLoading = false
                     renderCalendar()
@@ -1153,7 +1246,7 @@ class MainActivity : AppCompatActivity() {
         val nextDate = Calendar.getInstance().apply { time = startDate; add(Calendar.DAY_OF_MONTH, 1) }
         val supportedRange = if (entry.allDay) dateLabel.format(nextDate.time) == endLabel
             else startLabel == endLabel
-        val editButton = if (entry.state == "SCHEDULED" && supportedRange) MaterialButton(this).apply {
+        val editButton = if (!offline && entry.state == "SCHEDULED" && supportedRange) MaterialButton(this).apply {
             setText(R.string.calendar_edit)
             isAllCaps = false
             cornerRadius = dp(12)
@@ -1164,7 +1257,7 @@ class MainActivity : AppCompatActivity() {
         } else null
         val canCancel = entry.state != "CANCELLED" &&
             (entry.state != "COMPLETED" || entry.patientId == null)
-        val cancelButton = if (canCancel) MaterialButton(this).apply {
+        val cancelButton = if (!offline && canCancel) MaterialButton(this).apply {
             setText(R.string.calendar_delete)
             isAllCaps = false
             cornerRadius = dp(12)
@@ -1400,6 +1493,7 @@ class MainActivity : AppCompatActivity() {
         val dateTimeFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ROOT)
         val start = dateTimeFormat.format(today.time)
         val end = dateTimeFormat.format((today.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, 1) }.time)
+        val day = calendarKey(today)
         agendaDate.text = SimpleDateFormat("EEEE d MMMM yyyy", Locale.ITALIAN).format(today.time)
         swipeRefresh.isRefreshing = true
         appointmentsCount.setText(R.string.count_initial)
@@ -1409,10 +1503,27 @@ class MainActivity : AppCompatActivity() {
         addAgendaLine(getString(R.string.agenda_loading))
         worker.execute {
             try {
-                val (status, body) = request(
-                    "GET", "/api/calendar?start=$start&end=$end", "Bearer $activeToken"
-                )
-                if (status != 200) throw IllegalStateException("HTTP $status")
+                val (body, cachedAt) = try {
+                    val (status, response) = request(
+                        "GET", "/api/calendar?start=$start&end=$end", "Bearer $activeToken"
+                    )
+                    if (status != 200) throw IllegalStateException("HTTP $status")
+                    tokenStore.saveAgenda(accountUsername, day, response)
+                    response to null
+                } catch (_: IOException) {
+                    tokenStore.cachedAgenda(accountUsername, day)
+                        ?: tokenStore.cachedCalendar(accountUsername, "${day.take(7)}-01")?.let { (json, savedAt) ->
+                            val monthEvents = JSONArray(json)
+                            val daily = JSONArray()
+                            for (index in 0 until monthEvents.length()) {
+                                val event = monthEvents.getJSONObject(index)
+                                if (event.optString("start") < end && event.optString("end") > start)
+                                    daily.put(event)
+                            }
+                            daily.toString() to savedAt
+                        }
+                        ?: throw IOException("Agenda non disponibile offline")
+                }
                 val events = JSONArray(body)
                 val patientIds = mutableSetOf<Long>()
                 val rows = mutableListOf<AgendaRow>()
@@ -1436,12 +1547,14 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     if (token != activeToken || section != Section.HOME) return@runOnUiThread
                     swipeRefresh.isRefreshing = false
+                    setOfflineMode(cachedAt != null, cachedAt)
                     appointmentsCount.text = events.length().toString()
                     patientsCount.text = patientIds.size.toString()
                     remindersCount.text = reminders.toString()
                     agendaList.removeAllViews()
                     if (rows.isEmpty()) addAgendaLine(getString(R.string.agenda_empty))
                     rows.forEach(::addAgendaRow)
+                    if (cachedAt == null) primeCalendarMonths(activeToken)
                 }
             } catch (_: Exception) {
                 runOnUiThread {
@@ -1450,6 +1563,27 @@ class MainActivity : AppCompatActivity() {
                     agendaList.removeAllViews()
                     addAgendaLine(getString(R.string.agenda_error), R.color.brand_danger)
                 }
+            }
+        }
+    }
+
+    private fun primeCalendarMonths(activeToken: String) {
+        val months = listOf(0, -1, 1).map { offset ->
+            Calendar.getInstance().apply {
+                set(Calendar.DAY_OF_MONTH, 1)
+                add(Calendar.MONTH, offset)
+            }
+        }
+        worker.execute {
+            for (month in months) {
+                if (token != activeToken) return@execute
+                val start = calendarKey(month)
+                val end = calendarKey((month.clone() as Calendar).apply { add(Calendar.MONTH, 1) })
+                try {
+                    val (status, body) = request("GET",
+                        "/api/calendar?start=${start}T00:00:00&end=${end}T00:00:00", "Bearer $activeToken")
+                    if (status == 200) tokenStore.saveCalendar(accountUsername, start, body)
+                } catch (_: Exception) { continue }
             }
         }
     }
@@ -1535,6 +1669,8 @@ class MainActivity : AppCompatActivity() {
         }
         loginAttempt++
         token = null
+        accountUsername = ""
+        setOfflineMode(false)
         section = Section.HOME
         selectedPatientId = null
         patientsRequest++

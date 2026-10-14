@@ -12,6 +12,7 @@ la guida pertinente quando cambiano struttura, comportamento o procedure.
 - [Inventario funzionale](architecture/02-inventario-funzionale.md): schermate,
   flussi e criteri di parità.
 - [Piano API](architecture/04-api-roadmap.md): copertura dei flussi legacy per i nuovi client.
+- [Sincronizzazione locale](architecture/05-local-first.md): contratto e passi per desktop e Android.
 - [Stato dei lavori](migration-status.md): passi completati, aperti e verifiche.
 
 ## Operazioni

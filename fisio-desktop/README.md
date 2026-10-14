@@ -225,6 +225,21 @@ resta utilizzabile. Dopo la conferma, Logout elimina il token locale e ne chiede
 backend; se la revoca fallisce viene mostrato un avviso. La ricerca dei pazienti resta nella rubrica;
 la barra di ricerca globale non è presente nel desktop.
 
+La Rubrica scaricata senza ricerca e con l'ordinamento predefinito viene salvata
+in un file cifrato con una chiave derivata dal token protetto. Con backend spento,
+il desktop riapre questa copia per la stessa sessione: ricerca e ordinamento
+funzionano localmente; la scheda mostra solo nome, telefono e data e non è
+modificabile. Home salva l'agenda di oggi e la lista di attesa; Calendario
+salva i periodi visitati e prepara i tre mesi intorno a quello corrente.
+Senza backend si aprono Home, Calendario e Rubrica in sola lettura. Il filtro
+rubrica per data e le modifiche offline non sono disponibili. Logout elimina
+la copia locale. Per provare: accedi online, apri la Rubrica senza filtri e il
+Calendario, chiudi il desktop, spegni il backend e riavvia. Controlla Home,
+Calendario e ricerca pazienti, poi riaccendi il backend e riapri le schermate.
+La Home di un giorno fuori dai periodi salvati e i periodi del calendario fuori
+dalla copia mostrano un errore. Una revoca remota può essere rilevata solo al
+ritorno della connessione.
+
 Le licenze degli asset incorporati sono in `src/main/resources/desktop/vendor/`.
 
 ## Pacchetto Windows

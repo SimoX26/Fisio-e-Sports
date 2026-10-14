@@ -28,6 +28,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const adminReviewModal = new bootstrap.Modal(document.getElementById("adminReviewModal"));
   let authorization = null;
   let currentRole = null;
+  let currentIdentity = null;
+  let offlineMode = false;
+  let cachedPatientsSnapshot = null;
   let adminRequestsRequest = 0;
   let adminReviewSelection = null;
   let calendar = null;
@@ -387,6 +390,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function openAppointmentModal(start = new Date()) {
+    if (offlineMode) return;
     editingAppointmentId = null;
     convertingWaitlistId = null;
     const rounded = new Date(start);
@@ -447,6 +451,96 @@ document.addEventListener("DOMContentLoaded", () => {
     return (await apiRequest(path)).json();
   }
 
+  function readPatientCache(token) {
+    try {
+      const raw = window.desktopBridge?.loadPatientCache(token);
+      const snapshot = raw ? JSON.parse(raw) : null;
+      return snapshot?.version === 1 && snapshot.identity?.role === "THERAPIST"
+        && typeof snapshot.identity.username === "string"
+        && (Array.isArray(snapshot.patients) || snapshot.agenda || snapshot.calendarRanges?.length)
+        && Number.isFinite(snapshot.savedAt) ? snapshot : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function saveOfflineSnapshot(changes) {
+    if (currentIdentity?.role !== "THERAPIST" || !authorization?.startsWith("Bearer ")) return;
+    cachedPatientsSnapshot = {
+      version: 1, identity: { username: currentIdentity.username, role: "THERAPIST" },
+      savedAt: Date.now(), ...cachedPatientsSnapshot, ...changes
+    };
+    cachedPatientsSnapshot.savedAt = Date.now();
+    window.desktopBridge?.savePatientCache(authorization.slice(7), JSON.stringify(cachedPatientsSnapshot));
+  }
+
+  function calendarBoundary(value) {
+    return value.length === 10 ? `${value}T00:00:00` : value.slice(0, 19);
+  }
+
+  function cachedCalendarEvents(start, end) {
+    start = calendarBoundary(start);
+    end = calendarBoundary(end);
+    const range = cachedPatientsSnapshot?.calendarRanges?.slice().reverse().find(item =>
+      item.start <= start && item.end >= end && Array.isArray(item.events));
+    return range?.events.filter(event => event.start < end && (event.end || event.start) >= start) || null;
+  }
+
+  function saveCalendarRange(start, end, events) {
+    start = calendarBoundary(start);
+    end = calendarBoundary(end);
+    const ranges = (cachedPatientsSnapshot?.calendarRanges || [])
+      .filter(item => item.start !== start || item.end !== end).slice(-7);
+    ranges.push({ start, end, events });
+    saveOfflineSnapshot({ calendarRanges: ranges });
+  }
+
+  async function primeCalendarCache() {
+    const currentSession = sessionEpoch;
+    const start = new Date();
+    start.setDate(1);
+    start.setMonth(start.getMonth() - 1);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - 7);
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + 3);
+    end.setDate(end.getDate() + 14);
+    const from = localDateTime(start), to = localDateTime(end);
+    try {
+      const events = await getJson(`/api/calendar?${new URLSearchParams({ start: from, end: to })}`);
+      if (currentSession === sessionEpoch && currentIdentity?.role === "THERAPIST")
+        saveCalendarRange(from, to, events);
+    } catch (_) { /* La schermata mostra l'errore solo se viene aperta. */ }
+  }
+
+  function setOfflineMode(value) {
+    offlineMode = value;
+    document.getElementById("offlineNotice").classList.toggle("d-none", !value);
+    for (const id of ["homeNav", "calendarNav", "patientsNav", "treatmentsNav", "statsNav", "settingsNav"])
+      document.getElementById(id).parentElement.hidden = currentRole === "ADMIN"
+        || (value && !["homeNav", "calendarNav", "patientsNav"].includes(id));
+    document.getElementById("patientsCreateButton").disabled = value;
+    for (const id of ["homeCreateAppointmentButton", "homeCreatePatientButton", "homeSendRemindersButton",
+      "openHomeReminderBtn", "todayRemindersButton"])
+      document.getElementById(id).hidden = value;
+    document.querySelectorAll("#waitlistForm input, #waitlistForm button").forEach(field => { field.disabled = value; });
+    document.querySelectorAll(".home-waitlist-actions").forEach(actions => { actions.hidden = value; });
+    document.querySelectorAll(".calendar-reminder-btn").forEach(button => { button.hidden = value; });
+    if (calendar) {
+      calendar.setOption("editable", !value && calendar.view.type === "timeGridWeek");
+      for (const selector of [".fc-newAppointment-button", ".fc-trash-button"]) {
+        const button = document.querySelector(selector);
+        if (button) button.hidden = value;
+      }
+    }
+    const notice = document.getElementById("patientsOfflineNotice");
+    notice.classList.toggle("d-none", !value);
+    if (value && cachedPatientsSnapshot) {
+      const savedAt = new Date(cachedPatientsSnapshot.savedAt).toLocaleString("it-IT");
+      notice.textContent = `Offline: dati salvati il ${savedAt}, in sola lettura.`;
+    }
+  }
+
   async function loadIdentity() {
     try {
       return await getJson("/api/me");
@@ -456,9 +550,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function enterApp(identity) {
+  function enterApp(identity, offline = false) {
     sessionEpoch++;
     currentRole = identity.role;
+    currentIdentity = identity;
     document.getElementById("password").value = "";
     const prefix = new Date().getHours() > 15 ? "Buonasera" : "Buongiorno";
     const displayName = identity.username.charAt(0).toLocaleUpperCase("it-IT") + identity.username.slice(1).toLocaleLowerCase("it-IT");
@@ -473,8 +568,10 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById(id).parentElement.hidden = admin;
     document.getElementById("adminHomeNavItem").hidden = !admin;
     document.getElementById("adminRequestsNavItem").hidden = !admin;
+    setOfflineMode(offline);
     if (admin) showAdminHome();
     else showHome();
+    if (!admin && !offline) primeCalendarCache();
   }
 
   function showAuthNotice(message) {
@@ -502,12 +599,28 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!token || manualLoginStarted || authorization || loginScreen.hidden) return;
     authorization = `Bearer ${token}`;
     const attemptAuthorization = authorization;
+    let timeoutId;
     try {
-      const identity = await loadIdentity();
+      const identity = await Promise.race([
+        loadIdentity(),
+        new Promise((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error("backend_timeout")), 7000);
+        })
+      ]);
       if (manualLoginStarted || loginScreen.hidden) return;
+      const snapshot = readPatientCache(token);
+      cachedPatientsSnapshot = snapshot?.identity.username === identity.username ? snapshot : null;
       enterApp(identity);
     } catch (failure) {
       if (manualLoginStarted || authorization !== attemptAuthorization) return;
+      if (!failure.status) {
+        const snapshot = readPatientCache(token);
+        if (snapshot) {
+          cachedPatientsSnapshot = snapshot;
+          enterApp(snapshot.identity, true);
+          return;
+        }
+      }
       authorization = null;
       if (failure.status === 401) {
         window.desktopBridge.clearToken();
@@ -517,6 +630,8 @@ document.addEventListener("DOMContentLoaded", () => {
           : `Accesso automatico non riuscito. Controlla ${apiBase}/ready.`;
         loginError.classList.remove("d-none");
       }
+    } finally {
+      clearTimeout(timeoutId);
     }
   };
   window.desktopTokenStored = saved => {
@@ -525,6 +640,14 @@ document.addEventListener("DOMContentLoaded", () => {
       showAuthNotice(cleared
         ? "Accesso automatico non disponibile: il sistema non ha salvato il token protetto."
         : "Accesso automatico non disponibile: controlla l'archivio credenziali del sistema prima di riaprire l'app.");
+    }
+  };
+
+  window.desktopPatientCacheSaved = saved => {
+    if (!saved && !patientsScreen.hidden && !offlineMode) {
+      const error = document.getElementById("patientsError");
+      error.textContent = "Rubrica online disponibile, ma la copia locale non è stata salvata.";
+      error.classList.remove("d-none");
     }
   };
 
@@ -682,7 +805,16 @@ document.addEventListener("DOMContentLoaded", () => {
     list.replaceChildren();
     document.getElementById("waitlistError").classList.add("d-none");
     try {
-      const entries = await getJson("/api/waitlist");
+      let entries;
+      try {
+        entries = await getJson("/api/waitlist");
+        if (currentSession !== sessionEpoch) return;
+        saveOfflineSnapshot({ waitlist: { entries, savedAt: Date.now() } });
+      } catch (failure) {
+        if (failure.status || !Array.isArray(cachedPatientsSnapshot?.waitlist?.entries)) throw failure;
+        entries = cachedPatientsSnapshot.waitlist.entries;
+        setOfflineMode(true);
+      }
       if (currentSession !== sessionEpoch) return;
       document.getElementById("waitlistCount").textContent = `${entries.length} contatti`;
       if (entries.length === 0) {
@@ -709,6 +841,7 @@ document.addEventListener("DOMContentLoaded", () => {
         main.append(name, metadata);
         const actions = document.createElement("div");
         actions.className = "home-waitlist-actions";
+        actions.hidden = offlineMode;
         const convert = document.createElement("button");
         convert.type = "button";
         convert.className = "btn btn-outline-primary btn-sm";
@@ -761,7 +894,20 @@ document.addEventListener("DOMContentLoaded", () => {
     agenda.replaceChildren();
     try {
       const query = new URLSearchParams({ start: localDateTime(start), end: localDateTime(end) });
-      const events = await getJson(`/api/calendar?${query}`);
+      let events;
+      try {
+        events = await getJson(`/api/calendar?${query}`);
+        if (currentSession !== sessionEpoch) return;
+        saveOfflineSnapshot({ agenda: { day: localDateTime(start).slice(0, 10), events, savedAt: Date.now() } });
+        setOfflineMode(false);
+      } catch (failure) {
+        const cached = cachedPatientsSnapshot?.agenda;
+        if (failure.status) throw failure;
+        events = cached?.day === localDateTime(start).slice(0, 10) && Array.isArray(cached.events)
+          ? cached.events : cachedCalendarEvents(localDateTime(start), localDateTime(end));
+        if (!events) throw failure;
+        setOfflineMode(true);
+      }
       if (currentSession !== sessionEpoch) return;
       document.getElementById("appointmentsToday").textContent = events.length;
       document.getElementById("patientsToday").textContent = new Set(events.map(item => item.extendedProps.patientId).filter(id => id != null)).size;
@@ -853,7 +999,7 @@ document.addEventListener("DOMContentLoaded", () => {
       dragRevertDuration: 0,
       eventDurationEditable: false,
       eventAllow(drop, event) {
-        return calendar.view.type === "timeGridWeek" && !drop.allDay
+        return !offlineMode && calendar.view.type === "timeGridWeek" && !drop.allDay
           && !event.allDay && event.extendedProps.state === "SCHEDULED"
           && !movingAppointmentIds.has(event.id);
       },
@@ -862,7 +1008,7 @@ document.addEventListener("DOMContentLoaded", () => {
       slotLabelFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
       slotLabelInterval: "01:00",
       dayHeaderDidMount(info) {
-        if (info.view.type !== "timeGridWeek" && info.view.type !== "timeGridTwoWeeks") return;
+        if (offlineMode || (info.view.type !== "timeGridWeek" && info.view.type !== "timeGridTwoWeeks")) return;
         const anchor = info.el.querySelector(".fc-col-header-cell-cushion");
         if (!anchor) return;
         const date = appointmentDate(info.date);
@@ -886,11 +1032,20 @@ document.addEventListener("DOMContentLoaded", () => {
           const query = new URLSearchParams({ start: range.startStr, end: range.endStr });
           const events = await getJson(`/api/calendar?${query}`);
           if (currentSession !== sessionEpoch) return;
+          saveCalendarRange(range.startStr, range.endStr, events);
+          setOfflineMode(false);
           dataStatus.classList.add("d-none");
           success(events.map(event => event.extendedProps.state === "SCHEDULED" && !event.allDay
             ? event : { ...event, startEditable: false }));
         } catch (error) {
           if (currentSession !== sessionEpoch) return;
+          const cached = !error.status && cachedCalendarEvents(range.startStr, range.endStr);
+          if (cached) {
+            setOfflineMode(true);
+            dataStatus.classList.add("d-none");
+            success(cached.map(event => ({ ...event, startEditable: false })));
+            return;
+          }
           dataStatus.textContent = "Impossibile caricare gli appuntamenti dal backend.";
           dataStatus.classList.remove("d-none");
           failure(error);
@@ -979,7 +1134,8 @@ document.addEventListener("DOMContentLoaded", () => {
       },
       datesSet(info) {
         const weekView = info.view.type === "timeGridWeek";
-        if (calendar.getOption("editable") !== weekView) calendar.setOption("editable", weekView);
+        if (calendar.getOption("editable") !== (weekView && !offlineMode))
+          calendar.setOption("editable", weekView && !offlineMode);
         document.body.classList.toggle("calendar-view-day", info.view.type === "timeGridDay");
         document.body.classList.toggle("calendar-view-week", weekView);
         document.body.classList.toggle("calendar-view-two-weeks", info.view.type === "timeGridTwoWeeks");
@@ -987,7 +1143,7 @@ document.addEventListener("DOMContentLoaded", () => {
         scheduleCalendarLayout();
       },
       select(info) {
-        openAppointmentModal(info.start);
+        if (!offlineMode) openAppointmentModal(info.start);
       },
       eventClick(info) {
         info.jsEvent.preventDefault();
@@ -1017,12 +1173,12 @@ document.addEventListener("DOMContentLoaded", () => {
           }, { once: true });
           eventModal.hide();
         };
-        document.getElementById("sendSingleReminderBtn").classList.toggle("d-none", completed || allDay || generic || patientId == null);
+        document.getElementById("sendSingleReminderBtn").classList.toggle("d-none", offlineMode || completed || allDay || generic || patientId == null);
         document.getElementById("completeAppointmentBtn").classList.toggle("d-none",
-          event.extendedProps.state !== "SCHEDULED" || allDay || generic || patientId == null
+          offlineMode || event.extendedProps.state !== "SCHEDULED" || allDay || generic || patientId == null
           || !event.end || event.end > new Date());
-        document.getElementById("editAppointmentBtn").classList.toggle("d-none", completed);
-        document.getElementById("deleteAppointmentBtn").classList.toggle("d-none", completed && !generic);
+        document.getElementById("editAppointmentBtn").classList.toggle("d-none", offlineMode || completed);
+        document.getElementById("deleteAppointmentBtn").classList.toggle("d-none", offlineMode || (completed && !generic));
         const stateHints = [];
         if (completed) stateHints.push(generic ? "Evento completato: cancellazione consentita." : "Appuntamento completato: azioni non disponibili.");
         if (allDay) stateHints.push("Evento tutto il giorno: non collegato ai trattamenti.");
@@ -1051,6 +1207,8 @@ document.addEventListener("DOMContentLoaded", () => {
       calendar = createCalendar();
       calendar.render();
     }
+    for (const selector of [".fc-newAppointment-button", ".fc-trash-button"])
+      document.querySelector(selector).hidden = offlineMode;
     if (dayView) calendar.changeView("timeGridDay");
     document.body.classList.toggle("calendar-view-day", calendar.view.type === "timeGridDay");
     document.body.classList.toggle("calendar-view-week", calendar.view.type === "timeGridWeek");
@@ -1466,52 +1624,74 @@ document.addEventListener("DOMContentLoaded", () => {
     trashConfirmModal.show();
   }
 
-  async function loadPatients() {
-    const currentSession = sessionEpoch;
-    const currentRequest = ++patientsRequest;
+  function showCachedPatientDetail(patient) {
+    patientDetailRequest++;
+    document.getElementById("patientEditForm").hidden = true;
+    document.getElementById("patientSummary").hidden = false;
+    document.getElementById("patientEditToggle").hidden = true;
+    document.getElementById("patientSummaryError").classList.add("d-none");
+    document.getElementById("patientSummarySuccess").classList.add("d-none");
+    document.getElementById("patientModalTitle").textContent = patient.fullName;
+    const content = document.getElementById("patientSummaryContent");
+    content.classList.remove("text-muted");
+    content.textContent = `Scheda parziale salvata sul dispositivo.\nTelefono: ${patient.phone || "—"}\nData creazione: ${patient.createdDateLabel || "—"}`;
+    content.style.whiteSpace = "pre-line";
+    patientModal.show();
+  }
+
+  function cachedPatientsForCurrentFilter() {
+    if (!Array.isArray(cachedPatientsSnapshot?.patients) || patientsTreatedDate != null) return null;
+    const query = document.getElementById("patientsQuery").value.trim().toLocaleLowerCase("it-IT");
+    const sort = document.getElementById("patientsSort").value;
+    const patients = cachedPatientsSnapshot.patients
+      .filter(patient => patient.fullName?.toLocaleLowerCase("it-IT").includes(query));
+    if (sort === "created-asc") patients.reverse();
+    if (sort.startsWith("name-")) {
+      patients.sort((a, b) => a.fullName.localeCompare(b.fullName, "it-IT") * (sort === "name-desc" ? -1 : 1));
+    }
+    return patients;
+  }
+
+  function renderPatientRows(patients, readOnly) {
     const rows = document.getElementById("patientsRows");
-    const error = document.getElementById("patientsError");
-    const empty = document.getElementById("patientsEmpty");
     rows.replaceChildren();
-    error.classList.add("d-none");
-    empty.classList.add("d-none");
-    try {
-      const query = new URLSearchParams({
-        q: document.getElementById("patientsQuery").value,
-        sort: document.getElementById("patientsSort").value
-      });
-      if (patientsTreatedDate != null) query.set("treatedDate", patientsTreatedDate);
-      const patients = await getJson(`/api/patients?${query}`);
-      if (currentSession !== sessionEpoch || currentRequest !== patientsRequest) return;
-      empty.classList.toggle("d-none", patients.length !== 0);
-      for (const patient of patients) {
-        const row = document.createElement("tr");
-        row.className = "desktop-patient-row";
-        row.tabIndex = 0;
-        row.setAttribute("aria-label", `Apri scheda di ${patient.fullName}`);
-        row.addEventListener("click", event => {
-          if (!event.target.closest("button, a, input, select, textarea")) showPatientDetail(patient.id);
-        });
-        row.addEventListener("keydown", event => {
-          if (event.target !== row || (event.key !== "Enter" && event.key !== " ")) return;
-          event.preventDefault();
-          showPatientDetail(patient.id);
-        });
-        const nameCell = document.createElement("td");
-        const nameButton = document.createElement("button");
-        nameButton.type = "button";
-        nameButton.className = "btn btn-link p-0 patient-name-link text-start";
-        nameButton.textContent = patient.fullName;
-        nameButton.addEventListener("click", () => showPatientDetail(patient.id));
-        nameCell.appendChild(nameButton);
-        row.appendChild(nameCell);
-        for (const value of [patient.createdDateLabel, patient.phone || ""]) {
-          const cell = document.createElement("td");
-          cell.textContent = value;
-          row.appendChild(cell);
+    document.getElementById("patientsEmpty").classList.toggle("d-none", patients.length !== 0);
+    for (const patient of patients) {
+      const row = document.createElement("tr");
+      row.className = "desktop-patient-row";
+      row.tabIndex = 0;
+      row.setAttribute("aria-label", `Apri scheda di ${patient.fullName}`);
+      row.addEventListener("click", event => {
+        if (!event.target.closest("button, a, input, select, textarea")) {
+          if (readOnly) showCachedPatientDetail(patient);
+          else showPatientDetail(patient.id);
         }
-        const actions = document.createElement("td");
-        actions.className = "text-end address-book-actions";
+      });
+      row.addEventListener("keydown", event => {
+        if (event.target !== row || (event.key !== "Enter" && event.key !== " ")) return;
+        event.preventDefault();
+        if (readOnly) showCachedPatientDetail(patient);
+        else showPatientDetail(patient.id);
+      });
+      const nameCell = document.createElement("td");
+      const nameButton = document.createElement("button");
+      nameButton.type = "button";
+      nameButton.className = "btn btn-link p-0 patient-name-link text-start";
+      nameButton.textContent = patient.fullName;
+      nameButton.addEventListener("click", () => {
+        if (readOnly) showCachedPatientDetail(patient);
+        else showPatientDetail(patient.id);
+      });
+      nameCell.appendChild(nameButton);
+      row.appendChild(nameCell);
+      for (const value of [patient.createdDateLabel, patient.phone || ""]) {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.appendChild(cell);
+      }
+      const actions = document.createElement("td");
+      actions.className = "text-end address-book-actions";
+      if (!readOnly) {
         const history = document.createElement("button");
         history.type = "button";
         history.className = "btn btn-sm btn-outline-secondary me-2";
@@ -1525,12 +1705,57 @@ document.addEventListener("DOMContentLoaded", () => {
         remove.title = "Elimina paziente";
         remove.addEventListener("click", () => openDeletePatient(patient));
         actions.appendChild(remove);
-        row.appendChild(actions);
-        rows.appendChild(row);
       }
+      row.appendChild(actions);
+      rows.appendChild(row);
+    }
+  }
+
+  async function loadPatients() {
+    const currentSession = sessionEpoch;
+    const currentRequest = ++patientsRequest;
+    const error = document.getElementById("patientsError");
+    error.classList.add("d-none");
+    document.getElementById("patientsRows").replaceChildren();
+    document.getElementById("patientsEmpty").classList.add("d-none");
+    if (offlineMode) {
+      const cached = cachedPatientsForCurrentFilter();
+      if (cached) renderPatientRows(cached, true);
+    }
+    try {
+      const query = new URLSearchParams({
+        q: document.getElementById("patientsQuery").value,
+        sort: document.getElementById("patientsSort").value
+      });
+      if (patientsTreatedDate != null) query.set("treatedDate", patientsTreatedDate);
+      const patients = await getJson(`/api/patients?${query}`);
+      if (currentSession !== sessionEpoch || currentRequest !== patientsRequest) return;
+      if (query.get("q") === "" && query.get("sort") === "created-desc" && patientsTreatedDate == null
+          && currentIdentity?.role === "THERAPIST" && authorization?.startsWith("Bearer ")) {
+        saveOfflineSnapshot({ patients });
+      }
+      setOfflineMode(false);
+      renderPatientRows(patients, false);
     } catch (failure) {
       if (currentSession !== sessionEpoch || currentRequest !== patientsRequest) return;
-      error.textContent = "Impossibile caricare la rubrica dal backend.";
+      if (!failure.status && cachedPatientsSnapshot?.identity.username === currentIdentity?.username) {
+        const cached = cachedPatientsForCurrentFilter();
+        if (cached) {
+          setOfflineMode(true);
+          renderPatientRows(cached, true);
+          return;
+        }
+      }
+      if (failure.status === 401) {
+        cachedPatientsSnapshot = null;
+        window.desktopBridge?.clearToken();
+        setOfflineMode(false);
+      }
+      document.getElementById("patientsRows").replaceChildren();
+      error.textContent = failure.status === 401 ? "Sessione scaduta. Esci e accedi di nuovo."
+        : patientsTreatedDate != null && !failure.status && cachedPatientsSnapshot
+          ? "Il filtro per data non è disponibile offline. Rimuovi il filtro per vedere la rubrica salvata."
+          : "Impossibile caricare la rubrica dal backend.";
       error.classList.remove("d-none");
     }
   }
@@ -1866,6 +2091,7 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (failure) {
         rememberUnavailable = true;
       }
+      cachedPatientsSnapshot = null;
       enterApp(identity);
       if (rememberUnavailable) showAuthNotice("Accesso automatico non disponibile; questa sessione resta attiva fino all'uscita.");
     } catch (error) {
@@ -2363,6 +2589,9 @@ document.addEventListener("DOMContentLoaded", () => {
     mergeConfirmModal.hide();
     authorization = null;
     currentRole = null;
+    currentIdentity = null;
+    cachedPatientsSnapshot = null;
+    setOfflineMode(false);
     if (calendar) {
       calendar.destroy();
       calendar = null;

@@ -145,7 +145,18 @@ La password non viene salvata. Android cifra il token nel proprio archivio
 privato usando Android Keystore e lo separa per URL del backend; il backup
 dell'app è disabilitato perché la chiave non è trasferibile. Alla riapertura
 verifica la sessione con `/api/me`: se il token è scaduto o revocato torna
-al login. Se il backend non è raggiungibile, resta sul login e conserva il
-token per un tentativo successivo. Esci elimina il token locale e chiede al
+al login. Se il backend non è raggiungibile e sul dispositivo esiste una
+copia già scaricata per quell'account, apre Home, Calendario e Rubrica in sola
+lettura; altrimenti resta sul login. Home conserva l'agenda del giorno;
+Calendario prepara il mese precedente, corrente e successivo dopo un accesso
+online e salva anche i mesi visitati. La Home usa il mese salvato se cambia
+giorno. Un giorno o mese mai scaricato mostra
+un errore, senza fingere che sia vuoto. Per provare: accedi online, attendi
+il caricamento della Home, apri la Rubrica senza filtri, chiudi l'app, spegni
+il backend e riaprila. Controlla Home, Calendario, ricerca per nome e scheda
+parziale senza **Modifica**. Riavvia il backend e ricarica le schermate: il
+banner deve sparire.
+Prova anche un altro account sullo stesso backend: non deve vedere la copia
+del primo. Esci elimina il token locale e la copia dei dati e chiede al
 backend di revocarlo quando la rete è disponibile. Il token scade dopo 30
 giorni; ogni dispositivo ha una sessione distinta.
