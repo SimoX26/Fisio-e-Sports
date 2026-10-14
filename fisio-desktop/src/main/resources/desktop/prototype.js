@@ -303,6 +303,57 @@ document.addEventListener("DOMContentLoaded", () => {
     return localDateTime(date).slice(11, 16);
   }
 
+  let twoWeekLayoutFrame = 0;
+
+  function updateTwoWeekLayout() {
+    if (!calendar || calendar.view.type !== "timeGridTwoWeeks") return;
+    const days = [];
+    for (let date = new Date(calendar.view.activeStart); date < calendar.view.activeEnd;) {
+      const next = new Date(date);
+      next.setDate(next.getDate() + 1);
+      days.push({ date: appointmentDate(date), start: date, end: next });
+      date = next;
+    }
+    if (days.length !== 14) return;
+
+    const events = calendar.getEvents();
+    const occupied = days.map(day => events.some(event => {
+      if (!event.start || event.display === "background") return false;
+      const end = event.end || new Date(event.start.getTime() + 1);
+      return event.start < day.end && end > day.start;
+    }));
+    const weights = occupied.map(hasEvent => hasEvent ? 1 : .5);
+    const total = weights.reduce((sum, weight) => sum + weight, 0);
+    const root = document.getElementById("calendar");
+    root.querySelectorAll(".fc-timegrid colgroup").forEach(group => {
+      if (group.children.length < days.length) return;
+      const offset = group.children.length - days.length;
+      weights.forEach((weight, index) => {
+        group.children[offset + index].style.width = `${92 * weight / total}%`;
+      });
+    });
+    root.querySelectorAll(".fc-col-header-cell[data-date]").forEach(header => {
+      const index = days.findIndex(day => day.date === header.dataset.date);
+      if (index < 0) return;
+      const empty = !occupied[index];
+      header.classList.toggle("calendar-two-weeks-empty", empty);
+      const label = header.querySelector(".fc-col-header-cell-cushion");
+      if (label) label.dataset.dayNumber = String(days[index].start.getDate());
+    });
+  }
+
+  function scheduleTwoWeekLayout() {
+    if (twoWeekLayoutFrame) return;
+    twoWeekLayoutFrame = requestAnimationFrame(() => {
+      twoWeekLayoutFrame = requestAnimationFrame(() => {
+        twoWeekLayoutFrame = 0;
+        updateTwoWeekLayout();
+      });
+    });
+  }
+
+  window.addEventListener("resize", scheduleTwoWeekLayout);
+
   function showAppointmentError(message) {
     const error = document.getElementById("appointmentFormError");
     error.textContent = message;
@@ -831,6 +882,7 @@ document.addEventListener("DOMContentLoaded", () => {
           failure(error);
         }
       },
+      eventsSet: scheduleTwoWeekLayout,
       eventContent(arg) {
         const month = arg.view.type === "dayGridMonth";
         const wrapper = document.createElement(month ? "span" : "div");
@@ -870,6 +922,7 @@ document.addEventListener("DOMContentLoaded", () => {
         info.el.style.setProperty("color", foreground, "important");
         info.el.title = [info.event.title, info.event.extendedProps.patientPhone,
           info.event.extendedProps.notes].filter(Boolean).join(" · ");
+        if (info.view.type === "timeGridTwoWeeks") scheduleTwoWeekLayout();
       },
       async eventDrop(info) {
         const currentSession = sessionEpoch;
@@ -916,6 +969,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.body.classList.toggle("calendar-view-week", weekView);
         document.body.classList.toggle("calendar-view-two-weeks", info.view.type === "timeGridTwoWeeks");
         document.body.classList.toggle("calendar-view-month", info.view.type === "dayGridMonth");
+        scheduleTwoWeekLayout();
       },
       select(info) {
         openAppointmentModal(info.start);
@@ -988,6 +1042,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.classList.toggle("calendar-view-two-weeks", calendar.view.type === "timeGridTwoWeeks");
     document.body.classList.toggle("calendar-view-month", calendar.view.type === "dayGridMonth");
     calendar.updateSize();
+    scheduleTwoWeekLayout();
   }
 
   function setPatientsFilter(date) {

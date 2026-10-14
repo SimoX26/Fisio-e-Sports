@@ -340,6 +340,19 @@ body.calendar-view-two-weeks .fc .fc-col-header-cell-cushion{
     white-space: nowrap;
 }
 
+body.calendar-view-two-weeks .fc .calendar-two-weeks-empty .fc-col-header-cell-cushion{
+    font-size: 0;
+}
+
+body.calendar-view-two-weeks .fc .calendar-two-weeks-empty .fc-col-header-cell-cushion::after{
+    content: attr(data-day-number);
+    font-size: .7rem;
+}
+
+body.calendar-view-two-weeks .fc .calendar-two-weeks-empty .calendar-reminder-btn{
+    display: none;
+}
+
 body.calendar-view-two-weeks .calendar-reminder-btn{
     display: flex;
     width: 20px;
