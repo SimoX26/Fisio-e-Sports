@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let adminRequestsRequest = 0;
   let adminReviewSelection = null;
   let calendar = null;
+  const movingAppointmentIds = new Set();
   let selectedAppointment = null;
   let editingAppointmentId = null;
   let convertingWaitlistId = null;
@@ -762,7 +763,7 @@ document.addEventListener("DOMContentLoaded", () => {
       headerToolbar: { left: "prev,next today timeGridDay,timeGridWeek,dayGridMonth", center: "title", right: "trash newAppointment" },
       titleRangeSeparator: " - ",
       initialView: "timeGridWeek",
-      views: { timeGridWeek: { titleFormat: { day: "numeric", month: "long", year: "numeric" } } },
+      views: { timeGridWeek: { titleFormat: { day: "numeric", month: "long", year: "numeric" }, editable: true } },
       slotDuration: "00:15:00",
       snapDuration: "00:15:00",
       nowIndicator: true,
@@ -771,6 +772,12 @@ document.addEventListener("DOMContentLoaded", () => {
       scrollTime: "08:00:00",
       selectable: true,
       editable: false,
+      eventDurationEditable: false,
+      eventAllow(drop, event) {
+        return calendar.view.type === "timeGridWeek" && !drop.allDay
+          && !event.allDay && event.extendedProps.state === "SCHEDULED"
+          && !movingAppointmentIds.has(event.id);
+      },
       displayEventTime: true,
       eventTimeFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
       slotLabelFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
@@ -795,11 +802,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const wrapper = document.createElement(month ? "span" : "div");
         const time = document.createElement(month ? "span" : "div");
         const title = document.createElement(month ? "span" : "div");
+        if (!month) wrapper.className = "calendar-event-content";
         time.className = month ? "fc-event-time-inline" : "fc-event-time-line";
         title.className = month ? "fc-event-title-inline" : "fc-event-title-line";
         time.textContent = arg.timeText || "";
         title.textContent = arg.event.title || "";
         wrapper.append(time, title);
+        const phone = arg.event.extendedProps.patientPhone;
+        const minutes = arg.event.end && arg.event.start
+          ? (arg.event.end - arg.event.start) / 60000 : 0;
+        if (!month && phone && minutes >= 90 && !arg.event.extendedProps.nonTreatmentEvent) {
+          const contact = document.createElement("div");
+          contact.className = "fc-event-contact-line";
+          contact.textContent = phone;
+          wrapper.appendChild(contact);
+        }
         return { domNodes: [wrapper] };
       },
       eventDidMount(info) {
@@ -809,12 +826,53 @@ document.addEventListener("DOMContentLoaded", () => {
         const border = generic ? "#c9ced6" : completed ? "#8bc49a" : "#7f9fcd";
         const foreground = generic ? "#4b5563" : completed ? "#1f8f47" : "#1f2d3d";
         info.el.classList.add("calendar-event--custom-color");
+        if (info.event.extendedProps.state === "SCHEDULED" && !info.event.allDay)
+          info.el.classList.add("calendar-event--draggable");
         info.el.style.setProperty("--event-bg", background);
         info.el.style.setProperty("--event-border", border);
         info.el.style.setProperty("--event-text", foreground);
         info.el.style.setProperty("background", background, "important");
         info.el.style.setProperty("border", `1px solid ${border}`, "important");
         info.el.style.setProperty("color", foreground, "important");
+        info.el.title = [info.event.title, info.event.extendedProps.patientPhone,
+          info.event.extendedProps.notes].filter(Boolean).join(" · ");
+      },
+      async eventDrop(info) {
+        const currentSession = sessionEpoch;
+        const event = info.event;
+        if (!event.start || !event.end || event.allDay || event.extendedProps.state !== "SCHEDULED") {
+          info.revert();
+          return;
+        }
+        if (movingAppointmentIds.has(event.id)) {
+          info.revert();
+          return;
+        }
+        movingAppointmentIds.add(event.id);
+        const body = new URLSearchParams({
+          start: localDateTime(event.start),
+          end: localDateTime(event.end)
+        });
+        try {
+          await apiRequest(`/api/calendar/${encodeURIComponent(event.id)}/move`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+            body: body.toString()
+          });
+          if (currentSession !== sessionEpoch) return;
+          dataStatus.classList.add("d-none");
+          calendar.refetchEvents();
+          loadTodayAgenda();
+        } catch (failure) {
+          info.revert();
+          if (currentSession !== sessionEpoch) return;
+          dataStatus.textContent = failure.status === 409
+            ? "Spostamento non riuscito: fascia occupata o appuntamento non più modificabile."
+            : "Impossibile spostare l'appuntamento. Verifica il calendario e riprova.";
+          dataStatus.classList.remove("d-none");
+        } finally {
+          movingAppointmentIds.delete(event.id);
+        }
       },
       datesSet(info) {
         document.body.classList.toggle("calendar-view-day", info.view.type === "timeGridDay");
@@ -838,6 +896,10 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("eventModalTime").textContent = allDay
           ? `${date} • Tutto il giorno`
           : `${date} • ${time(event.start)}${event.end ? ` - ${time(event.end)}` : ""}`;
+        const phone = event.extendedProps.patientPhone;
+        const phoneLabel = document.getElementById("eventModalPhone");
+        phoneLabel.textContent = phone ? `Tel. ${phone}` : "";
+        phoneLabel.classList.toggle("d-none", !phone || generic);
         document.getElementById("eventModalNotes").textContent = event.extendedProps.notes || "Nessuna nota";
         const patientButton = document.getElementById("openPatientDetailsBtn");
         patientButton.classList.toggle("d-none", patientId == null);

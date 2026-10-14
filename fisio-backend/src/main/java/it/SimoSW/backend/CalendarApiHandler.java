@@ -86,12 +86,20 @@ final class CalendarApiHandler implements HttpHandler {
                 return;
             }
             if (path.startsWith("/api/calendar/")) {
+                boolean moveRequest = path.endsWith("/move");
                 long appointmentId;
                 try {
-                    appointmentId = Long.parseLong(path.substring("/api/calendar/".length()));
+                    String idPart = path.substring("/api/calendar/".length(),
+                            moveRequest ? path.length() - "/move".length() : path.length());
+                    appointmentId = Long.parseLong(idPart);
                     if (appointmentId <= 0) throw new NumberFormatException();
                 } catch (NumberFormatException exception) {
                     ApiJson.send(exchange, 400, "{\"error\":\"invalid_id\"}");
+                    return;
+                }
+                if (moveRequest && !"PUT".equals(method)) {
+                    exchange.getResponseHeaders().set("Allow", "PUT");
+                    ApiJson.send(exchange, 405, "{\"error\":\"method_not_allowed\"}");
                     return;
                 }
                 if ("PUT".equals(method) || "DELETE".equals(method)) {
@@ -102,7 +110,8 @@ final class CalendarApiHandler implements HttpHandler {
                         return;
                     }
                 }
-                if ("PUT".equals(method)) update(exchange, therapistId, appointmentId);
+                if (moveRequest) move(exchange, therapistId, appointmentId);
+                else if ("PUT".equals(method)) update(exchange, therapistId, appointmentId);
                 else if ("DELETE".equals(method)) {
                     calendar.cancelAppointment(appointmentId, therapistId);
                     exchange.sendResponseHeaders(204, -1);
@@ -168,6 +177,19 @@ final class CalendarApiHandler implements HttpHandler {
         }
         calendar.rescheduleAppointment(appointmentId, therapistId, name, start, end,
                 Boolean.parseBoolean(fields.get("allDay")), Boolean.parseBoolean(fields.get("nonTreatmentEvent")), notes, phone);
+        exchange.sendResponseHeaders(204, -1);
+    }
+
+    private void move(HttpExchange exchange, long therapistId, long appointmentId) throws IOException {
+        Map<String, String> fields = readForm(exchange);
+        if (fields == null) return;
+        LocalDateTime start = parseDateTime(fields.get("start"));
+        LocalDateTime end = parseDateTime(fields.get("end"));
+        if (start == null || end == null) {
+            ApiJson.send(exchange, 400, "{\"error\":\"invalid_period\"}");
+            return;
+        }
+        calendar.moveAppointment(appointmentId, therapistId, start, end);
         exchange.sendResponseHeaders(204, -1);
     }
 

@@ -74,6 +74,9 @@ segue la conferma legacy; se sono presenti appuntamenti, richiede `force=1`.
 `PUT /api/calendar/{id}` accetta anche `patientPhone`: quando l'appuntamento
 è collegato a un paziente, aggiorna il numero nella sua scheda del terapista
 autenticato. Se il campo è omesso, il numero rimane invariato.
+`PUT /api/calendar/{id}/move` cambia soltanto inizio e fine di un appuntamento
+programmato con orario. È usato dal trascinamento della vista settimana desktop;
+mantiene durata, paziente, telefono e note, e rifiuta fasce occupate.
 
 Il backend ascolta su loopback per impostazione predefinita; lo script locale
 lo espone anche sulla LAN per il collaudo Android. Basic verifica il login e rilascia

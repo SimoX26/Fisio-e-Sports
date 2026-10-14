@@ -94,7 +94,8 @@ con quella corrente evidenziata, anche dopo un cambio di vista.
 Verificare anche credenziali errate e Logout: i dati
 precedenti non devono restare visibili dopo l'uscita. Ripetere con un secondo
 terapista per verificare la separazione degli appuntamenti. Nel dettaglio di un
-appuntamento controllare data, orario, note e pulsanti visibili secondo lo stato;
+appuntamento controllare data, orario, telefono, note e pulsanti visibili secondo lo stato;
+la finestra deve restare compatta anche su uno schermo ampio;
 **Dettagli paziente** deve aprire la scheda nella rubrica. Provare anche un evento
 generico e uno tutto il giorno. **+ Nuovo** apre il modulo legacy: verificare i
 suggerimenti dei pazienti, la creazione di un paziente nuovo con telefono, un
@@ -103,7 +104,17 @@ fascia occupata: il modulo deve restare aperto e mostrare l'errore. Controllare
 che l'appuntamento salvato compaia anche nella webapp legacy dello stesso
 terapista e non nel calendario di un altro. Nelle viste giorno e settimana,
 verificare che le righe orarie siano compatte e che orario e nome restino
-leggibili anche negli appuntamenti di 15 minuti. Provare **Modifica** sullo stesso
+leggibili anche negli appuntamenti di 15 minuti. Provare un nome lungo in un
+appuntamento di un'ora: deve andare a capo entro la card, con spazio sopra
+l'orario e tra orario e nome. Nella vista settimana,
+trascinare un appuntamento programmato su un altro orario o giorno: deve
+mantenere la durata e aggiornarsi anche nel calendario Android. Provare una
+fascia occupata: la card deve tornare al punto di partenza e comparire un
+errore. Verificare che trascinamento e ridimensionamento non siano disponibili
+nelle viste giorno e mese, né per trattamenti completati o eventi tutto il
+giorno. Le card mostrano il telefono per gli appuntamenti di almeno 90 minuti;
+passando il puntatore si leggono nome, telefono e note completi.
+Provare **Modifica** sullo stesso
 appuntamento: cambiare orario e note, verificare il risultato anche nel legacy
 e provare una fascia occupata. Provare **Elimina** su un appuntamento di test:
 la conferma deve precedere la cancellazione e l'evento deve sparire dal

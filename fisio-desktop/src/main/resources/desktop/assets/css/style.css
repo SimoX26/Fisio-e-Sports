@@ -627,27 +627,31 @@ body.calendar-view-week .fc .fc-scrollgrid-section-header th{
     body.calendar-view-day .fc .fc-timegrid-event,
     body.calendar-view-week .fc .fc-timegrid-event{
         min-height: 0;
+        padding: 0 2px;
     }
 
     body.calendar-view-day .fc .fc-timegrid-event .fc-event-main,
     body.calendar-view-week .fc .fc-timegrid-event .fc-event-main{
-        padding: 0 2px;
+        padding: 3px 2px 0;
     }
 
     body.calendar-view-day .fc .fc-timegrid-event .fc-event-time-line,
     body.calendar-view-week .fc .fc-timegrid-event .fc-event-time-line{
-        font-size: .7rem;
-        line-height: 1.05;
+        font-size: .78rem;
+        line-height: 1.2;
     }
 
     body.calendar-view-day .fc .fc-timegrid-event .fc-event-title-line,
     body.calendar-view-week .fc .fc-timegrid-event .fc-event-title-line{
-        font-size: .8rem;
-        line-height: 1.06;
+        font-size: .95rem;
+        line-height: 1.25;
         font-weight: 600;
-        white-space: nowrap;
+        white-space: normal;
+        overflow-wrap: anywhere;
         overflow: hidden;
-        text-overflow: ellipsis;
+        max-height: 2.6em;
+        margin-top: 4px;
+        padding-bottom: 2px;
     }
 
     body.calendar-week-fill .calendar-scroll-shell{
@@ -1898,8 +1902,25 @@ button.home-action-pill{
     display: flex;
     flex-direction: column;
     gap: 0;
-    line-height: 1.12;
+    line-height: 1.25;
     min-width: 0;
+}
+
+.fc .fc-timegrid-event .calendar-event-content{
+    min-width: 0;
+}
+
+body.calendar-view-week .fc .calendar-event--draggable{
+    cursor: grab;
+}
+
+.fc .fc-timegrid-event .fc-event-contact-line{
+    font-size: .76rem;
+    line-height: 1.25;
+    opacity: .8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .fc .fc-timegrid-event .fc-event-time-line{
@@ -2004,8 +2025,8 @@ body.calendar-gcal-page .modal-backdrop.show {
 }
 
 #eventModal .modal-dialog {
-    width: min(980px, calc(100vw - 2rem));
-    max-width: 980px;
+    width: min(720px, calc(100vw - 2rem));
+    max-width: 720px;
 }
 
 #eventModal .modal-header,
@@ -2016,45 +2037,67 @@ body.calendar-gcal-page .modal-backdrop.show {
 
 #eventModal .modal-header {
     position: relative;
-    justify-content: center;
+    justify-content: flex-start;
+    padding: 1.25rem 1.5rem;
 }
 
 #eventModal .modal-header .btn-close {
     position: absolute;
     right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 1.25rem;
 }
 
 #eventModal .event-title-block {
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    text-align: center;
-    gap: .5rem;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: .35rem;
     max-width: calc(100% - 4rem);
+}
+
+#eventModal .modal-title {
+    overflow-wrap: anywhere;
+    line-height: 1.25;
 }
 
 #eventModal .modal-body {
     font-size: 1.04rem;
     line-height: var(--line-height-body);
     text-align: left;
+    padding: 1.25rem 1.5rem;
+}
+
+#eventModal .event-note-panel {
+    padding: .85rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-standard);
+    background: #f7f9fc;
+}
+
+#eventModal .event-note-panel p {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+#eventModal .event-note-label {
+    color: var(--text-muted);
+    font-size: .8rem;
+    font-weight: 700;
+    margin-bottom: .35rem !important;
 }
 
 #eventModal .modal-footer {
-    justify-content: center;
+    justify-content: flex-end;
     flex-wrap: wrap;
     gap: .45rem;
-    padding-top: .75rem;
-    padding-bottom: .75rem;
+    padding: 1rem 1.5rem;
 }
 
 #eventModal .modal-footer #eventModalStateHint {
     flex: 1 0 100%;
     margin-right: 0 !important;
-    text-align: center;
+    text-align: left;
 }
 
 #eventModal .modal-footer .btn {
@@ -2068,15 +2111,14 @@ body.calendar-gcal-page .modal-backdrop.show {
 
 #eventModal .event-title-time {
     color: var(--text-muted);
-    font-size: 1rem;
+    font-size: .92rem;
     font-weight: 500;
-    text-align: center;
+    text-align: left;
 }
 
-@media (min-width: 992px) {
-    #eventModal .modal-footer {
-        flex-wrap: nowrap;
-    }
+#eventModal .event-title-phone {
+    color: var(--text-muted);
+    font-size: .9rem;
 }
 
 /* =========================

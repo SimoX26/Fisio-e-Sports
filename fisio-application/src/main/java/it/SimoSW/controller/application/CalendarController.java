@@ -98,6 +98,18 @@ public class CalendarController {
                 allDay, nonTreatmentEvent, notes, null);
     }
 
+    public Appointment moveAppointment(long appointmentId, long therapistId, LocalDateTime newStart, LocalDateTime newEnd) {
+        Appointment existing = getAppointmentForTherapist(appointmentId, therapistId);
+        if (existing.getState() != AppointmentState.SCHEDULED || existing.isAllDay()) {
+            throw new InvalidAppointmentStateException("Only scheduled timed appointments can be moved");
+        }
+        validateTimeRange(newStart, newEnd, false);
+        existing.setStart(newStart);
+        existing.setEnd(newEnd);
+        checkForConflicts(existing);
+        return appointmentDAO.update(existing);
+    }
+
     public Appointment rescheduleAppointment(long appointmentId, long therapistId, String patientName, LocalDateTime newStart, LocalDateTime newEnd, boolean allDay, boolean nonTreatmentEvent, String notes, String patientPhone) {
         Appointment existing = getAppointmentForTherapist(appointmentId, therapistId);
 
