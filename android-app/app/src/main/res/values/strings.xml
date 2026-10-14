@@ -115,7 +115,8 @@
     <string name="logout_confirmation">Vuoi uscire dall’app?</string>
     <string name="session_save_error">Accesso effettuato, ma il dispositivo non ha salvato la sessione protetta.</string>
     <string name="session_clear_error">Impossibile eliminare la sessione salvata. Riprova a uscire.</string>
-    <string name="welcome">Accesso effettuato: %1$s</string>
+    <string name="welcome_morning">Buongiorno, %1$s</string>
+    <string name="welcome_evening">Buonasera, %1$s</string>
     <string name="appointments_label">Appuntamenti oggi</string>
     <string name="patients_label">Pazienti oggi</string>
     <string name="reminders_label">Promemoria da inviare oggi</string>

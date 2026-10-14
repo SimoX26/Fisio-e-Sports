@@ -2,10 +2,20 @@
     <style name="Theme.FisioESport" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/brand_primary</item>
         <item name="colorOnPrimary">@color/surface</item>
+        <item name="colorPrimaryContainer">@color/brand_primary_soft</item>
+        <item name="colorOnPrimaryContainer">@color/text_main</item>
+        <item name="colorSecondaryContainer">@color/brand_primary_soft</item>
+        <item name="colorOnSecondaryContainer">@color/text_main</item>
+        <item name="colorTertiaryContainer">@color/brand_primary_soft</item>
+        <item name="colorOnTertiaryContainer">@color/text_main</item>
         <item name="colorSurface">@color/surface</item>
+        <item name="colorSurfaceContainerHigh">@color/surface</item>
+        <item name="colorSurfaceContainerHighest">@color/bg_main</item>
         <item name="colorOnSurface">@color/text_main</item>
         <item name="colorOnSurfaceVariant">@color/text_muted</item>
         <item name="materialAlertDialogTheme">@style/ThemeOverlay.Fisio.Dialog</item>
+        <item name="materialCalendarTheme">@style/ThemeOverlay.Fisio.Calendar</item>
+        <item name="materialTimePickerTheme">@style/ThemeOverlay.Fisio.TimePicker</item>
         <item name="android:colorAccent">@color/brand_primary</item>
         <item name="android:windowBackground">@color/bg_main</item>
         <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
@@ -15,11 +25,32 @@
     </style>
 
     <style name="ThemeOverlay.Fisio.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="alertDialogStyle">@style/Widget.Fisio.Dialog</item>
         <item name="colorPrimary">@color/brand_primary</item>
         <item name="colorOnSurface">@color/text_main</item>
         <item name="colorOnSurfaceVariant">@color/text_muted</item>
         <item name="backgroundTint">@color/surface</item>
         <item name="shapeAppearanceOverlay">@style/ShapeAppearance.Fisio.Dialog</item>
+    </style>
+
+    <style name="Widget.Fisio.Dialog" parent="MaterialAlertDialog.Material3">
+        <item name="backgroundTint">@color/surface</item>
+    </style>
+
+    <style name="ThemeOverlay.Fisio.Calendar" parent="ThemeOverlay.Material3.MaterialCalendar">
+        <item name="materialCalendarStyle">@style/Widget.Fisio.Calendar</item>
+    </style>
+
+    <style name="Widget.Fisio.Calendar" parent="Widget.Material3.MaterialCalendar">
+        <item name="backgroundTint">@color/surface</item>
+    </style>
+
+    <style name="ThemeOverlay.Fisio.TimePicker" parent="ThemeOverlay.Material3.MaterialTimePicker">
+        <item name="materialTimePickerStyle">@style/Widget.Fisio.TimePicker</item>
+    </style>
+
+    <style name="Widget.Fisio.TimePicker" parent="Widget.Material3.MaterialTimePicker">
+        <item name="backgroundTint">@color/surface</item>
     </style>
 
     <style name="ShapeAppearance.Fisio.Dialog" parent="ShapeAppearance.Material3.MediumComponent">

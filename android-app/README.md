@@ -92,8 +92,13 @@ Il modulo usa una scheda chiara con campi arrotondati e azioni blu: prova a
 scorrerlo fino a **Salva** con la tastiera aperta, e verifica che gli errori
 restino leggibili senza chiudere il modulo.
 Le finestre di conferma, i dettagli, il cestino e la modifica del paziente
-usano il tema Material chiaro con la palette blu, superfici chiare e angoli
-arrotondati anche quando il telefono è in modalità scura.
+usano il tema Material chiaro con la palette blu, superfici bianche e angoli
+arrotondati anche quando il telefono è in modalità scura. Il fondo delle modali
+di conferma e dei selettori di data e ora è bianco, come nel modulo del nuovo
+appuntamento. Nella Rubrica la ricerca compare direttamente sotto la barra di
+navigazione, senza un secondo titolo.
+La Home mostra «Buongiorno» prima delle 15:00 e «Buonasera» dalle 15:00,
+seguiti dal nome dell'utente; il saluto si aggiorna tornando alla Home.
 Data e ora dell'appuntamento si scelgono con i picker Material: verifica
 selezione iniziale, conferma e annullamento, anche modificando un evento.
 Controlla anche le conferme rosse per eliminazione, svuotamento ed Esci.

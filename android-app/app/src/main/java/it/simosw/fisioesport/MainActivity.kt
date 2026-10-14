@@ -76,6 +76,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var loggedInPanel: View
     private lateinit var loginPanel: View
     private lateinit var welcome: TextView
+    private var signedInName = ""
     private lateinit var agendaDate: TextView
     private lateinit var appointmentsCount: TextView
     private lateinit var patientsCount: TextView
@@ -228,11 +229,23 @@ class MainActivity : AppCompatActivity() {
 
     private fun enterSession(activeToken: String, displayName: String) {
         token = activeToken
+        signedInName = displayName.replaceFirstChar { it.titlecase(Locale.ITALIAN) }
         password.text.clear()
-        welcome.text = getString(R.string.welcome, displayName)
+        updateGreeting()
         loginPanel.visibility = View.GONE
         loggedInPanel.visibility = View.VISIBLE
         showSection(Section.HOME)
+    }
+
+    private fun updateGreeting() {
+        val greeting = if (Calendar.getInstance().get(Calendar.HOUR_OF_DAY) < 15)
+            R.string.welcome_morning else R.string.welcome_evening
+        welcome.text = getString(greeting, signedInName)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (token != null) updateGreeting()
     }
 
     private fun login() {
@@ -291,6 +304,7 @@ class MainActivity : AppCompatActivity() {
     private fun showSection(next: Section) {
         if (token == null) return
         section = next
+        if (next == Section.HOME) updateGreeting()
         selectedPatientId = null
         swipeRefresh.isRefreshing = false
         swipeRefresh.isEnabled = next == Section.HOME || next == Section.CALENDAR || next == Section.PATIENTS
