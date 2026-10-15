@@ -58,8 +58,8 @@ if [[ ! -f "$manifest" || ! -f "$installer" ]]; then
     echo 'Artefatti della build incompleti.' >&2
     exit 1
 fi
-manifest_version="$(sed -n 's/^version=//p' "$manifest")"
-expected_hash="$(sed -n 's/^sha256=//p' "$manifest")"
+manifest_version="$(sed -n 's/^version=//p' "$manifest" | tr -d '\r')"
+expected_hash="$(sed -n 's/^sha256=//p' "$manifest" | tr -d '\r')"
 actual_hash="$(sha256sum "$installer" | cut -d' ' -f1)"
 if [[ "$manifest_version" != "$version" || ! "$expected_hash" =~ ^[0-9a-f]{64}$ || "$actual_hash" != "$expected_hash" ]]; then
     echo 'Versione o SHA-256 dell’installer non corrispondente.' >&2
