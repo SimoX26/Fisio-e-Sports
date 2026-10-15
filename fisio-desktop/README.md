@@ -261,6 +261,8 @@ build e scarica l'installer verificando SHA-256 in
 Non occorrono JDK Windows né WiX sul PC Linux. Alla prima esecuzione, il file
 del workflow deve essere già presente sul branch principale di GitHub. Il
 download dell'artefatto non lo pubblica come Release.
+Il workflow cerca `candle.exe` e `light.exe` sia nei programmi Windows sia nella
+cartella Chocolatey; se mancano, forza la reinstallazione di WiX sul runner.
 
 In alternativa, su Windows con JDK 21 o successivo (`JAVA_HOME`), Maven e WiX
 compatibile con il JDK, eseguire:

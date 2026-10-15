@@ -29,16 +29,36 @@ jobs:
       - name: Prepara WiX
         shell: pwsh
         run: |
-          $wix = Get-ChildItem 'C:\Program Files (x86)\WiX Toolset*' -Recurse -Filter candle.exe -File -ErrorAction SilentlyContinue |
-            Select-Object -First 1
-          if (-not $wix) {
-            choco install wixtoolset -y --no-progress
-            if ($LASTEXITCODE -ne 0) { throw 'Installazione WiX fallita.' }
-            $wix = Get-ChildItem 'C:\Program Files (x86)\WiX Toolset*' -Recurse -Filter candle.exe -File -ErrorAction SilentlyContinue |
-              Select-Object -First 1
+          function Find-Wix {
+            $roots = @()
+            $programFilesX86 = [Environment]::GetFolderPath('ProgramFilesX86')
+            if (Test-Path -LiteralPath $programFilesX86) {
+              $roots += @(Get-ChildItem -LiteralPath $programFilesX86 -Directory -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -like 'WiX Toolset*' })
+            }
+            $chocoPackage = Join-Path $env:ProgramData 'chocolatey\lib\wixtoolset'
+            if (Test-Path -LiteralPath $chocoPackage) { $roots += Get-Item -LiteralPath $chocoPackage }
+            foreach ($root in $roots) {
+              $found = Get-ChildItem -LiteralPath $root.FullName -Recurse -Filter candle.exe -File -ErrorAction SilentlyContinue |
+                Where-Object { Test-Path -LiteralPath (Join-Path $_.DirectoryName 'light.exe') } |
+                Select-Object -First 1
+              if ($found) { return $found.DirectoryName }
+            }
+            $command = Get-Command candle.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($command -and (Test-Path -LiteralPath (Join-Path (Split-Path $command.Source) 'light.exe'))) {
+              return (Split-Path $command.Source)
+            }
+            return $null
           }
-          if (-not $wix) { throw 'candle.exe non trovato.' }
-          $wix.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          $wixDirectory = Find-Wix
+          if (-not $wixDirectory) {
+            choco install wixtoolset -y --force --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Installazione WiX fallita.' }
+            $wixDirectory = Find-Wix
+          }
+          if (-not $wixDirectory) { throw 'candle.exe e light.exe non trovati dopo la reinstallazione di WiX.' }
+          Write-Host "WiX disponibile in: $wixDirectory"
+          $wixDirectory | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
       - name: Crea installer
         shell: pwsh
         env:
