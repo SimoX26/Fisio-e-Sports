@@ -35,8 +35,8 @@ $outputDir = Join-Path $desktopDir "target\windows-dist\$AppVersion"
 
 Push-Location $projectRoot
 try {
-    Write-Host '>> Build Maven desktop e moduli richiesti'
-    & $maven '-pl' 'fisio-desktop' '-am' 'package'
+    Write-Host '>> Build Maven desktop, backend e moduli richiesti'
+    & $maven '-pl' 'fisio-desktop,fisio-backend' '-am' 'package'
     if ($LASTEXITCODE -ne 0) { throw 'Build Maven fallita.' }
 
     if (Test-Path $stageDir) { Remove-Item $stageDir -Recurse -Force }
@@ -55,6 +55,10 @@ try {
         throw 'Dipendenza JavaFX Web per Windows assente. Esegui lo script su Windows.'
     }
     Copy-Item $appJar $inputDir
+    $backendJar = Join-Path $projectRoot 'fisio-backend\target\fisio-backend-0.1.0.jar'
+    if (-not (Test-Path $backendJar)) { throw "JAR backend non trovato: $backendJar" }
+    Copy-Item $backendJar $inputDir
+    Copy-Item (Join-Path $projectRoot 'fisio-backend\config.properties.example') $inputDir
     if (Test-Path $outputDir) { Remove-Item $outputDir -Recurse -Force }
     New-Item $outputDir -ItemType Directory -Force | Out-Null
 
@@ -70,6 +74,7 @@ try {
         '--main-class', 'it.SimoSW.desktop.DesktopLauncher',
         '--java-options', "-Dfisio.desktop.version=$AppVersion",
         '--java-options', "-Dfisio.desktop.installType=$Type",
+        '--java-options', '-Dfisio.desktop.bundledBackend=true',
         '--java-options', '-Dprism.order=sw',
         '--add-modules', 'ALL-MODULE-PATH,java.desktop'
     )

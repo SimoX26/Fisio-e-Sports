@@ -4,6 +4,7 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Worker;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.web.WebView;
@@ -23,6 +24,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public final class DesktopApplication extends Application {
+    private final LocalBackend localBackend = new LocalBackend();
     private final ExecutorService tokenExecutor = Executors.newSingleThreadExecutor(task -> {
         Thread thread = new Thread(task, "fisio-secure-token-store");
         thread.setDaemon(true);
@@ -77,6 +79,15 @@ public final class DesktopApplication extends Application {
         stage.setMinHeight(600);
         stage.setScene(new Scene(view, 1120, 760));
         stage.show();
+        String backendError = localBackend.start(backendUrl);
+        if (backendError != null) {
+            recordStartup("Backend locale: " + backendError);
+            Alert alert = new Alert(Alert.AlertType.WARNING, backendError);
+            alert.initOwner(stage);
+            alert.setTitle("Backend locale non disponibile");
+            alert.setHeaderText("Verifica MySQL e la configurazione locale");
+            alert.show();
+        }
         view.getEngine().load(page.toExternalForm());
         DesktopUpdater.checkOnStartup(stage);
     }
@@ -114,6 +125,7 @@ public final class DesktopApplication extends Application {
 
     @Override
     public void stop() {
+        localBackend.stop();
         tokenExecutor.shutdown();
         try {
             if (!tokenExecutor.awaitTermination(35, TimeUnit.SECONDS)) tokenExecutor.shutdownNow();

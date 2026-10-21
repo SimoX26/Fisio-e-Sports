@@ -287,7 +287,15 @@ pacchetto. `jpackage` crea l'EXE su Windows, anche quando la build è avviata
 dal PC Linux tramite GitHub Actions. L'app desktop usa
 `http://127.0.0.1:8081` per impostazione predefinita; `FISIO_BACKEND_URL`
 permette di indicare il backend HTTPS remoto.
-L'installer non include il backend o il database e non modifica i dati.
+L'installer include il backend Java e lo avvia automaticamente quando il
+desktop usa `http://127.0.0.1:8081`. MySQL 8 va installato e mantenuto sullo
+stesso PC: l'installer non installa MySQL e non importa dati. Il backend ascolta
+solo su `127.0.0.1` e si chiude con la finestra desktop. Se un backend locale è
+già attivo e pronto, il desktop usa quello. La configurazione privata si trova
+in `%LOCALAPPDATA%\Fisio-e-Sports\backend\config.properties`; al primo avvio
+il programma copia un modello `.example` nella stessa cartella. Per importare
+i dati esistenti e completare la configurazione, seguire la sezione seguente.
+
 L'EXE si chiama `Fisio e Sports - installer.exe`; il programma installato e
 il collegamento si chiamano **Fisio e Sports**. L'installer usa il codice di
 aggiornamento dei precedenti pacchetti **Fisio-e-Sports**: una versione più
@@ -297,13 +305,47 @@ l'aggiornamento e verificare in **App installate** che resti una sola voce.
 Il pacchetto Windows usa il rendering software di JavaFX per evitare finestre
 bianche in macchine virtuali. Se il caricamento della pagina locale fallisce,
 la finestra mostra l'errore invece di restare bianca. Dopo l'installazione,
-verificare che compaia la schermata di login anche con backend spento.
+verificare che, senza configurazione MySQL, compaia un avviso con il percorso
+del file da preparare; dopo la configurazione, deve comparire la schermata di
+login senza avviso.
 Il titolo della finestra mostra la versione installata. Installer, collegamento
 e finestra usano il logo dell'app al posto dell'icona Java. Se la finestra
 rimane bianca, leggere `%LOCALAPPDATA%\Fisio-e-Sports\desktop-startup.log`:
 registra soltanto gli eventi di avvio della pagina, senza credenziali o dati
 dei pazienti. In VirtualBox provare anche a disattivare l'accelerazione 3D
 nelle impostazioni Schermo della VM spenta.
+
+### Prima installazione locale con dati esistenti
+
+1. Installare MySQL 8 sul PC Windows e verificare che il servizio sia avviato.
+   Conservare un backup separato del database di origine. Per il server attuale,
+   `./backup-db.sh` produce un dump compresso e verificato; trasferirlo sul PC
+   Windows con un mezzo protetto e decomprimerlo in una cartella privata.
+2. Ripristinare il dump **solo su un'istanza MySQL nuova o vuota**. Il dump
+   contiene `DROP DATABASE`: importarlo su un database con dati da conservare
+   li eliminerebbe. Da `mysql -u root -p`, usare
+   `SOURCE C:/percorso/privato/backup.sql;`. Non usare `db.sql` per il
+   ripristino. Verificare che il database `fisio_e_sport` contenga gli account,
+   i pazienti e gli appuntamenti attesi e che `patients.therapist_id` sia
+   presente e valorizzato; se il dump precede le migrazioni, seguire
+   [la procedura di associazione](../docs/operations/associazione-pazienti.md)
+   su una copia di prova prima dell'uso operativo.
+3. Creare in MySQL un utente dedicato con permessi su `fisio_e_sport`. Copiare
+   `config.properties.example` in `config.properties` nella cartella
+   `%LOCALAPPDATA%\Fisio-e-Sports\backend` e compilare
+   `db.url=jdbc:mysql://127.0.0.1:3306/fisio_e_sport?connectTimeout=3000`,
+   `db.username` e `db.password`; mantenere
+   `whatsapp.baileys.enabled=false` se il gateway non è installato.
+4. Riavviare l'app. Controllare `http://127.0.0.1:8081/ready`, che deve
+   rispondere `{"status":"ok"}`; entrare con un account importato e verificare
+   rubrica, calendario, anamnesi e trattamenti. Scollegare Internet e ripetere
+   lettura e scrittura di dati di prova. I promemoria WhatsApp richiedono il
+   gateway e la connessione al servizio WhatsApp; gli aggiornamenti automatici
+   richiedono GitHub, ma la loro assenza non blocca l'app.
+
+Il file `backend.log` nella stessa cartella aiuta a diagnosticare un mancato
+avvio. Il dump e `config.properties` contengono dati sensibili e non vanno
+aggiunti al repository.
 
 ### Aggiornamenti dell'app Windows
 
