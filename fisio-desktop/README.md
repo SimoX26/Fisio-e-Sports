@@ -292,6 +292,12 @@ Il pacchetto Windows usa il rendering software di JavaFX per evitare finestre
 bianche in macchine virtuali. Se il caricamento della pagina locale fallisce,
 la finestra mostra l'errore invece di restare bianca. Dopo l'installazione,
 verificare che compaia la schermata di login anche con backend spento.
+Il titolo della finestra mostra la versione installata. Installer, collegamento
+e finestra usano il logo dell'app al posto dell'icona Java. Se la finestra
+rimane bianca, leggere `%LOCALAPPDATA%\Fisio-e-Sports\desktop-startup.log`:
+registra soltanto gli eventi di avvio della pagina, senza credenziali o dati
+dei pazienti. In VirtualBox provare anche a disattivare l'accelerazione 3D
+nelle impostazioni Schermo della VM spenta.
 
 ### Aggiornamenti dell'app Windows
 

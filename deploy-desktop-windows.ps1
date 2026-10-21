@@ -28,6 +28,7 @@ $maven = (Get-Command 'mvn.cmd' -ErrorAction Stop).Source
 
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $desktopDir = Join-Path $projectRoot 'fisio-desktop'
+$icon = Join-Path $desktopDir 'src\main\resources\desktop\assets\img\logo.ico'
 $stageDir = Join-Path $desktopDir 'target\windows-package'
 $inputDir = Join-Path $stageDir 'input'
 $outputDir = Join-Path $desktopDir "target\windows-dist\$AppVersion"
@@ -62,6 +63,7 @@ try {
         '--name', 'Fisio-e-Sports',
         '--app-version', $AppVersion,
         '--vendor', 'SimoSW',
+        '--icon', $icon,
         '--input', $inputDir,
         '--dest', $outputDir,
         '--main-jar', 'fisio-desktop-1.0.jar',

@@ -5,12 +5,19 @@ import javafx.application.Platform;
 import javafx.concurrent.Worker;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import netscape.javascript.JSObject;
 
 import java.net.URL;
 import java.net.MalformedURLException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.time.Instant;
+import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -24,12 +31,15 @@ public final class DesktopApplication extends Application {
 
     @Override
     public void start(Stage stage) {
+        String version = System.getProperty("fisio.desktop.version", "sviluppo");
+        recordStartup("Avvio " + version);
         URL page = DesktopApplication.class.getResource("/desktop/index.html");
         if (page == null) {
             throw new IllegalStateException("Interfaccia desktop non trovata");
         }
 
         WebView view = new WebView();
+        view.getEngine().setOnError(event -> recordStartup("WebEngine: " + event.getMessage()));
         String backendUrl = BackendEndpoint.resolve(System.getenv("FISIO_BACKEND_URL"));
         SecureTokenStore tokenStore = new SecureTokenStore(backendUrl);
         EncryptedPatientCache patientCache = new EncryptedPatientCache(backendUrl);
@@ -37,27 +47,57 @@ public final class DesktopApplication extends Application {
         view.getEngine().getLoadWorker().stateProperty().addListener((observable, oldState, newState) -> {
             if (newState == Worker.State.SUCCEEDED) {
                 if (isTrustedPage(page, view.getEngine().getLocation())) {
-                    JSObject window = (JSObject) view.getEngine().executeScript("window");
-                    window.setMember("fisioBackendUrl", backendUrl);
-                    window.setMember("desktopBridge", bridge);
-                    view.getEngine().executeScript("window.desktopBridgeReady && window.desktopBridgeReady()");
+                    try {
+                        recordStartup("Pagina caricata: " + view.getEngine().executeScript("document.readyState"));
+                        if (!Boolean.TRUE.equals(view.getEngine().executeScript(
+                                "Boolean(document.getElementById('loginScreen'))"))) {
+                            throw new IllegalStateException("Schermata di login assente dalla pagina locale");
+                        }
+                        JSObject window = (JSObject) view.getEngine().executeScript("window");
+                        window.setMember("fisioBackendUrl", backendUrl);
+                        window.setMember("desktopBridge", bridge);
+                        view.getEngine().executeScript("window.desktopBridgeReady && window.desktopBridgeReady()");
+                        recordStartup("Collegamento JavaScript pronto");
+                    } catch (RuntimeException | LinkageError failure) {
+                        showStartupError(stage, "Inizializzazione della pagina fallita: " + failure);
+                    }
                 } else {
-                    System.err.println("Impossibile inizializzare il desktop: pagina locale non riconosciuta");
+                    showStartupError(stage, "Pagina locale non riconosciuta");
                 }
             } else if (newState == Worker.State.FAILED) {
                 Throwable failure = view.getEngine().getLoadWorker().getException();
                 String detail = failure == null ? "Errore sconosciuto" : failure.toString();
-                System.err.println("Impossibile caricare l'interfaccia desktop: " + detail);
-                stage.setScene(new Scene(new Label("Impossibile caricare l'interfaccia desktop.\n" + detail), 840, 600));
+                showStartupError(stage, "Caricamento della pagina fallito: " + detail);
             }
         });
-        view.getEngine().load(page.toExternalForm());
-        stage.setTitle("Fisio e Sports — prototipo desktop");
+        stage.setTitle("Fisio e Sports — " + version);
+        URL icon = DesktopApplication.class.getResource("/desktop/assets/img/logo.png");
+        if (icon != null) stage.getIcons().add(new Image(icon.toExternalForm()));
         stage.setMinWidth(840);
         stage.setMinHeight(600);
         stage.setScene(new Scene(view, 1120, 760));
         stage.show();
+        view.getEngine().load(page.toExternalForm());
         DesktopUpdater.checkOnStartup(stage);
+    }
+
+    private static void showStartupError(Stage stage, String detail) {
+        recordStartup(detail);
+        System.err.println("Impossibile avviare il desktop: " + detail);
+        stage.setScene(new Scene(new Label("Impossibile avviare il desktop.\n" + detail), 840, 600));
+    }
+
+    private static void recordStartup(String message) {
+        String localAppData = System.getenv("LOCALAPPDATA");
+        if (localAppData == null || localAppData.isBlank()) return;
+        try {
+            Path log = Path.of(localAppData, "Fisio-e-Sports", "desktop-startup.log");
+            Files.createDirectories(log.getParent());
+            Files.writeString(log, Instant.now() + " " + message + System.lineSeparator(),
+                    StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        } catch (IOException | RuntimeException ignored) {
+            // La diagnostica non deve impedire l'avvio dell'applicazione.
+        }
     }
 
     public static void main(String[] args) {
