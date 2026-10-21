@@ -54,15 +54,18 @@ gh run download "$run_id" --name "fisio-desktop-windows-$version" --dir "$output
 
 manifest="$output_dir/desktop-update.properties"
 installer="$output_dir/Fisio e Sports - installer.exe"
-if [[ ! -f "$manifest" || ! -f "$installer" ]]; then
+setup="$output_dir/install-fisio-windows.ps1"
+if [[ ! -f "$manifest" || ! -f "$installer" || ! -f "$setup" ]]; then
     echo 'Artefatti della build incompleti.' >&2
     exit 1
 fi
 manifest_version="$(sed -n 's/^version=//p' "$manifest" | tr -d '\r')"
 expected_hash="$(sed -n 's/^sha256=//p' "$manifest" | tr -d '\r')"
 actual_hash="$(sha256sum "$installer" | cut -d' ' -f1)"
-if [[ "$manifest_version" != "$version" || ! "$expected_hash" =~ ^[0-9a-f]{64}$ || "$actual_hash" != "$expected_hash" ]]; then
-    echo 'Versione o SHA-256 dell’installer non corrispondente.' >&2
+setup_hash="$(sed -n 's/^setupSha256=//p' "$manifest" | tr -d '\r')"
+actual_setup_hash="$(sha256sum "$setup" | cut -d' ' -f1)"
+if [[ "$manifest_version" != "$version" || ! "$expected_hash" =~ ^[0-9a-f]{64}$ || "$actual_hash" != "$expected_hash" || ! "$setup_hash" =~ ^[0-9a-f]{64}$ || "$actual_setup_hash" != "$setup_hash" ]]; then
+    echo 'Versione o SHA-256 degli artefatti non corrispondente.' >&2
     exit 1
 fi
 echo "Installer verificato: $installer"
@@ -74,4 +77,11 @@ if [[ "$(sha256sum "$downloads_installer" | cut -d' ' -f1)" != "$expected_hash" 
     echo 'SHA-256 della copia in Scaricati non corrispondente.' >&2
     exit 1
 fi
+downloads_setup="$downloads_dir/install-fisio-windows.ps1"
+cp -f "$setup" "$downloads_setup"
+if [[ "$(sha256sum "$downloads_setup" | cut -d' ' -f1)" != "$setup_hash" ]]; then
+    echo 'SHA-256 dello script in Scaricati non corrispondente.' >&2
+    exit 1
+fi
 echo "Installer copiato in: $downloads_installer"
+echo "Script prima installazione: $downloads_setup"

@@ -288,13 +288,13 @@ dal PC Linux tramite GitHub Actions. L'app desktop usa
 `http://127.0.0.1:8081` per impostazione predefinita; `FISIO_BACKEND_URL`
 permette di indicare il backend HTTPS remoto.
 L'installer include il backend Java e lo avvia automaticamente quando il
-desktop usa `http://127.0.0.1:8081`. MySQL 8 va installato e mantenuto sullo
-stesso PC: l'installer non installa MySQL e non importa dati. Il backend ascolta
+desktop usa `http://127.0.0.1:8081`. Per la prima installazione usare
+`install-fisio-windows.ps1`, distribuito insieme all'EXE: scarica MySQL LTS,
+importa il backup selezionato sul PC e configura il database locale. Il backend ascolta
 solo su `127.0.0.1` e si chiude con la finestra desktop. Se un backend locale è
 già attivo e pronto, il desktop usa quello. La configurazione privata si trova
-in `%LOCALAPPDATA%\Fisio-e-Sports\backend\config.properties`; al primo avvio
-il programma copia un modello `.example` nella stessa cartella. Per importare
-i dati esistenti e completare la configurazione, seguire la sezione seguente.
+in `%LOCALAPPDATA%\Fisio-e-Sports\backend\config.properties`. L'avvio diretto
+dell'EXE richiede ancora la configurazione manuale del database.
 
 L'EXE si chiama `Fisio e Sports - installer.exe`; il programma installato e
 il collegamento si chiamano **Fisio e Sports**. L'installer usa il codice di
@@ -317,35 +317,50 @@ nelle impostazioni Schermo della VM spenta.
 
 ### Prima installazione locale con dati esistenti
 
-1. Installare MySQL 8 sul PC Windows e verificare che il servizio sia avviato.
-   Conservare un backup separato del database di origine. Per il server attuale,
-   `./backup-db.sh` produce un dump compresso e verificato; trasferirlo sul PC
-   Windows con un mezzo protetto e decomprimerlo in una cartella privata.
-2. Ripristinare il dump **solo su un'istanza MySQL nuova o vuota**. Il dump
-   contiene `DROP DATABASE`: importarlo su un database con dati da conservare
-   li eliminerebbe. Da `mysql -u root -p`, usare
-   `SOURCE C:/percorso/privato/backup.sql;`. Non usare `db.sql` per il
-   ripristino. Verificare che il database `fisio_e_sport` contenga gli account,
-   i pazienti e gli appuntamenti attesi e che `patients.therapist_id` sia
-   presente e valorizzato; se il dump precede le migrazioni, seguire
-   [la procedura di associazione](../docs/operations/associazione-pazienti.md)
-   su una copia di prova prima dell'uso operativo.
-3. Creare in MySQL un utente dedicato con permessi su `fisio_e_sport`. Copiare
-   `config.properties.example` in `config.properties` nella cartella
-   `%LOCALAPPDATA%\Fisio-e-Sports\backend` e compilare
-   `db.url=jdbc:mysql://127.0.0.1:3306/fisio_e_sport?connectTimeout=3000`,
-   `db.username` e `db.password`; mantenere
-   `whatsapp.baileys.enabled=false` se il gateway non è installato.
-4. Riavviare l'app. Controllare `http://127.0.0.1:8081/ready`, che deve
-   rispondere `{"status":"ok"}`; entrare con un account importato e verificare
-   rubrica, calendario, anamnesi e trattamenti. Scollegare Internet e ripetere
-   lettura e scrittura di dati di prova. I promemoria WhatsApp richiedono il
-   gateway e la connessione al servizio WhatsApp; gli aggiornamenti automatici
-   richiedono GitHub, ma la loro assenza non blocca l'app.
+Collocare `Fisio e Sports - installer.exe` e `install-fisio-windows.ps1` nella
+stessa cartella e copiare sul PC il backup `.sql.gz` o `.sql` da importare.
+Il file prodotto da `./backup-db.sh` è adatto dopo la verifica e il trasferimento
+protetto descritti nella [guida backup](../docs/operations/backup-database.md).
+Servono Internet per scaricare MySQL e Windows Package Manager (`winget`).
+Per passare dal server al PC locale senza divergenze, fare il backup dopo aver
+fermato le scritture sul server e sugli altri client. Aprire PowerShell **come
+amministratore con l'account Windows che userà l'app** e avviare:
 
-Il file `backend.log` nella stessa cartella aiuta a diagnosticare un mancato
-avvio. Il dump e `config.properties` contengono dati sensibili e non vanno
-aggiunti al repository.
+```powershell
+powershell.exe -STA -ExecutionPolicy Bypass -File .\install-fisio-windows.ps1
+```
+
+Lo script apre una finestra per scegliere il backup locale. In alternativa si
+può indicare `-BackupFile C:\percorso\backup.sql.gz`; `-DatabaseName` cambia il
+nome atteso del database (`fisio_e_sport` per impostazione predefinita).
+Cerca nel catalogo winget l'ultima release delle
+serie MySQL LTS 9.7 e 8.4, poi scarica l'archivio ZIP dal CDN ufficiale MySQL.
+Installa il runtime Visual C++ se manca, inizializza un servizio `FisioMySQL`
+che ascolta solo su `127.0.0.1`, importa il file selezionato e crea credenziali
+locali casuali. Il backup resta nel percorso scelto; la password amministrativa MySQL è
+salvata per quell'utente come file protetto DPAPI. Le credenziali applicative
+sono in `%LOCALAPPDATA%\Fisio-e-Sports\backend\config.properties`.
+
+Se trova una configurazione applicativa esistente, lo script installa solo
+l'aggiornamento dell'app. Se trova un servizio MySQL o la porta 3306 occupata
+senza configurazione, si ferma: **non importa sopra dati preesistenti**. Il
+dump contiene `DROP DATABASE`; non usare `db.sql` per il ripristino. Se il
+backup proviene da uno schema precedente, occorre seguire
+[la procedura di associazione](../docs/operations/associazione-pazienti.md)
+su una copia di prova; lo script si ferma quando trova pazienti senza
+terapista o riferimenti clinici incoerenti. Un'importazione interrotta richiede
+verifica manuale del database locale prima di ritentare. Il dump e le
+credenziali non vanno aggiunti al repository.
+
+Dopo l'installazione, avviare l'app e controllare
+`http://127.0.0.1:8081/ready`, che deve rispondere `{"status":"ok"}`. Accedere
+con un account importato e verificare rubrica, calendario, anamnesi e
+trattamenti. Scollegare Internet e ripetere lettura e scrittura di dati di
+prova. I promemoria WhatsApp richiedono il gateway e la connessione al
+servizio WhatsApp; gli aggiornamenti automatici richiedono GitHub.
+
+Il file `%LOCALAPPDATA%\Fisio-e-Sports\backend\backend.log` aiuta a
+diagnosticare un mancato avvio.
 
 ### Aggiornamenti dell'app Windows
 
@@ -353,17 +368,19 @@ L'app installata da EXE controlla automaticamente all'avvio l'ultima GitHub
 Release del repository `SimoX26/Fisio-e-Sports`. Se la versione è più recente,
 scarica l'installer in `%LOCALAPPDATA%\Fisio-e-Sports\updates`, verifica SHA-256
 e mostra **Apri installer** o **Più tardi**. Il download avviene in background;
-la scelta di installare resta all'utente. Lo sviluppo Linux e il pacchetto
+la scelta di installare resta all'utente. L'aggiornamento dell'app non aggiorna
+MySQL né importa nuovamente il database. Lo sviluppo Linux e il pacchetto
 `app-image` non eseguono questo controllo. Se GitHub non è raggiungibile, l'app
 continua ad avviarsi normalmente e ritenta al prossimo avvio.
 
 Per pubblicare una versione Windows, usare lo script Linux qui sopra oppure,
-su Windows, `.\deploy-desktop-windows.ps1 -AppVersion 1.0.3`. I due file da
-allegare **alla stessa GitHub Release stabile** sono `Fisio e Sports - installer.exe` e
-`desktop-update.properties`, nella cartella di output indicata dallo script.
+su Windows, `.\deploy-desktop-windows.ps1 -AppVersion 1.0.3`. I tre file da
+allegare **alla stessa GitHub Release stabile** sono `Fisio e Sports - installer.exe`,
+`install-fisio-windows.ps1` e `desktop-update.properties`, nella cartella di
+output indicata dallo script.
 La Release deve essere la più recente del repository, non una prerelease; il
 numero `version` nel manifesto deve coincidere con `-AppVersion`. Non modificare
-l'EXE dopo la generazione dell'hash. Conservare l'installer originale versionato
+l'EXE o lo script dopo la generazione degli hash. Conservare l'installer originale versionato
 solo come artefatto locale o allegato aggiuntivo. Prima della pubblicazione,
 installare la versione precedente su un PC di prova e verificare download,
 hash, apertura dell'installer, riavvio e conservazione della configurazione.

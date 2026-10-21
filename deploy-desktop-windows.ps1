@@ -94,9 +94,11 @@ try {
         $releaseInstaller = Join-Path $outputDir 'Fisio e Sports - installer.exe'
         Move-Item $installer[0].FullName $releaseInstaller -Force
         $hash = (Get-FileHash $releaseInstaller -Algorithm SHA256).Hash.ToLowerInvariant()
-        @("version=$AppVersion", "sha256=$hash") |
+        Copy-Item (Join-Path $projectRoot 'install-fisio-windows.ps1') $outputDir
+        $setupHash = (Get-FileHash (Join-Path $outputDir 'install-fisio-windows.ps1') -Algorithm SHA256).Hash.ToLowerInvariant()
+        @("version=$AppVersion", "sha256=$hash", "setupSha256=$setupHash") |
             Set-Content (Join-Path $outputDir 'desktop-update.properties') -Encoding ascii
-        Write-Host '>> Pubblica Fisio e Sports - installer.exe e desktop-update.properties nella stessa GitHub Release'
+        Write-Host '>> Pubblica installer EXE, script di prima installazione e desktop-update.properties nella stessa GitHub Release'
     }
 
     Write-Host ">> Pacchetto pronto in: $outputDir"
