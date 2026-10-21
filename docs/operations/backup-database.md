@@ -42,3 +42,21 @@ aggiungerlo al repository.
 Il dump include `DROP DATABASE` per consentire il ripristino su una nuova
 istanza. Un'importazione su un database esistente può eliminarne i dati:
 provare il ripristino su un'istanza separata prima di usarlo operativamente.
+
+## Backup per la versione locale Windows
+
+Se il backup precede l'associazione delle schede paziente ai terapisti,
+prepara un nuovo archivio dalla radice del progetto:
+
+```bash
+python3 prepare-mysql-backup.py backups/NOME_BACKUP.sql.gz
+```
+
+Lo script lascia intatto l'originale e crea `NOME_BACKUP.mysql-ready.sql.gz`
+nella stessa directory. Rimuove la direttiva iniziale specifica del client
+MariaDB e accoda la migrazione versionata che assegna le schede senza
+riferimenti al terapista attivo `marco`; per le altre schede usa i terapisti
+dei riferimenti clinici. Se lo schema contiene già `patients.therapist_id`,
+lo script si interrompe. Selezionare il nuovo archivio durante l'installazione
+Windows. Il ripristino va fatto su una nuova istanza MySQL: il dump contiene
+`DROP DATABASE`. Conservare anche il nuovo archivio come dato clinico protetto.
