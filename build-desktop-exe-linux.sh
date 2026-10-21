@@ -66,3 +66,12 @@ if [[ "$manifest_version" != "$version" || ! "$expected_hash" =~ ^[0-9a-f]{64}$ 
     exit 1
 fi
 echo "Installer verificato: $installer"
+downloads_dir="$HOME/Scaricati"
+mkdir -p "$downloads_dir"
+downloads_installer="$downloads_dir/Fisio-e-Sports.exe"
+cp -f "$installer" "$downloads_installer"
+if [[ "$(sha256sum "$downloads_installer" | cut -d' ' -f1)" != "$expected_hash" ]]; then
+    echo 'SHA-256 della copia in Scaricati non corrispondente.' >&2
+    exit 1
+fi
+echo "Installer copiato in: $downloads_installer"

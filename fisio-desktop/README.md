@@ -258,6 +258,8 @@ Lo script richiede una working tree pulita e il commit corrente già presente
 su `origin` nel branch attivo. Avvia una GitHub Action su Windows, attende la
 build e scarica l'installer verificando SHA-256 in
 `fisio-desktop/target/windows-dist/1.0.1/github-<run-id>/Fisio-e-Sports.exe`.
+Dopo la verifica ne copia una seconda copia in `~/Scaricati/Fisio-e-Sports.exe`,
+come lo script Android fa con l'APK. Il manifesto resta nella cartella `target`.
 Non occorrono JDK Windows né WiX sul PC Linux. Alla prima esecuzione, il file
 del workflow deve essere già presente sul branch principale di GitHub. Il
 download dell'artefatto non lo pubblica come Release.
@@ -286,6 +288,10 @@ dal PC Linux tramite GitHub Actions. L'app desktop usa
 `http://127.0.0.1:8081` per impostazione predefinita; `FISIO_BACKEND_URL`
 permette di indicare il backend HTTPS remoto.
 L'installer non include il backend o il database e non modifica i dati.
+Il pacchetto Windows usa il rendering software di JavaFX per evitare finestre
+bianche in macchine virtuali. Se il caricamento della pagina locale fallisce,
+la finestra mostra l'errore invece di restare bianca. Dopo l'installazione,
+verificare che compaia la schermata di login anche con backend spento.
 
 ### Aggiornamenti dell'app Windows
 

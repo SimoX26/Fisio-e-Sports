@@ -68,6 +68,7 @@ try {
         '--main-class', 'it.SimoSW.desktop.DesktopLauncher',
         '--java-options', "-Dfisio.desktop.version=$AppVersion",
         '--java-options', "-Dfisio.desktop.installType=$Type",
+        '--java-options', '-Dprism.order=sw',
         '--add-modules', 'ALL-MODULE-PATH,java.desktop'
     )
     if ($Type -eq 'exe') {

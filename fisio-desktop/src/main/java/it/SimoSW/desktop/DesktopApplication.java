@@ -4,6 +4,7 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Worker;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import netscape.javascript.JSObject;
@@ -43,6 +44,11 @@ public final class DesktopApplication extends Application {
                 } else {
                     System.err.println("Impossibile inizializzare il desktop: pagina locale non riconosciuta");
                 }
+            } else if (newState == Worker.State.FAILED) {
+                Throwable failure = view.getEngine().getLoadWorker().getException();
+                String detail = failure == null ? "Errore sconosciuto" : failure.toString();
+                System.err.println("Impossibile caricare l'interfaccia desktop: " + detail);
+                stage.setScene(new Scene(new Label("Impossibile caricare l'interfaccia desktop.\n" + detail), 840, 600));
             }
         });
         view.getEngine().load(page.toExternalForm());
