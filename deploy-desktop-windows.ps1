@@ -2,7 +2,7 @@ param(
     [ValidateSet('exe', 'app-image')]
     [string]$Type = 'exe',
     [ValidatePattern('^\d+(\.\d+){0,3}$')]
-    [string]$AppVersion = '1.0.0'
+    [string]$AppVersion = '1.0.3'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -60,7 +60,7 @@ try {
 
     $packageArgs = @(
         '--type', $Type,
-        '--name', 'Fisio-e-Sports',
+        '--name', 'Fisio e Sports',
         '--app-version', $AppVersion,
         '--vendor', 'SimoSW',
         '--icon', $icon,
@@ -74,7 +74,9 @@ try {
         '--add-modules', 'ALL-MODULE-PATH,java.desktop'
     )
     if ($Type -eq 'exe') {
-        $packageArgs += @('--win-menu', '--win-shortcut', '--win-dir-chooser', '--win-per-user-install')
+        # Codice di upgrade dei vecchi pacchetti jpackage (SimoSW/Fisio-e-Sports).
+        $packageArgs += @('--win-upgrade-uuid', '873d5ba6-5207-3ea9-ac27-e0693c6158d2',
+            '--win-menu', '--win-shortcut', '--win-dir-chooser', '--win-per-user-install')
     }
 
     Write-Host ">> Crea pacchetto Windows ($Type)"
@@ -84,12 +86,12 @@ try {
     if ($Type -eq 'exe') {
         $installer = @(Get-ChildItem $outputDir -Filter '*.exe' -File)
         if ($installer.Count -ne 1) { throw 'Installer EXE non trovato o ambiguo.' }
-        $releaseInstaller = Join-Path $outputDir 'Fisio-e-Sports.exe'
-        Copy-Item $installer[0].FullName $releaseInstaller -Force
+        $releaseInstaller = Join-Path $outputDir 'Fisio e Sports - installer.exe'
+        Move-Item $installer[0].FullName $releaseInstaller -Force
         $hash = (Get-FileHash $releaseInstaller -Algorithm SHA256).Hash.ToLowerInvariant()
         @("version=$AppVersion", "sha256=$hash") |
             Set-Content (Join-Path $outputDir 'desktop-update.properties') -Encoding ascii
-        Write-Host '>> Pubblica Fisio-e-Sports.exe e desktop-update.properties nella stessa GitHub Release'
+        Write-Host '>> Pubblica Fisio e Sports - installer.exe e desktop-update.properties nella stessa GitHub Release'
     }
 
     Write-Host ">> Pacchetto pronto in: $outputDir"

@@ -25,6 +25,7 @@ import java.util.Properties;
 /** Downloads verified Windows installers without replacing files of a running application. */
 final class DesktopUpdater {
     private static final String RELEASE = "https://github.com/SimoX26/Fisio-e-Sports/releases/latest/download/";
+    private static final String INSTALLER_ASSET = "Fisio%20e%20Sports%20-%20installer.exe";
     private static final long MAX_INSTALLER_BYTES = 500_000_000L;
     private static final int MAX_MANIFEST_BYTES = 8192;
 
@@ -60,13 +61,13 @@ final class DesktopUpdater {
                 String localAppData = System.getenv("LOCALAPPDATA");
                 if (localAppData == null || localAppData.isBlank()) return;
                 Path directory = Path.of(localAppData, "Fisio-e-Sports", "updates");
-                Path installer = directory.resolve("Fisio-e-Sports-" + version + ".exe");
+                Path installer = directory.resolve("Fisio e Sports - installer-" + version + ".exe");
                 if (!Files.isRegularFile(installer) || Files.size(installer) > MAX_INSTALLER_BYTES
                         || !expectedHash.equals(sha256(installer))) {
                     Files.createDirectories(directory);
                     Path temporary = Files.createTempFile(directory, "download-", ".tmp");
                     try {
-                        HttpRequest downloadRequest = HttpRequest.newBuilder(URI.create(RELEASE + "Fisio-e-Sports.exe"))
+                        HttpRequest downloadRequest = HttpRequest.newBuilder(URI.create(RELEASE + INSTALLER_ASSET))
                                 .timeout(Duration.ofMinutes(5)).GET().build();
                         HttpResponse<InputStream> response = client.send(downloadRequest, HttpResponse.BodyHandlers.ofInputStream());
                         try (InputStream input = response.body()) {

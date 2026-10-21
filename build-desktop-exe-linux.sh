@@ -3,7 +3,7 @@ set -euo pipefail
 
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cd "$project_root"
-version="${1:-1.0.0}"
+version="${1:-1.0.3}"
 if [[ ! "$version" =~ ^[0-9]+(\.[0-9]+){0,3}$ ]]; then
     echo 'Versione non valida. Esempio: ./build-desktop-exe-linux.sh 1.0.1' >&2
     exit 2
@@ -53,7 +53,7 @@ mkdir -p "$output_dir"
 gh run download "$run_id" --name "fisio-desktop-windows-$version" --dir "$output_dir"
 
 manifest="$output_dir/desktop-update.properties"
-installer="$output_dir/Fisio-e-Sports.exe"
+installer="$output_dir/Fisio e Sports - installer.exe"
 if [[ ! -f "$manifest" || ! -f "$installer" ]]; then
     echo 'Artefatti della build incompleti.' >&2
     exit 1
@@ -68,7 +68,7 @@ fi
 echo "Installer verificato: $installer"
 downloads_dir="$HOME/Scaricati"
 mkdir -p "$downloads_dir"
-downloads_installer="$downloads_dir/Fisio-e-Sports.exe"
+downloads_installer="$downloads_dir/Fisio e Sports - installer.exe"
 cp -f "$installer" "$downloads_installer"
 if [[ "$(sha256sum "$downloads_installer" | cut -d' ' -f1)" != "$expected_hash" ]]; then
     echo 'SHA-256 della copia in Scaricati non corrispondente.' >&2

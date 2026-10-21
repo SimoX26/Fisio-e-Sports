@@ -251,14 +251,14 @@ Da Linux, dopo aver pubblicato sul repository GitHub il commit da compilare,
 accedere con GitHub CLI (`gh auth login`) ed eseguire dalla radice:
 
 ```bash
-./build-desktop-exe-linux.sh 1.0.1
+./build-desktop-exe-linux.sh 1.0.3
 ```
 
 Lo script richiede una working tree pulita e il commit corrente già presente
 su `origin` nel branch attivo. Avvia una GitHub Action su Windows, attende la
 build e scarica l'installer verificando SHA-256 in
-`fisio-desktop/target/windows-dist/1.0.1/github-<run-id>/Fisio-e-Sports.exe`.
-Dopo la verifica ne copia una seconda copia in `~/Scaricati/Fisio-e-Sports.exe`,
+`fisio-desktop/target/windows-dist/1.0.3/github-<run-id>/Fisio e Sports - installer.exe`.
+Dopo la verifica ne copia una seconda copia in `~/Scaricati/Fisio e Sports - installer.exe`,
 come lo script Android fa con l'APK. Il manifesto resta nella cartella `target`.
 Non occorrono JDK Windows né WiX sul PC Linux. Alla prima esecuzione, il file
 del workflow deve essere già presente sul branch principale di GitHub. Il
@@ -270,24 +270,30 @@ In alternativa, su Windows con JDK 21 o successivo (`JAVA_HOME`), Maven e WiX
 compatibile con il JDK, eseguire:
 
 ```powershell
-.\deploy-desktop-windows.ps1 -AppVersion 1.0.0
+.\deploy-desktop-windows.ps1 -AppVersion 1.0.3
 ```
 
 Lo script compila il desktop, copia le dipendenze JavaFX per Windows e crea un
 installer EXE con runtime Java incluso in
-`fisio-desktop/target/windows-dist/1.0.0/`. Per una prima prova senza WiX:
+`fisio-desktop/target/windows-dist/1.0.3/`. Per una prima prova senza WiX:
 
 ```powershell
 .\deploy-desktop-windows.ps1 -Type app-image
 ```
 
 Il risultato portabile è una cartella con launcher `.exe` e runtime incluso:
-va copiata per intero. `-AppVersion 1.0.1` permette di cambiare la versione del
+va copiata per intero. `-AppVersion 1.0.3` permette di cambiare la versione del
 pacchetto. `jpackage` crea l'EXE su Windows, anche quando la build è avviata
 dal PC Linux tramite GitHub Actions. L'app desktop usa
 `http://127.0.0.1:8081` per impostazione predefinita; `FISIO_BACKEND_URL`
 permette di indicare il backend HTTPS remoto.
 L'installer non include il backend o il database e non modifica i dati.
+L'EXE si chiama `Fisio e Sports - installer.exe`; il programma installato e
+il collegamento si chiamano **Fisio e Sports**. L'installer usa il codice di
+aggiornamento dei precedenti pacchetti **Fisio-e-Sports**: una versione più
+recente sostituisce quelle precedenti installate dallo stesso utente Windows,
+senza eliminare i dati salvati nel suo profilo. Chiudere l'app prima di avviare
+l'aggiornamento e verificare in **App installate** che resti una sola voce.
 Il pacchetto Windows usa il rendering software di JavaFX per evitare finestre
 bianche in macchine virtuali. Se il caricamento della pagina locale fallisce,
 la finestra mostra l'errore invece di restare bianca. Dopo l'installazione,
@@ -310,8 +316,8 @@ la scelta di installare resta all'utente. Lo sviluppo Linux e il pacchetto
 continua ad avviarsi normalmente e ritenta al prossimo avvio.
 
 Per pubblicare una versione Windows, usare lo script Linux qui sopra oppure,
-su Windows, `.\deploy-desktop-windows.ps1 -AppVersion 1.0.1`. I due file da
-allegare **alla stessa GitHub Release stabile** sono `Fisio-e-Sports.exe` e
+su Windows, `.\deploy-desktop-windows.ps1 -AppVersion 1.0.3`. I due file da
+allegare **alla stessa GitHub Release stabile** sono `Fisio e Sports - installer.exe` e
 `desktop-update.properties`, nella cartella di output indicata dallo script.
 La Release deve essere la più recente del repository, non una prerelease; il
 numero `version` nel manifesto deve coincidere con `-AppVersion`. Non modificare
