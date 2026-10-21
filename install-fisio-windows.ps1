@@ -1,7 +1,8 @@
 param(
     [string]$AppInstaller = (Join-Path $PSScriptRoot 'Fisio e Sports - installer.exe'),
     [string]$BackupFile,
-    [ValidatePattern('^[A-Za-z0-9_]+$')][string]$DatabaseName = 'fisio_e_sport'
+    [ValidatePattern('^[A-Za-z0-9_]+$')][string]$DatabaseName = 'fisio_e_sport',
+    [switch]$DatabaseOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -15,10 +16,10 @@ $principal = [Security.Principal.WindowsPrincipal]::new($identity)
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     throw 'Avviare PowerShell come amministratore con lo stesso account Windows che userà Fisio e Sports.'
 }
-if (-not (Test-Path -LiteralPath $AppInstaller -PathType Leaf)) {
+if (-not $DatabaseOnly -and -not (Test-Path -LiteralPath $AppInstaller -PathType Leaf)) {
     throw "Installer dell'app non trovato: $AppInstaller"
 }
-$AppInstaller = (Resolve-Path -LiteralPath $AppInstaller).Path
+if (-not $DatabaseOnly) { $AppInstaller = (Resolve-Path -LiteralPath $AppInstaller).Path }
 $profileDir = Join-Path $env:LOCALAPPDATA 'Fisio-e-Sports'
 $backendDir = Join-Path $profileDir 'backend'
 $configPath = Join-Path $backendDir 'config.properties'
@@ -110,7 +111,7 @@ if (Test-Path -LiteralPath $configPath -PathType Leaf) {
     if (-not (Get-Service -Name $serviceName -ErrorAction SilentlyContinue)) {
         throw "La configurazione esiste ma il servizio $serviceName manca. Verificare MySQL prima di aggiornare l'app."
     }
-    Write-Host 'Configurazione locale già presente: aggiorno soltanto l’app. Il database e i dati non vengono modificati.'
+    Write-Host 'Configurazione locale già presente: il database e i dati non vengono modificati.'
 } else {
     $databaseServices = @(Get-Service | Where-Object {
         $_.Name -match 'mysql|mariadb' -or $_.DisplayName -match 'mysql|mariadb'
@@ -227,7 +228,11 @@ if (Test-Path -LiteralPath $configPath -PathType Leaf) {
     Write-Host '>> MySQL, dati e configurazione locale pronti'
 }
 
-Write-Host '>> Installo Fisio e Sports'
-$appProcess = Start-Process -FilePath $AppInstaller -Wait -PassThru
-if ($appProcess.ExitCode -ne 0) { throw "Installer Fisio e Sports fallito: codice $($appProcess.ExitCode)" }
-Write-Host 'Installazione completata. Avvia Fisio e Sports e verifica http://127.0.0.1:8081/ready.'
+if (-not $DatabaseOnly) {
+    Write-Host '>> Installo Fisio e Sports'
+    $appProcess = Start-Process -FilePath $AppInstaller -Wait -PassThru
+    if ($appProcess.ExitCode -ne 0) { throw "Installer Fisio e Sports fallito: codice $($appProcess.ExitCode)" }
+    Write-Host 'Installazione completata. Avvia Fisio e Sports e verifica http://127.0.0.1:8081/ready.'
+} else {
+    Write-Host 'Database configurato. Ora esegui Fisio e Sports - installer.exe.'
+}

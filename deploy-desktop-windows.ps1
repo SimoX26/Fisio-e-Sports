@@ -2,7 +2,7 @@ param(
     [ValidateSet('exe', 'app-image')]
     [string]$Type = 'exe',
     [ValidatePattern('^\d+(\.\d+){0,3}$')]
-    [string]$AppVersion = '1.0.3'
+    [string]$AppVersion = '1.0.4'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -94,11 +94,21 @@ try {
         $releaseInstaller = Join-Path $outputDir 'Fisio e Sports - installer.exe'
         Move-Item $installer[0].FullName $releaseInstaller -Force
         $hash = (Get-FileHash $releaseInstaller -Algorithm SHA256).Hash.ToLowerInvariant()
-        Copy-Item (Join-Path $projectRoot 'install-fisio-windows.ps1') $outputDir
-        $setupHash = (Get-FileHash (Join-Path $outputDir 'install-fisio-windows.ps1') -Algorithm SHA256).Hash.ToLowerInvariant()
-        @("version=$AppVersion", "sha256=$hash", "setupSha256=$setupHash") |
+        $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+        if (-not (Test-Path -LiteralPath $compiler)) {
+            throw 'Compilatore .NET Framework x64 non trovato: impossibile creare l’installer database.'
+        }
+        $databaseInstaller = Join-Path $outputDir 'Fisio e Sports - database.exe'
+        $launcherSource = Join-Path $projectRoot 'windows-database-launcher.cs'
+        $setupScript = Join-Path $projectRoot 'install-fisio-windows.ps1'
+        & $compiler '/nologo' '/target:exe' '/platform:x64' "/win32icon:$icon" "/out:$databaseInstaller" "/resource:$setupScript,FisioDatabaseScript" $launcherSource
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $databaseInstaller)) {
+            throw 'Compilazione dell’installer database fallita.'
+        }
+        $databaseHash = (Get-FileHash $databaseInstaller -Algorithm SHA256).Hash.ToLowerInvariant()
+        @("version=$AppVersion", "sha256=$hash", "databaseSha256=$databaseHash") |
             Set-Content (Join-Path $outputDir 'desktop-update.properties') -Encoding ascii
-        Write-Host '>> Pubblica installer EXE, script di prima installazione e desktop-update.properties nella stessa GitHub Release'
+        Write-Host '>> Pubblica i due EXE e desktop-update.properties nella stessa GitHub Release'
     }
 
     Write-Host ">> Pacchetto pronto in: $outputDir"

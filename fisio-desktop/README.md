@@ -247,50 +247,45 @@ Le licenze degli asset incorporati sono in `src/main/resources/desktop/vendor/`.
 
 ## Pacchetto Windows
 
-Da Linux, dopo aver pubblicato sul repository GitHub il commit da compilare,
-accedere con GitHub CLI (`gh auth login`) ed eseguire dalla radice:
-
-```bash
-./build-desktop-exe-linux.sh 1.0.3
-```
-
-Lo script richiede una working tree pulita e il commit corrente già presente
-su `origin` nel branch attivo. Avvia una GitHub Action su Windows, attende la
-build e scarica l'installer verificando SHA-256 in
-`fisio-desktop/target/windows-dist/1.0.3/github-<run-id>/Fisio e Sports - installer.exe`.
-Dopo la verifica ne copia una seconda copia in `~/Scaricati/Fisio e Sports - installer.exe`,
-come lo script Android fa con l'APK. Il manifesto resta nella cartella `target`.
-Non occorrono JDK Windows né WiX sul PC Linux. Alla prima esecuzione, il file
-del workflow deve essere già presente sul branch principale di GitHub. Il
-download dell'artefatto non lo pubblica come Release.
-Il workflow cerca `candle.exe` e `light.exe` sia nei programmi Windows sia nella
-cartella Chocolatey; se mancano, forza la reinstallazione di WiX sul runner.
-
-In alternativa, su Windows con JDK 21 o successivo (`JAVA_HOME`), Maven e WiX
-compatibile con il JDK, eseguire:
+Compilare sul PC Windows con JDK 21 o successivo (`JAVA_HOME`), Maven 3.8 o
+successivo e WiX Toolset 3 (`candle.exe` e `light.exe` nel `PATH`). Serve anche
+il compilatore .NET Framework x64 presente in Windows. Copiare sul PC Windows
+la cartella del progetto aggiornata, aprire PowerShell nella sua radice e
+verificare i prerequisiti:
 
 ```powershell
-.\deploy-desktop-windows.ps1 -AppVersion 1.0.3
+Test-Path "$env:JAVA_HOME\bin\jpackage.exe"
+mvn.cmd -version
+Get-Command candle.exe, light.exe
+Test-Path "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 ```
 
-Lo script compila il desktop, copia le dipendenze JavaFX per Windows e crea un
-installer EXE con runtime Java incluso in
-`fisio-desktop/target/windows-dist/1.0.3/`. Per una prima prova senza WiX:
+I due controlli `Test-Path` devono restituire `True`; gli altri devono mostrare
+i programmi trovati. Poi eseguire:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\deploy-desktop-windows.ps1 -AppVersion 1.0.4
+```
+
+Lo script compila desktop e backend e crea i due file
+`fisio-desktop\target\windows-dist\1.0.4\Fisio e Sports - database.exe` e
+`fisio-desktop\target\windows-dist\1.0.4\Fisio e Sports - installer.exe`.
+Il secondo include il runtime Java. Per una prima prova dell'app senza WiX:
 
 ```powershell
 .\deploy-desktop-windows.ps1 -Type app-image
 ```
 
 Il risultato portabile è una cartella con launcher `.exe` e runtime incluso:
-va copiata per intero. `-AppVersion 1.0.3` permette di cambiare la versione del
-pacchetto. `jpackage` crea l'EXE su Windows, anche quando la build è avviata
-dal PC Linux tramite GitHub Actions. L'app desktop usa
+va copiata per intero. `-AppVersion 1.0.4` permette di cambiare la versione del
+pacchetto. L'app desktop usa
 `http://127.0.0.1:8081` per impostazione predefinita; `FISIO_BACKEND_URL`
 permette di indicare il backend HTTPS remoto.
-L'installer include il backend Java e lo avvia automaticamente quando il
-desktop usa `http://127.0.0.1:8081`. Per la prima installazione usare
-`install-fisio-windows.ps1`, distribuito insieme all'EXE: scarica MySQL LTS,
-importa il backup selezionato sul PC e configura il database locale. Il backend ascolta
+L'installer dell'app include il backend Java e lo avvia automaticamente quando il
+desktop usa `http://127.0.0.1:8081`. Per la prima installazione avviare prima
+`Fisio e Sports - database.exe`: scarica MySQL LTS, importa il backup selezionato
+sul PC e configura il database locale. Poi avviare `Fisio e Sports - installer.exe`
+per installare l'app. Il backend ascolta
 solo su `127.0.0.1` e si chiude con la finestra desktop. Se un backend locale è
 già attivo e pronto, il desktop usa quello. La configurazione privata si trova
 in `%LOCALAPPDATA%\Fisio-e-Sports\backend\config.properties`. L'avvio diretto
@@ -318,22 +313,16 @@ nelle impostazioni Schermo della VM spenta.
 
 ### Prima installazione locale con dati esistenti
 
-Collocare `Fisio e Sports - installer.exe` e `install-fisio-windows.ps1` nella
-stessa cartella e copiare sul PC il backup `.sql.gz` o `.sql` da importare.
-Il file prodotto da `./backup-db.sh` è adatto dopo la verifica e il trasferimento
-protetto descritti nella [guida backup](../docs/operations/backup-database.md).
+Collocare i due EXE sul PC Windows e copiare il backup `.mysql-ready.sql.gz`
+da importare. Prepararlo dal backup originale come descritto nella
+[guida backup](../docs/operations/backup-database.md).
 Servono Internet per scaricare MySQL e Windows Package Manager (`winget`).
 Per passare dal server al PC locale senza divergenze, fare il backup dopo aver
-fermato le scritture sul server e sugli altri client. Aprire PowerShell **come
-amministratore con l'account Windows che userà l'app** e avviare:
-
-```powershell
-powershell.exe -STA -ExecutionPolicy Bypass -File .\install-fisio-windows.ps1
-```
-
-Lo script apre una finestra per scegliere il backup locale. In alternativa si
-può indicare `-BackupFile C:\percorso\backup.sql.gz`; `-DatabaseName` cambia il
-nome atteso del database (`fisio_e_sport` per impostazione predefinita).
+fermato le scritture sul server e sugli altri client. Accedere con l'account
+Windows che userà l'app, avviare `Fisio e Sports - database.exe` e accettare
+la richiesta di amministratore. Scegliere il backup preparato nella finestra
+di selezione. Quando la configurazione termina, avviare
+`Fisio e Sports - installer.exe`; l'app compare nel menu Start.
 Cerca nel catalogo winget l'ultima release delle
 serie MySQL LTS 9.7 e 8.4, poi scarica l'archivio ZIP dal CDN ufficiale MySQL.
 Installa il runtime Visual C++ se manca, inizializza un servizio `FisioMySQL`
@@ -342,8 +331,8 @@ locali casuali. Il backup resta nel percorso scelto; la password amministrativa 
 salvata per quell'utente come file protetto DPAPI. Le credenziali applicative
 sono in `%LOCALAPPDATA%\Fisio-e-Sports\backend\config.properties`.
 
-Se trova una configurazione applicativa esistente, lo script installa solo
-l'aggiornamento dell'app. Se trova un servizio MySQL o la porta 3306 occupata
+Se trova una configurazione applicativa esistente, l'installer del database
+non modifica i dati. Se trova un servizio MySQL o la porta 3306 occupata
 senza configurazione, si ferma: **non importa sopra dati preesistenti**. Il
 dump contiene `DROP DATABASE`; non usare `db.sql` per il ripristino. Se il
 backup proviene da uno schema precedente, occorre seguire
@@ -374,17 +363,17 @@ MySQL né importa nuovamente il database. Lo sviluppo Linux e il pacchetto
 `app-image` non eseguono questo controllo. Se GitHub non è raggiungibile, l'app
 continua ad avviarsi normalmente e ritenta al prossimo avvio.
 
-Per pubblicare una versione Windows, usare lo script Linux qui sopra oppure,
-su Windows, `.\deploy-desktop-windows.ps1 -AppVersion 1.0.3`. I tre file da
+Per pubblicare una versione Windows, eseguire
+`.\deploy-desktop-windows.ps1 -AppVersion 1.0.4` su Windows. I tre file da
 allegare **alla stessa GitHub Release stabile** sono `Fisio e Sports - installer.exe`,
-`install-fisio-windows.ps1` e `desktop-update.properties`, nella cartella di
+`Fisio e Sports - database.exe` e `desktop-update.properties`, nella cartella di
 output indicata dallo script.
 La Release deve essere la più recente del repository, non una prerelease; il
 numero `version` nel manifesto deve coincidere con `-AppVersion`. Non modificare
-l'EXE o lo script dopo la generazione degli hash. Conservare l'installer originale versionato
+gli EXE dopo la generazione degli hash. Conservare l'installer originale versionato
 solo come artefatto locale o allegato aggiuntivo. Prima della pubblicazione,
 installare la versione precedente su un PC di prova e verificare download,
 hash, apertura dell'installer, riavvio e conservazione della configurazione.
-L'installer non è ancora firmato digitalmente: Windows può mostrare un avviso
+Gli installer non sono ancora firmati digitalmente: Windows può mostrare un avviso
 prima dell'esecuzione. La pubblicazione della Release resta un'operazione
 manuale.
