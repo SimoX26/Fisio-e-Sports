@@ -16,7 +16,7 @@ SANDBOX_HEADER = "/*M!999999\\- enable the sandbox mode */"
 
 def prepare(source: Path, destination: Path) -> None:
     if not source.is_file() or not source.name.endswith(".sql.gz"):
-        raise ValueError("Il backup di origine deve essere un file .sql.gz esistente.")
+        raise ValueError(f"Backup non trovato: {source}. Controlla il percorso (la cartella predefinita è 'backups').")
     if source.resolve() == destination.resolve():
         raise ValueError("Il backup originale non può essere sovrascritto.")
     if destination.exists():
@@ -74,10 +74,18 @@ def prepare(source: Path, destination: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("backup", type=Path, help="Backup originale .sql.gz")
+    parser.add_argument("backup", nargs="?", type=Path, help="Backup originale .sql.gz (predefinito: il più recente in backups/)")
     parser.add_argument("output", nargs="?", type=Path, help="Nuovo backup .sql.gz")
     args = parser.parse_args()
-    source = args.backup
+    if args.backup is None:
+        candidates = [path for path in (ROOT / "backups").glob("*.sql.gz")
+                      if not path.name.endswith(".mysql-ready.sql.gz")]
+        if not candidates:
+            parser.exit(1, "Errore: nessun backup originale .sql.gz trovato nella cartella backups/.\n")
+        source = max(candidates, key=lambda path: (path.stat().st_mtime_ns, path.name))
+        print(f"Backup originale selezionato: {source}")
+    else:
+        source = args.backup
     destination = args.output or source.with_name(source.name.removesuffix(".sql.gz") + ".mysql-ready.sql.gz")
     try:
         prepare(source, destination)

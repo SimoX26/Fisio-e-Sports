@@ -46,11 +46,16 @@ provare il ripristino su un'istanza separata prima di usarlo operativamente.
 ## Backup per la versione locale Windows
 
 Se il backup precede l'associazione delle schede paziente ai terapisti,
-prepara un nuovo archivio dalla radice del progetto:
+prepara un nuovo archivio dalla radice del progetto. Lo script sceglie il
+backup originale più recente nella cartella `backups/`:
 
 ```bash
-python3 prepare-mysql-backup.py backups/NOME_BACKUP.sql.gz
+python prepare-mysql-backup.py
 ```
+
+Per scegliere un file diverso, passa il percorso completo relativo alla
+radice del progetto, per esempio
+`python prepare-mysql-backup.py backups/NOME_BACKUP.sql.gz`.
 
 Lo script lascia intatto l'originale e crea `NOME_BACKUP.mysql-ready.sql.gz`
 nella stessa directory. Rimuove la direttiva iniziale specifica del client
