@@ -309,7 +309,8 @@ verificare che, senza configurazione MySQL, compaia un avviso con il percorso
 del file da preparare; dopo la configurazione, deve comparire la schermata di
 login senza avviso.
 Il titolo della finestra mostra la versione installata. Installer, collegamento
-e finestra usano il logo dell'app al posto dell'icona Java. Se la finestra
+e finestra usano il logo con sfondo bianco; gli asset degli altri sistemi
+restano invariati. Se la finestra
 rimane bianca, leggere `%LOCALAPPDATA%\Fisio-e-Sports\desktop-startup.log`:
 registra soltanto gli eventi di avvio della pagina, senza credenziali o dati
 dei pazienti. In VirtualBox provare anche a disattivare l'accelerazione 3D

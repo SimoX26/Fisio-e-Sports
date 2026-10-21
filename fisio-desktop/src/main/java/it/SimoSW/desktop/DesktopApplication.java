@@ -73,7 +73,9 @@ public final class DesktopApplication extends Application {
             }
         });
         stage.setTitle("Fisio e Sports — " + version);
-        URL icon = DesktopApplication.class.getResource("/desktop/assets/img/logo.png");
+        boolean windows = System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT).contains("win");
+        URL icon = DesktopApplication.class.getResource(windows
+                ? "/desktop/assets/img/logo-windows.png" : "/desktop/assets/img/logo.png");
         if (icon != null) stage.getIcons().add(new Image(icon.toExternalForm()));
         stage.setMinWidth(840);
         stage.setMinHeight(600);

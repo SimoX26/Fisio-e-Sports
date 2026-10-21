@@ -28,7 +28,7 @@ $maven = (Get-Command 'mvn.cmd' -ErrorAction Stop).Source
 
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $desktopDir = Join-Path $projectRoot 'fisio-desktop'
-$icon = Join-Path $desktopDir 'src\main\resources\desktop\assets\img\logo.ico'
+$icon = Join-Path $desktopDir 'src\main\resources\desktop\assets\img\logo-windows.ico'
 $stageDir = Join-Path $desktopDir 'target\windows-package'
 $inputDir = Join-Path $stageDir 'input'
 $outputDir = Join-Path $desktopDir "target\windows-dist\$AppVersion"
